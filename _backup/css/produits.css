@@ -1,0 +1,69 @@
+/* ============================================
+   GRILLE CATEGORIES - 2 colonnes
+   ============================================ */
+.categories-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 8px;
+    grid-auto-flow: dense;
+}
+
+.category-block { position: relative; }
+.category-block[data-col="left"] { grid-column: 1; }
+.category-block[data-col="right"] { grid-column: 2; }
+
+.category-header {
+    text-align: center;
+    padding: 2px 8px;
+    background: #0d2347;
+    border-radius: 3px;
+    margin-bottom: 1px;
+    position: relative;
+}
+
+.category-header h3 {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+.edit-mode .category-header { cursor: pointer; }
+.edit-mode .category-header:hover { background: #1a3a6e; }
+
+.category-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.edit-mode .category-header:hover .delete-btn { display: block; }
+
+.add-category-btn { grid-column: 1 / -1; }
+
+.row-action-btn.move { background: #555; color: #fff; }
+.row-action-btn.move:hover { background: #777; }
+.row-action-btn.move.disabled {
+    background: #bbb;
+    color: #eee;
+    cursor: default;
+    opacity: 0.4;
+}
+
+/* ============================================
+   RESPONSIVE PRODUITS
+   ============================================ */
+@media (max-width: 740px) {
+    .categories-grid { grid-template-columns: 1fr; }
+    .category-block[data-col="left"],
+    .category-block[data-col="right"] { grid-column: 1; }
+    .category-header h3 { font-size: 13px; letter-spacing: 2px; }
+}
+
+@media (max-width: 480px) {
+    .category-header { padding: 3px 6px; }
+    .category-header h3 { font-size: 13px; letter-spacing: 1px; }
+}

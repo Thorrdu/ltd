@@ -1,0 +1,151 @@
+/* ============================================
+   CONTENEUR MENUS
+   ============================================ */
+.menus-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+/* ============================================
+   CARTES MENU
+   ============================================ */
+.menu-card {
+    border: 2px solid #0d2347;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.menu-card-header {
+    background: #0d2347;
+    padding: 6px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.menu-card-header h3 {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.menu-card-price {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: #f5f0e6;
+    background: #8b0000;
+    padding: 2px 12px;
+    border-radius: 3px;
+}
+
+.menu-card-body {
+    padding: 10px 14px;
+    background: rgba(13, 35, 71, 0.04);
+}
+
+.menu-card-desc {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.menu-card-items {
+    list-style: none;
+    margin-top: 4px;
+}
+
+.menu-card-items li {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: #1a1a1a;
+    padding: 2px 0 2px 16px;
+    position: relative;
+    font-weight: 500;
+}
+
+.menu-card-items li::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 5px;
+    background: #8b0000;
+    border-radius: 50%;
+}
+
+/* ============================================
+   BANNIERE PROMO
+   ============================================ */
+.promo-banner {
+    background: linear-gradient(135deg, #8b0000 0%, #c0392b 100%);
+    border-radius: 5px;
+    padding: 10px 16px;
+    text-align: center;
+}
+
+.promo-banner p {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 1px;
+}
+
+.promo-banner .promo-highlight {
+    font-size: 17px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* ============================================
+   EDITION MENUS
+   ============================================ */
+.edit-mode .menu-card-header { cursor: pointer; }
+.edit-mode .menu-card-header:hover { background: #1a3a6e; }
+.edit-mode .menu-card-body { cursor: pointer; }
+.edit-mode .menu-card-body:hover { background: rgba(192, 57, 43, 0.06); }
+
+.edit-input-desc { width: 100%; font-size: 14px; }
+
+.delete-menu-btn {
+    display: none;
+    width: 22px;
+    height: 22px;
+    border: none;
+    border-radius: 3px;
+    background: #c0392b;
+    color: #fff;
+    font-size: 11px;
+    cursor: pointer;
+    line-height: 22px;
+    text-align: center;
+    padding: 0;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+
+.edit-mode .delete-menu-btn { display: inline-block; }
+.delete-menu-btn:hover { background: #e74c3c; }
+
+/* ============================================
+   RESPONSIVE MENUS
+   ============================================ */
+@media (max-width: 480px) {
+    .menu-card-header h3 { font-size: 14px; }
+    .menu-card-price { font-size: 15px; }
+}
+
+@media print {
+    .delete-menu-btn { display: none !important; }
+    .menus-container { gap: 8px; }
+}

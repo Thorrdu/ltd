@@ -1,0 +1,335 @@
+/* ============================================
+   PAGE D'ACCUEIL - Station LTD
+   ============================================ */
+
+body.accueil {
+    background: #0d1b2e;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+}
+
+.hero {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.hero-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.18;
+    filter: blur(2px);
+}
+
+.hero-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(13, 27, 46, 0.5) 0%,
+        rgba(13, 27, 46, 0.85) 40%,
+        rgba(13, 27, 46, 0.95) 70%,
+        #0d1b2e 100%
+    );
+}
+
+.hero-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 800px;
+    width: 100%;
+}
+
+.hero-logo {
+    width: 220px;
+    height: auto;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.6));
+    animation: logoFadeIn 1s ease-out;
+}
+
+@keyframes logoFadeIn {
+    from { opacity: 0; transform: translateY(-20px) scale(0.9); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.hero-title {
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 48px;
+    color: #fff;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+    margin-bottom: 4px;
+    text-align: center;
+}
+
+.hero-divider {
+    width: 200px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #c0392b, transparent);
+    margin: 8px 0;
+    border: none;
+}
+
+.hero-subtitle {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+.hero-location {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+}
+
+/* --- Cartes de navigation --- */
+.nav-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 780px;
+    animation: cardsFadeIn 1.2s ease-out;
+}
+
+@keyframes cardsFadeIn {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.nav-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 28px 16px 24px;
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.nav-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(192, 57, 43, 0.15) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.nav-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(192, 57, 43, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(192, 57, 43, 0.15);
+}
+
+.nav-card:hover::before { opacity: 1; }
+
+.nav-card-icon {
+    position: relative;
+    z-index: 1;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #1a3a6e, #0d2347);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    border: 2px solid rgba(192, 57, 43, 0.4);
+    font-size: 24px;
+    transition: all 0.3s ease;
+}
+
+.nav-card:hover .nav-card-icon {
+    border-color: #c0392b;
+    box-shadow: 0 0 12px rgba(192, 57, 43, 0.3);
+    transform: scale(1.08);
+}
+
+.nav-card-title {
+    position: relative;
+    z-index: 1;
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    transition: color 0.3s;
+}
+
+.nav-card:hover .nav-card-title {
+    color: #e74c3c;
+}
+
+.nav-card-desc {
+    position: relative;
+    z-index: 1;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    text-align: center;
+    line-height: 1.5;
+}
+
+.nav-card.locked .nav-card-icon {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.nav-card.locked:hover .nav-card-icon {
+    border-color: rgba(192, 57, 43, 0.4);
+}
+
+.lock-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.25);
+    font-family: 'Segoe UI', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* --- Galerie d'images --- */
+.gallery {
+    display: flex;
+    gap: 16px;
+    margin-top: 48px;
+    max-width: 780px;
+    width: 100%;
+    animation: cardsFadeIn 1.4s ease-out;
+}
+
+.gallery-img {
+    flex: 1;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: all 0.3s ease;
+}
+
+.gallery-img img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+    filter: brightness(0.7) saturate(0.8);
+    transition: all 0.4s ease;
+}
+
+.gallery-img:hover img {
+    filter: brightness(0.9) saturate(1);
+    transform: scale(1.03);
+}
+
+.gallery-img:hover {
+    border-color: rgba(192, 57, 43, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* --- Pied de page --- */
+.hero-footer {
+    margin-top: 48px;
+    text-align: center;
+    animation: cardsFadeIn 1.6s ease-out;
+}
+
+.hero-footer-brand {
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.2);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+.hero-footer-slogan {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.12);
+    font-style: italic;
+    margin-top: 4px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 740px) {
+    .hero { padding: 30px 16px; }
+    .hero-logo { width: 160px; }
+    .hero-title { font-size: 36px; letter-spacing: 4px; }
+    .hero-subtitle { font-size: 14px; }
+    .hero-location { margin-bottom: 36px; }
+
+    .nav-cards {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        max-width: 340px;
+    }
+
+    .nav-card { padding: 20px 16px; flex-direction: row; gap: 14px; }
+    .nav-card-icon { margin-bottom: 0; width: 48px; height: 48px; font-size: 20px; flex-shrink: 0; }
+    .nav-card-title { font-size: 16px; text-align: left; }
+    .nav-card-desc { text-align: left; }
+
+    .gallery { flex-direction: column; gap: 10px; margin-top: 36px; }
+    .gallery-img img { height: 120px; }
+}
+
+@media (max-width: 480px) {
+    .hero { padding: 24px 12px; }
+    .hero-logo { width: 130px; }
+    .hero-title { font-size: 28px; letter-spacing: 3px; }
+    .hero-divider { width: 140px; }
+    .hero-subtitle { font-size: 13px; }
+    .hero-location { font-size: 11px; margin-bottom: 28px; }
+
+    .nav-card { padding: 16px 12px; }
+    .nav-card-icon { width: 42px; height: 42px; font-size: 18px; }
+    .nav-card-title { font-size: 14px; }
+    .nav-card-desc { font-size: 11px; }
+
+    .gallery-img img { height: 100px; }
+}
+
+@media print {
+    body.accueil { background: #fff; }
+    .hero-bg { display: none; }
+    .nav-card { border: 1px solid #ccc; color: #111; }
+    .nav-card-desc { color: #666; }
+}

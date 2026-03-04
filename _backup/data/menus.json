@@ -1,0 +1,24 @@
+[
+  {
+    "type": "menu",
+    "name": "Menu Midi",
+    "price": "400",
+    "items": ["Sandwich", "Blue Bull", "Fruit au choix"]
+  },
+  {
+    "type": "menu",
+    "name": "Menu LTD",
+    "price": "500",
+    "items": ["Sandwich", "Blue Bull", "Gauffre de BXL", "Cafe"]
+  },
+  {
+    "type": "promo",
+    "text": "10 menus achetes = 1 menu offert"
+  },
+  {
+    "type": "menu",
+    "name": "Pack Nouvel Arrivant",
+    "price": "1 200",
+    "items": ["Telephone", "Radio", "Gauffre de BXL", "Blue Bull"]
+  }
+]

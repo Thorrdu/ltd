@@ -1,0 +1,46 @@
+[
+  {
+    "name": "AutoV / Garage Moto",
+    "products": [
+      { "name": "Jerrican d'essence", "price": "180" },
+      { "name": "Kit de nettoyage", "price": "50" }
+    ]
+  },
+  {
+    "name": "Jupiter",
+    "products": [
+      { "name": "Bouteille vide", "price": "4" },
+      { "name": "Canette vide", "price": "4" },
+      { "name": "Sucre", "price": "4" },
+      { "name": "Bidon vide", "price": "150" }
+    ]
+  },
+  {
+    "name": "Vigneron",
+    "products": [
+      { "name": "Bouteille de vin vide", "price": "30" },
+      { "name": "Ciseaux", "price": "70" }
+    ]
+  },
+  {
+    "name": "Bahamas / Unicorn / Tequilala",
+    "products": [
+      { "name": "Citron vert", "price": "6" },
+      { "name": "Citron", "price": "5" },
+      { "name": "Blue Bull", "price": "15" }
+    ]
+  },
+  {
+    "name": "Quikly",
+    "products": [
+      { "name": "Tasse vide", "price": "3" },
+      { "name": "Tasse vide (papier)", "price": "3" }
+    ]
+  },
+  {
+    "name": "Mystere",
+    "products": [
+      { "name": "Spray pesticide", "price": "5 000" }
+    ]
+  }
+]

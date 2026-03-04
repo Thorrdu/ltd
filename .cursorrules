@@ -1,0 +1,48 @@
+# Station LTD - Conventions et patterns
+
+## Contexte projet
+- Serveur GTA RP : Bruxelles Life
+- Personnage : Jacques Noir, patron de la station LTD (Anderlecht, Little Seoul)
+- Application : Laravel 11 + Filament 3 + MySQL 8
+- Objectif : site vitrine + panneau admin + toolbox extensible
+
+## Architecture
+- Product est la source unique : tous les produits (retail, enterprise, menus) sont dans la table `products`
+- Flags `is_retail` et `is_enterprise` determinent la visibilite
+- Les menus referencent des produits via pivot `menu_product` (champ `choice_group` pour les choix)
+- Les entreprises referencent des produits via pivot `enterprise_group_product` (champ `price` specifique)
+- Pages publiques en Blade, CSS custom dans public/css/ (reutilisation du design original)
+
+## Conventions code
+- Prix toujours en entiers (pas de centimes, pas de float)
+- sort_order sur toutes les entites ordonnees
+- Noms de categories en majuscules
+- Scopes Eloquent pour les filtres courants (scopeRetail, scopeEnterprise, scopeMenus, scopePromos)
+- Pas de logique metier dans les controllers : queries simples, donnees passees aux vues
+
+## Conventions design (pages publiques)
+- Couleurs : navy (#0d1b2e, #0d2347), rouge (#8b0000, #c0392b), creme (#f5f0e6)
+- Panneau bois avec ombres et animation boardFadeIn
+- Dot leaders entre noms et prix (span.dot-leader)
+- Zebra stripes (nth-child(even))
+- Logo PNG dans toutes les pages
+- Largeur panneau : 700px max
+- Sous-titre : "Little Seoul - Bruxelles"
+
+## Fichiers de reference
+- `docs/architecture.md` : schema complet de la base, modeles, relations, seeders
+- `docs/reglement-bxl-life/` : reglement du serveur BXL Life
+- `docs/tasks/` : taches futures (lotto, stock, strategies, etc.)
+- `memory-bank/` : documentation du projet (6 fichiers .md)
+
+## Ne pas faire
+- Ne jamais stocker les prix en float
+- Ne pas inventer de slogans (lore-friendly uniquement)
+- Ne pas utiliser d'emojis dans le code ou les reponses
+- Ne pas modifier les fichiers dans _backup/
+
+## Langue
+- Reponses en francais
+- Code et commentaires en anglais
+- Noms de modeles/tables en anglais
+- Contenu affiche (labels, textes) en francais

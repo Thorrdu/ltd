@@ -1,0 +1,18 @@
+<IfModule mod_headers.c>
+    # Supprimer les en-tetes de securite qui bloquent les iframes
+    Header unset X-Frame-Options
+    Header always unset X-Frame-Options
+    Header edit X-Frame-Options .* ""
+    Header always edit X-Frame-Options .* ""
+
+    Header unset Content-Security-Policy
+    Header always unset Content-Security-Policy
+
+    # Remplacer par une politique permissive
+    Header set Content-Security-Policy "frame-ancestors *"
+
+    # CORS
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type"
+</IfModule>

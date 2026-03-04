@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Station LTD - Entreprises Only</title>
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/entreprises.css">
+</head>
+<body>
+
+    <div class="password-overlay" id="passwordOverlay">
+        <div class="password-box">
+            <div class="password-inner">
+                <h3>Acces restreint</h3>
+                <p>Page reservee aux entreprises partenaires</p>
+                <input type="password" id="pwInput" placeholder="Mot de passe" autocomplete="off">
+                <button class="pw-btn" id="pwBtn" onclick="checkPassword()">Entrer</button>
+                <div class="pw-error" id="pwError">Mot de passe incorrect</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toolbar">
+        <span class="toolbar-title">STATION LTD - Editeur Entreprises</span>
+        <button id="btnToggleEdit" onclick="toggleEditMode()">Mode Edition</button>
+        <div class="toolbar-separator"></div>
+        <button onclick="exportJSON()">Exporter JSON</button>
+        <button onclick="importJSON()">Importer JSON</button>
+        <div class="toolbar-separator"></div>
+        <button onclick="window.print()">Imprimer</button>
+    </div>
+
+    <div class="menu-board" id="menuBoard">
+        <div class="inner-board">
+            <div class="header">
+                <div class="main-title">
+                    <img src="img/logo-ltd.png" alt="LTD" class="main-title-logo">
+                    <h2>STATION LTD - ENTREPRISES</h2>
+                </div>
+            </div>
+
+            <div class="enterprise-container" id="enterpriseContainer"></div>
+
+            <div class="footer-section">
+                <div class="footer-brand">LTD - Bruxelles</div>
+                <div class="footer-slogan">Venez remplir le plein... et plus encore</div>
+                <div class="confidential-badge">Reservee aux entreprises partenaires</div>
+            </div>
+
+            <nav class="page-nav">
+                <a href="index.html">Accueil</a>
+                <a href="produits.html">Produits</a>
+                <a href="menus.html">Menus</a>
+                <a href="entreprises.html" class="current">Entreprises</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3 id="modalTitle">Exporter les donnees</h3>
+            <textarea id="modalTextarea" spellcheck="false"></textarea>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">Fermer</button>
+                <button class="btn-primary" id="modalAction" onclick="copyToClipboard()">Copier</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script src="js/entreprises.js"></script>
+
+</body>
+</html>

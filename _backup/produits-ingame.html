@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Station LTD - Produits</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: #0d1b2e;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 8px 20px;
+    color: #111;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background: radial-gradient(ellipse at center, rgba(13,27,46,0.6), #0d1b2e);
+    pointer-events: none;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(ellipse at center top, rgba(139,0,0,0.05) 0%, transparent 50%),
+        linear-gradient(180deg, rgba(13,27,46,0.4) 0%, rgba(13,27,46,0.9) 100%);
+    pointer-events: none;
+}
+
+.menu-board {
+    width: 700px;
+    max-width: 100%;
+    margin-top: 4px;
+    position: relative;
+    background: linear-gradient(160deg, #6b5a45 0%, #7a6b55 20%, #6b5c47 50%, #5e5040 80%, #4d4234 100%);
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow:
+        0 0 0 3px #3d3428,
+        0 0 0 5px #2a2219,
+        0 8px 32px rgba(0,0,0,0.7),
+        0 0 80px rgba(0,0,0,0.25);
+    animation: boardFadeIn 0.6s ease-out;
+}
+
+@keyframes boardFadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.inner-board {
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(180deg, #f5f0e6 0%, #f0e9d8 100%);
+    border-radius: 3px;
+    padding: 8px 14px 6px;
+    border: 1px solid rgba(0,0,0,0.3);
+}
+
+.header { text-align: center; margin-bottom: 2px; }
+
+.main-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #8b0000 0%, #a01010 50%, #8b0000 100%);
+    border-radius: 3px;
+}
+
+.main-title h2 {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 15px;
+    color: #fff;
+    letter-spacing: 3px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.categories-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px 8px;
+    grid-auto-flow: dense;
+}
+
+.category-block { position: relative; }
+.category-block[data-col="left"]  { grid-column: 1; }
+.category-block[data-col="right"] { grid-column: 2; }
+
+.category-header {
+    text-align: center;
+    padding: 2px 8px;
+    background: #0d2347;
+    border-radius: 3px;
+    margin-bottom: 1px;
+}
+
+.category-header h3 {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+.product-list { list-style: none; }
+
+.product-row {
+    display: flex;
+    align-items: baseline;
+    padding: 1px 6px;
+    font-size: 15px;
+    line-height: 1.3;
+}
+
+.product-row:nth-child(even) { background: rgba(13,35,71,0.035); }
+
+.product-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    color: #111;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dot-leader {
+    flex: 1;
+    border-bottom: 1px dotted rgba(0,0,0,0.25);
+    min-width: 10px;
+    margin: 0 4px;
+    position: relative;
+    bottom: 3px;
+}
+
+.product-price {
+    flex: 0 0 auto;
+    color: #8b0000;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-weight: 800;
+    font-size: 15px;
+    text-align: right;
+    white-space: nowrap;
+    min-width: 60px;
+}
+
+.footer-section {
+    margin-top: 4px;
+    padding-top: 3px;
+    border-top: 2px solid transparent;
+    border-image: linear-gradient(90deg, transparent, #8b0000, transparent) 1;
+    text-align: center;
+}
+
+.footer-brand {
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 15px;
+    color: #0d2347;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+.footer-slogan {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-style: italic;
+    color: #666;
+    margin-top: 1px;
+}
+
+@media (max-width: 740px) {
+    body { padding: 16px 12px; }
+    .menu-board { width: 100%; padding: 8px; margin-top: 8px; }
+    .inner-board { padding: 10px 12px 8px; }
+    .main-title { gap: 8px; padding: 5px 10px; }
+    .main-title h2 { font-size: 12px; letter-spacing: 2px; }
+    .product-row { font-size: 14px; padding: 1px 6px; }
+    .product-price { min-width: 52px; font-size: 14px; }
+    .categories-grid { grid-template-columns: 1fr; }
+    .category-block[data-col="left"],
+    .category-block[data-col="right"] { grid-column: 1; }
+    .category-header h3 { font-size: 13px; letter-spacing: 2px; }
+}
+
+@media (max-width: 480px) {
+    body { padding: 10px 8px; }
+    .menu-board { padding: 6px; margin-top: 6px; }
+    .inner-board { padding: 8px 8px 6px; }
+    .main-title { gap: 6px; padding: 4px 8px; }
+    .main-title h2 { font-size: 10px; letter-spacing: 1px; }
+    .product-row { font-size: 13px; }
+    .product-price { min-width: 46px; font-size: 13px; }
+    .category-header { padding: 3px 6px; }
+    .category-header h3 { font-size: 13px; letter-spacing: 1px; }
+}
+</style>
+</head>
+<body>
+
+<div class="menu-board">
+    <div class="inner-board">
+        <div class="header">
+            <div class="main-title">
+                <h2>STATION LTD - PRODUITS</h2>
+            </div>
+        </div>
+
+        <div class="categories-grid" id="categoriesGrid"></div>
+
+        <div class="footer-section">
+            <div class="footer-brand">LTD - Bruxelles</div>
+            <div class="footer-slogan">Venez remplir le plein... et plus encore</div>
+        </div>
+    </div>
+</div>
+
+<script>
+var PRODUITS = [
+  {
+    "name": "SNACKS",
+    "column": "left",
+    "products": [
+      { "name": "Sandwich", "price": "300" },
+      { "name": "Gaufre de BXL", "price": "200" },
+      { "name": "Chips", "price": "200" },
+      { "name": "Barres de cereales", "price": "150" },
+      { "name": "Barre de chocolat", "price": "150" },
+      { "name": "Glace au chocolat", "price": "200" },
+      { "name": "Glace a la vanille", "price": "200" },
+      { "name": "Glace a la fraise", "price": "200" },
+      { "name": "Pomme", "price": "80" },
+      { "name": "Banane", "price": "80" },
+      { "name": "Poire", "price": "80" },
+      { "name": "Orange", "price": "80" }
+    ]
+  },
+  {
+    "name": "BOISSONS",
+    "column": "right",
+    "products": [
+      { "name": "Cafe", "price": "150" },
+      { "name": "Bouteille d'eau", "price": "200" },
+      { "name": "Blue Bull", "price": "200" },
+      { "name": "Jupiter", "price": "300" },
+      { "name": "M27", "price": "300" },
+      { "name": "Solaris", "price": "400" },
+      { "name": "Vin rouge", "price": "500" },
+      { "name": "Vin blanc", "price": "500" },
+      { "name": "Champagne", "price": "1 000" },
+      { "name": "Vodka", "price": "750" },
+      { "name": "Rhum", "price": "750" },
+      { "name": "Whisky", "price": "750" },
+      { "name": "Super Vodka (Challenge)", "price": "1 000" }
+    ]
+  },
+  {
+    "name": "COIN FESTIF",
+    "column": "left",
+    "products": [
+      { "name": "Bombe a graffiti", "price": "500" },
+      { "name": "Feu d'artifice (flare)", "price": "400" },
+      { "name": "Fusee de feux d'artifice", "price": "2 000" },
+      { "name": "Pyro petit", "price": "500" },
+      { "name": "Pyro moyen", "price": "1 000" },
+      { "name": "Pyro pirate", "price": "600" },
+      { "name": "Pyro tapis", "price": "1 200" },
+      { "name": "Pyro tapis long", "price": "2 000" },
+      { "name": "Pyro flare 1", "price": "2 000" },
+      { "name": "Pyro flare 2", "price": "2 000" },
+      { "name": "Pyro flare 3", "price": "2 000" },
+      { "name": "Fontaine de feux d'artifices", "price": "1 000" }
+    ]
+  },
+  {
+    "name": "OBJETS DU QUOTIDIEN",
+    "column": "right",
+    "products": [
+      { "name": "Ticket a gratter", "price": "100" },
+      { "name": "Radio", "price": "200" },
+      { "name": "Telephone", "price": "1 000" },
+      { "name": "Tablette", "price": "1 750" },
+      { "name": "Sac de tenue", "price": "250" },
+      { "name": "Portefeuille", "price": "100" },
+      { "name": "Jerrican d'essence", "price": "200" },
+      { "name": "Paquet de cigarettes", "price": "1 200" },
+      { "name": "Cigarette (unite)", "price": "50" },
+      { "name": "Feuille a rouler", "price": "3" },
+      { "name": "Skateboard", "price": "1 500" },
+      { "name": "Rollers", "price": "2 000" },
+      { "name": "Parachute", "price": "6 000" }
+    ]
+  }
+];
+
+(function() {
+    var grid = document.getElementById('categoriesGrid');
+
+    PRODUITS.forEach(function(cat) {
+        var block = document.createElement('div');
+        block.className = 'category-block';
+        if (cat.column) block.setAttribute('data-col', cat.column);
+
+        var header = document.createElement('div');
+        header.className = 'category-header';
+        header.innerHTML = '<h3>' + cat.name + '</h3>';
+        block.appendChild(header);
+
+        var list = document.createElement('ul');
+        list.className = 'product-list';
+
+        cat.products.forEach(function(p) {
+            var row = document.createElement('li');
+            row.className = 'product-row';
+
+            var name = document.createElement('span');
+            name.className = 'product-name';
+            name.textContent = p.name;
+
+            var dots = document.createElement('span');
+            dots.className = 'dot-leader';
+
+            var price = document.createElement('span');
+            price.className = 'product-price';
+            price.textContent = p.price + '\u20AC';
+
+            row.appendChild(name);
+            row.appendChild(dots);
+            row.appendChild(price);
+            list.appendChild(row);
+        });
+
+        block.appendChild(list);
+        grid.appendChild(block);
+    });
+})();
+</script>
+
+</body>
+</html>

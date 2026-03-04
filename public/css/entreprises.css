@@ -1,0 +1,189 @@
+/* ============================================
+   BLOCS ENTREPRISES
+   ============================================ */
+.enterprise-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.enterprise-block {
+    border: 1px solid rgba(13, 35, 71, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.enterprise-header {
+    background: #0d2347;
+    padding: 5px 12px;
+    cursor: default;
+}
+
+.enterprise-header h3 {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.enterprise-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.edit-mode .enterprise-header { cursor: pointer; }
+.edit-mode .enterprise-header:hover { background: #1a3a6e; }
+.edit-mode .enterprise-header:hover .delete-btn { display: block; }
+
+.product-row { padding: 2px 12px; }
+
+.confidential-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 12px;
+    background: #8b0000;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-radius: 3px;
+}
+
+/* ============================================
+   OVERLAY MOT DE PASSE
+   ============================================ */
+.password-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0d1b2e;
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.password-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url('../img/station-nuit.png') center/cover no-repeat;
+    opacity: 0.1;
+    filter: blur(3px);
+    pointer-events: none;
+}
+
+.password-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at center, rgba(139, 0, 0, 0.06) 0%, transparent 50%),
+        linear-gradient(180deg, rgba(13, 27, 46, 0.3) 0%, rgba(13, 27, 46, 0.9) 100%);
+    pointer-events: none;
+}
+
+.password-overlay.hidden { display: none; }
+
+.password-box {
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(160deg, #6b5a45 0%, #7a6b55 20%, #6b5c47 50%, #5e5040 80%, #4d4234 100%);
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 0 0 3px #3d3428, 0 0 0 5px #2a2219, 0 8px 32px rgba(0,0,0,0.7), 0 0 80px rgba(0,0,0,0.25);
+    width: 380px;
+    max-width: 90vw;
+    animation: boardFadeIn 0.6s ease-out;
+}
+
+.password-inner {
+    background: #f5f0e6;
+    border-radius: 3px;
+    padding: 30px 24px;
+    border: 1px solid rgba(0,0,0,0.3);
+    text-align: center;
+}
+
+.password-inner h3 {
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-size: 20px;
+    color: #0d2347;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.password-inner p {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    color: #666;
+    font-style: italic;
+    margin-bottom: 16px;
+}
+
+.password-inner input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #0d2347;
+    border-radius: 4px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 15px;
+    text-align: center;
+    outline: none;
+    letter-spacing: 2px;
+}
+
+.password-inner input:focus {
+    border-color: #c0392b;
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.15);
+}
+
+.password-inner .pw-btn {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px 0;
+    background: #8b0000;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.password-inner .pw-btn:hover { background: #c0392b; }
+
+.password-inner .pw-error {
+    display: none;
+    margin-top: 10px;
+    color: #c0392b;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.password-inner .pw-error.visible { display: block; }
+
+/* ============================================
+   RESPONSIVE ENTREPRISES
+   ============================================ */
+@media (max-width: 480px) {
+    .enterprise-header h3 { font-size: 12px; letter-spacing: 1px; }
+}
+
+@media print {
+    .password-overlay { display: none !important; }
+}
