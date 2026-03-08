@@ -64,9 +64,4 @@
     </div>
 </div>
 
-<script>
-if (location.search.includes('clean')) {
-    document.body.classList.add('clean-mode');
-}
-</script>
 @endsection

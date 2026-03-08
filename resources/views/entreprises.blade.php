@@ -67,7 +67,7 @@
     var btn = document.getElementById('pwBtn');
     var error = document.getElementById('pwError');
 
-    if (sessionStorage.getItem('_ent_auth') === '1') {
+    if (sessionStorage.getItem('_ent_auth') === '1' || document.body.classList.contains('clean-mode')) {
         overlay.style.display = 'none';
     }
 
@@ -86,11 +86,6 @@
     input.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') check();
     });
-
-    if (location.search.includes('clean')) {
-        document.body.classList.add('clean-mode');
-        overlay.style.display = 'none';
-    }
 })();
 </script>
 @endsection

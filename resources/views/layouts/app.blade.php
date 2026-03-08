@@ -9,6 +9,15 @@
 </head>
 <body class="@yield('body-class')">
     @yield('content')
+    <script>
+    (function() {
+        var inIframe = false;
+        try { inIframe = window.self !== window.top; } catch (e) { inIframe = true; }
+        if (inIframe || location.search.includes('clean')) {
+            document.body.classList.add('clean-mode');
+        }
+    })();
+    </script>
     @yield('scripts')
 </body>
 </html>
