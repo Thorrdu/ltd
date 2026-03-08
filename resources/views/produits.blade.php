@@ -16,42 +16,38 @@
         </div>
 
         <div class="categories-grid">
-            <div class="column-left">
-                @foreach($leftCategories as $category)
-                @if($category->products->count())
-                <div class="category-block">
-                    <h3 class="category-header">{{ $category->name }}</h3>
-                    <div class="product-list">
-                        @foreach($category->products as $product)
-                        <div class="product-row">
-                            <span class="product-name">{{ $product->name }}</span>
-                            <span class="dot-leader"></span>
-                            <span class="product-price">{{ number_format($product->price, 0, ',', ' ') }} &euro;</span>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
-                @endforeach
+            @foreach($leftCategories as $category)
+            @if($category->products->count())
+            <div class="category-block" data-col="left">
+                <div class="category-header"><h3>{{ $category->name }}</h3></div>
+                <ul class="product-list">
+                    @foreach($category->products as $product)
+                    <li class="product-row">
+                        <span class="product-name">{{ $product->name }}</span>
+                        <span class="dot-leader"></span>
+                        <span class="product-price">{{ number_format($product->price, 0, ',', ' ') }} &euro;</span>
+                    </li>
+                    @endforeach
+                </ul>
             </div>
-            <div class="column-right">
-                @foreach($rightCategories as $category)
-                @if($category->products->count())
-                <div class="category-block">
-                    <h3 class="category-header">{{ $category->name }}</h3>
-                    <div class="product-list">
-                        @foreach($category->products as $product)
-                        <div class="product-row">
-                            <span class="product-name">{{ $product->name }}</span>
-                            <span class="dot-leader"></span>
-                            <span class="product-price">{{ number_format($product->price, 0, ',', ' ') }} &euro;</span>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-                @endif
-                @endforeach
+            @endif
+            @endforeach
+            @foreach($rightCategories as $category)
+            @if($category->products->count())
+            <div class="category-block" data-col="right">
+                <div class="category-header"><h3>{{ $category->name }}</h3></div>
+                <ul class="product-list">
+                    @foreach($category->products as $product)
+                    <li class="product-row">
+                        <span class="product-name">{{ $product->name }}</span>
+                        <span class="dot-leader"></span>
+                        <span class="product-price">{{ number_format($product->price, 0, ',', ' ') }} &euro;</span>
+                    </li>
+                    @endforeach
+                </ul>
             </div>
+            @endif
+            @endforeach
         </div>
 
         <div class="footer-section">

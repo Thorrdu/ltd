@@ -19,16 +19,16 @@
             @foreach($menus as $menu)
                 @if($menu->type === 'promo')
                 <div class="promo-banner">
-                    <span>{{ $menu->promo_text }}</span>
+                    <p class="promo-highlight">{{ $menu->promo_text }}</p>
                 </div>
                 @else
                 <div class="menu-card">
                     <div class="menu-card-header">
-                        <span class="menu-card-name">{{ $menu->name }}</span>
+                        <h3>{{ $menu->name }}</h3>
                         <span class="menu-card-price">{{ number_format($menu->price, 0, ',', ' ') }} &euro;</span>
                     </div>
-                    <div class="menu-card-items">
-                        {{ implode(' + ', $menu->display_items) }}
+                    <div class="menu-card-body">
+                        <div class="menu-card-desc">{{ implode(' + ', $menu->display_items) }}</div>
                     </div>
                 </div>
                 @endif

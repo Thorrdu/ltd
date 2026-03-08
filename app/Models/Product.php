@@ -8,9 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Product extends Model
 {
-    protected $fillable = ['category_id', 'name', 'price', 'is_retail', 'is_enterprise', 'sort_order'];
+    protected $fillable = [
+        'category_id', 'name', 'purchase_price', 'usual_price', 'price',
+        'is_retail', 'is_enterprise', 'sort_order',
+    ];
 
     protected $casts = [
+        'purchase_price' => 'integer',
+        'usual_price' => 'integer',
         'price' => 'integer',
         'is_retail' => 'boolean',
         'is_enterprise' => 'boolean',
@@ -28,9 +33,9 @@ class Product extends Model
             ->withPivot('choice_group', 'sort_order');
     }
 
-    public function enterpriseGroups(): BelongsToMany
+    public function enterprises(): BelongsToMany
     {
-        return $this->belongsToMany(EnterpriseGroup::class, 'enterprise_group_product')
+        return $this->belongsToMany(Enterprise::class, 'enterprise_product')
             ->withPivot('price', 'sort_order');
     }
 
@@ -46,6 +51,20 @@ class Product extends Model
 
     public function getFormattedPriceAttribute(): string
     {
-        return number_format($this->price, 0, ',', ' ') . ' €';
+        return number_format($this->price, 0, ',', ' ') . ' \u{20AC}';
+    }
+
+    public function getFormattedPurchasePriceAttribute(): string
+    {
+        return $this->purchase_price !== null
+            ? number_format($this->purchase_price, 0, ',', ' ') . ' \u{20AC}'
+            : '';
+    }
+
+    public function getFormattedUsualPriceAttribute(): string
+    {
+        return $this->usual_price !== null
+            ? number_format($this->usual_price, 0, ',', ' ') . ' \u{20AC}'
+            : '';
     }
 }

@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\ProductResource\Pages;
 use App\Models\Product;
 use App\Models\Category;
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -33,8 +34,20 @@ class ProductResource extends Resource
                 ->label('Nom')
                 ->required()
                 ->maxLength(255),
+            Forms\Components\TextInput::make('purchase_price')
+                ->label('Prix d\'achat')
+                ->numeric()
+                ->nullable()
+                ->suffix('€')
+                ->helperText('Prix auquel LTD achete le produit'),
+            Forms\Components\TextInput::make('usual_price')
+                ->label('Prix habituel')
+                ->numeric()
+                ->nullable()
+                ->suffix('€')
+                ->helperText('Prix du marche / prix concurrent'),
             Forms\Components\TextInput::make('price')
-                ->label('Prix')
+                ->label('Prix de vente')
                 ->numeric()
                 ->required()
                 ->suffix('€'),
@@ -56,7 +69,13 @@ class ProductResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->label('Nom')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('price')->label('Prix')->sortable()
+                Tables\Columns\TextColumn::make('purchase_price')->label('Achat')->sortable()
+                    ->formatStateUsing(fn ($state) => $state !== null ? number_format($state, 0, ',', ' ') . ' €' : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('usual_price')->label('Habituel')->sortable()
+                    ->formatStateUsing(fn ($state) => $state !== null ? number_format($state, 0, ',', ' ') . ' €' : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('price')->label('Vente')->sortable()
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', ' ') . ' €'),
                 Tables\Columns\TextColumn::make('category.name')->label('Catégorie')->sortable()->badge(),
                 Tables\Columns\IconColumn::make('is_retail')->label('Retail')->boolean(),
@@ -70,10 +89,10 @@ class ProductResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_retail')->label('Retail'),
                 Tables\Filters\TernaryFilter::make('is_enterprise')->label('Entreprise'),
             ])
-            ->actions([Tables\Actions\EditAction::make()])
+            ->actions([Actions\EditAction::make()])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('category_id');

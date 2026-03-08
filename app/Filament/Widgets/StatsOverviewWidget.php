@@ -3,7 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Category;
-use App\Models\EnterpriseGroup;
+use App\Models\Enterprise;
 use App\Models\Menu;
 use App\Models\Product;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -23,8 +23,8 @@ class StatsOverviewWidget extends BaseWidget
             Stat::make('Menus', Menu::where('type', 'menu')->count())
                 ->description('Formules actives')
                 ->color('warning'),
-            Stat::make('Entreprises partenaires', EnterpriseGroup::count())
-                ->description('Groupes entreprise')
+            Stat::make('Entreprises partenaires', Enterprise::count())
+                ->description('Clients entreprise')
                 ->color('danger'),
         ];
     }

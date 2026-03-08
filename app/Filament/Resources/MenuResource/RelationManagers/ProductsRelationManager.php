@@ -1,6 +1,7 @@
 <?php
 namespace App\Filament\Resources\MenuResource\RelationManagers;
 
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -40,14 +41,13 @@ class ProductsRelationManager extends RelationManager
                     ->placeholder('—')->badge()->color('info'),
                 Tables\Columns\TextColumn::make('pivot.sort_order')->label('Ordre')->sortable(),
             ])
-            ->defaultSort('pivot.sort_order')
-            ->headerActions([Tables\Actions\AttachAction::make()->preloadRecordSelect()
-                ->form(fn (Tables\Actions\AttachAction $action): array => [
+            ->headerActions([Actions\AttachAction::make()->preloadRecordSelect()
+                ->form(fn (Actions\AttachAction $action): array => [
                     $action->getRecordSelect(),
                     Forms\Components\TextInput::make('choice_group')->label('Groupe de choix'),
                     Forms\Components\TextInput::make('sort_order')->label('Ordre')->numeric()->default(0),
                 ])])
-            ->actions([Tables\Actions\DetachAction::make()])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DetachBulkAction::make()])]);
+            ->actions([Actions\DetachAction::make()])
+            ->bulkActions([Actions\BulkActionGroup::make([Actions\DetachBulkAction::make()])]);
     }
 }

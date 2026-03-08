@@ -2,22 +2,23 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\EnterpriseGroupResource\Pages;
-use App\Filament\Resources\EnterpriseGroupResource\RelationManagers;
-use App\Models\EnterpriseGroup;
+use App\Filament\Resources\EnterpriseResource\Pages;
+use App\Filament\Resources\EnterpriseResource\RelationManagers;
+use App\Models\Enterprise;
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class EnterpriseGroupResource extends Resource
+class EnterpriseResource extends Resource
 {
-    protected static ?string $model = EnterpriseGroup::class;
+    protected static ?string $model = Enterprise::class;
     protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-building-office';
     protected static string | \UnitEnum | null $navigationGroup = 'Entreprises';
-    protected static ?string $modelLabel = 'Groupe entreprise';
-    protected static ?string $pluralModelLabel = 'Groupes entreprise';
+    protected static ?string $modelLabel = 'Entreprise';
+    protected static ?string $pluralModelLabel = 'Entreprises';
     protected static ?int $navigationSort = 4;
 
     public static function form(Schema $schema): Schema
@@ -27,6 +28,11 @@ class EnterpriseGroupResource extends Resource
                 ->label('Nom')
                 ->required()
                 ->maxLength(255),
+            Forms\Components\Textarea::make('notes')
+                ->label('Notes / Conditions du contrat')
+                ->rows(3)
+                ->nullable()
+                ->helperText('Conditions particulieres, frequence de livraison, etc.'),
             Forms\Components\TextInput::make('sort_order')
                 ->label('Ordre')
                 ->numeric()
@@ -43,8 +49,8 @@ class EnterpriseGroupResource extends Resource
                     ->counts('products')->sortable(),
                 Tables\Columns\TextColumn::make('sort_order')->label('Ordre')->sortable(),
             ])
-            ->actions([Tables\Actions\EditAction::make()])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])])
+            ->actions([Actions\EditAction::make()])
+            ->bulkActions([Actions\BulkActionGroup::make([Actions\DeleteBulkAction::make()])])
             ->defaultSort('sort_order')
             ->reorderable('sort_order');
     }
@@ -57,9 +63,9 @@ class EnterpriseGroupResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListEnterpriseGroups::route('/'),
-            'create' => Pages\CreateEnterpriseGroup::route('/create'),
-            'edit' => Pages\EditEnterpriseGroup::route('/{record}/edit'),
+            'index' => Pages\ListEnterprises::route('/'),
+            'create' => Pages\CreateEnterprise::route('/create'),
+            'edit' => Pages\EditEnterprise::route('/{record}/edit'),
         ];
     }
 }

@@ -1,6 +1,8 @@
 <?php
-namespace App\Filament\Resources\EnterpriseGroupResource\RelationManagers;
 
+namespace App\Filament\Resources\EnterpriseResource\RelationManagers;
+
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
@@ -41,16 +43,14 @@ class ProductsRelationManager extends RelationManager
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', ' ') . ' €')->sortable(),
                 Tables\Columns\TextColumn::make('price')->label('Prix retail')
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', ' ') . ' €'),
-                Tables\Columns\TextColumn::make('pivot.sort_order')->label('Ordre')->sortable(),
             ])
-            ->defaultSort('pivot.sort_order')
-            ->headerActions([Tables\Actions\AttachAction::make()->preloadRecordSelect()
-                ->form(fn (Tables\Actions\AttachAction $action): array => [
+            ->headerActions([Actions\AttachAction::make()->preloadRecordSelect()
+                ->form(fn (Actions\AttachAction $action): array => [
                     $action->getRecordSelect(),
                     Forms\Components\TextInput::make('price')->label('Prix entreprise')->numeric()->required()->suffix('€'),
                     Forms\Components\TextInput::make('sort_order')->label('Ordre')->numeric()->default(0),
                 ])])
-            ->actions([Tables\Actions\DetachAction::make()])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DetachBulkAction::make()])]);
+            ->actions([Actions\DetachAction::make()])
+            ->bulkActions([Actions\BulkActionGroup::make([Actions\DetachBulkAction::make()])]);
     }
 }

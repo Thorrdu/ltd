@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\EnterpriseGroup;
+use App\Models\Enterprise;
 use App\Models\Menu;
 
 class PageController extends Controller
@@ -39,10 +39,10 @@ class PageController extends Controller
 
     public function entreprises()
     {
-        $groups = EnterpriseGroup::with(['products' => fn ($q) => $q->orderByPivot('sort_order')])
+        $enterprises = Enterprise::with(['products' => fn ($q) => $q->orderByPivot('sort_order')])
             ->orderBy('sort_order')
             ->get();
 
-        return view('entreprises', compact('groups'));
+        return view('entreprises', compact('enterprises'));
     }
 }

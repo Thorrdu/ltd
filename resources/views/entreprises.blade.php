@@ -28,18 +28,18 @@
         </div>
 
         <div class="enterprise-container">
-            @foreach($groups as $group)
+            @foreach($enterprises as $enterprise)
             <div class="enterprise-block">
-                <h3 class="enterprise-header">{{ $group->name }}</h3>
-                <div class="product-list">
-                    @foreach($group->products as $product)
-                    <div class="product-row">
+                <div class="enterprise-header"><h3>{{ $enterprise->name }}</h3></div>
+                <ul class="product-list">
+                    @foreach($enterprise->products as $product)
+                    <li class="product-row">
                         <span class="product-name">{{ $product->name }}</span>
                         <span class="dot-leader"></span>
                         <span class="product-price">{{ number_format($product->pivot->price, 0, ',', ' ') }} &euro;</span>
-                    </div>
+                    </li>
                     @endforeach
-                </div>
+                </ul>
             </div>
             @endforeach
         </div>

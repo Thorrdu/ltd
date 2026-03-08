@@ -7,16 +7,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('enterprise_groups', function (Blueprint $table) {
+        Schema::create('enterprises', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->text('notes')->nullable();
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
 
-        Schema::create('enterprise_group_product', function (Blueprint $table) {
+        Schema::create('enterprise_product', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('enterprise_group_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('enterprise_id')->constrained()->cascadeOnDelete();
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->integer('price')->default(0);
             $table->integer('sort_order')->default(0);
@@ -25,7 +26,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('enterprise_group_product');
-        Schema::dropIfExists('enterprise_groups');
+        Schema::dropIfExists('enterprise_product');
+        Schema::dropIfExists('enterprises');
     }
 };
