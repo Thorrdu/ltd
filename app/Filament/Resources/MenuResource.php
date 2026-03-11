@@ -64,7 +64,7 @@ class MenuResource extends Resource
                 Tables\Columns\TextColumn::make('price')->label('Prix')->sortable()
                     ->formatStateUsing(fn ($state) => $state ? number_format($state, 0, ',', ' ') . ' €' : '—'),
                 Tables\Columns\TextColumn::make('promo_text')->label('Promo')->limit(50)
-                    ->placeholder('—'),
+                    ->placeholder('—')->searchable(),
                 Tables\Columns\TextColumn::make('products_count')->label('Produits')
                     ->counts('products'),
                 Tables\Columns\TextColumn::make('sort_order')->label('Ordre')->sortable(),

@@ -45,9 +45,15 @@ class EnterpriseResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->label('Entreprise')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('notes')->label('Notes')->limit(40)->placeholder('—')->searchable()->toggleable(),
                 Tables\Columns\TextColumn::make('products_count')->label('Produits')
                     ->counts('products')->sortable(),
                 Tables\Columns\TextColumn::make('sort_order')->label('Ordre')->sortable(),
+            ])
+            ->filters([
+                Tables\Filters\Filter::make('has_products')
+                    ->label('Avec produits')
+                    ->query(fn ($query) => $query->has('products')),
             ])
             ->actions([Actions\EditAction::make()])
             ->bulkActions([Actions\BulkActionGroup::make([Actions\DeleteBulkAction::make()])])

@@ -22,6 +22,8 @@ class ProductsRelationManager extends RelationManager
             Forms\Components\TextInput::make('price')->label('Prix de vente')->numeric()->required()->suffix('€'),
             Forms\Components\Toggle::make('is_retail')->label('Retail')->default(true),
             Forms\Components\Toggle::make('is_enterprise')->label('Entreprise')->default(false),
+            Forms\Components\TextInput::make('enterprise_price')->label('Prix entreprise (général)')->numeric()->nullable()->suffix('€')
+                ->helperText('Prix par défaut pour toutes les entreprises.'),
             Forms\Components\TextInput::make('sort_order')->label('Ordre')->numeric()->default(0),
         ]);
     }

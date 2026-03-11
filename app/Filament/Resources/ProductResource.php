@@ -9,6 +9,7 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -56,7 +57,15 @@ class ProductResource extends Resource
                 ->default(true),
             Forms\Components\Toggle::make('is_enterprise')
                 ->label('Disponible pour entreprises')
-                ->default(false),
+                ->default(false)
+                ->live(),
+            Forms\Components\TextInput::make('enterprise_price')
+                ->label('Prix entreprise (général)')
+                ->numeric()
+                ->nullable()
+                ->suffix('€')
+                ->helperText('Prix par défaut pour toutes les entreprises. Peut être surchargé par entreprise.')
+                ->visible(fn (Get $get) => $get('is_enterprise')),
             Forms\Components\TextInput::make('sort_order')
                 ->label('Ordre')
                 ->numeric()
@@ -77,6 +86,9 @@ class ProductResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('price')->label('Vente')->sortable()
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', ' ') . ' €'),
+                Tables\Columns\TextColumn::make('enterprise_price')->label('Prix entreprise')->sortable()
+                    ->formatStateUsing(fn ($state) => $state !== null ? number_format($state, 0, ',', ' ') . ' €' : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('category.name')->label('Catégorie')->sortable()->badge(),
                 Tables\Columns\IconColumn::make('is_retail')->label('Retail')->boolean(),
                 Tables\Columns\IconColumn::make('is_enterprise')->label('Entreprise')->boolean(),
