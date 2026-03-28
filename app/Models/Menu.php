@@ -7,10 +7,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Menu extends Model
 {
-    protected $fillable = ['type', 'name', 'price', 'promo_text', 'sort_order'];
+    protected $fillable = ['type', 'name', 'price', 'promo_price', 'promo_text', 'sort_order'];
 
     protected $casts = [
         'price' => 'integer',
+        'promo_price' => 'integer',
         'sort_order' => 'integer',
     ];
 

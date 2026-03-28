@@ -39,6 +39,13 @@ class MenuResource extends Resource
                 ->numeric()
                 ->suffix('€')
                 ->visible(fn (Get $get) => $get('type') === 'menu'),
+            Forms\Components\TextInput::make('promo_price')
+                ->label('Prix promo')
+                ->numeric()
+                ->nullable()
+                ->suffix('€')
+                ->helperText('Laisser vide si pas de promo. Le prix normal sera barré.')
+                ->visible(fn (Get $get) => $get('type') === 'menu'),
             Forms\Components\TextInput::make('promo_text')
                 ->label('Texte promotionnel')
                 ->maxLength(255)
@@ -63,7 +70,9 @@ class MenuResource extends Resource
                     ->placeholder('—'),
                 Tables\Columns\TextColumn::make('price')->label('Prix')->sortable()
                     ->formatStateUsing(fn ($state) => $state ? number_format($state, 0, ',', ' ') . ' €' : '—'),
-                Tables\Columns\TextColumn::make('promo_text')->label('Promo')->limit(50)
+                Tables\Columns\TextColumn::make('promo_price')->label('Prix promo')->sortable()
+                    ->formatStateUsing(fn ($state) => $state !== null ? number_format($state, 0, ',', ' ') . ' €' : '—'),
+                Tables\Columns\TextColumn::make('promo_text')->label('Texte promo')->limit(50)
                     ->placeholder('—')->searchable(),
                 Tables\Columns\TextColumn::make('products_count')->label('Produits')
                     ->counts('products'),

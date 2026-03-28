@@ -22,10 +22,17 @@
                     <p class="promo-highlight">{{ $menu->promo_text }}</p>
                 </div>
                 @else
-                <div class="menu-card">
+                <div class="menu-card{{ $menu->promo_price !== null ? ' has-promo' : '' }}">
                     <div class="menu-card-header">
                         <h3>{{ $menu->name }}</h3>
-                        <span class="menu-card-price">{{ number_format($menu->price, 0, ',', ' ') }} &euro;</span>
+                        <div class="menu-card-prices">
+                            @if($menu->promo_price !== null)
+                            <span class="menu-card-price-old">{{ number_format($menu->price, 0, ',', ' ') }} &euro;</span>
+                            <span class="menu-card-price promo">{{ number_format($menu->promo_price, 0, ',', ' ') }} &euro;</span>
+                            @else
+                            <span class="menu-card-price">{{ number_format($menu->price, 0, ',', ' ') }} &euro;</span>
+                            @endif
+                        </div>
                     </div>
                     <div class="menu-card-body">
                         <div class="menu-card-desc">{{ implode(' + ', $menu->display_items) }}</div>

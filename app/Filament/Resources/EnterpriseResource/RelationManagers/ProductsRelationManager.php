@@ -13,6 +13,7 @@ class ProductsRelationManager extends RelationManager
 {
     protected static string $relationship = 'products';
     protected static ?string $title = 'Produits entreprise';
+    protected static ?string $recordTitleAttribute = 'name';
 
     public function form(Schema $schema): Schema
     {

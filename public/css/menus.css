@@ -34,6 +34,32 @@
     text-transform: uppercase;
 }
 
+.menu-card-prices {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.menu-card-price-old {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: line-through;
+}
+
+.menu-card-price.promo {
+    color: #ff4444;
+}
+
+.has-promo {
+    border-color: #8b0000;
+}
+
+.has-promo .menu-card-header {
+    background: linear-gradient(135deg, #0d2347 0%, #1a1a4e 100%);
+}
+
 .menu-card-price {
     font-family: 'Segoe UI', 'Arial', sans-serif;
     font-size: 18px;
