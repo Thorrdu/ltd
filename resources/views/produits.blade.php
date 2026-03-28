@@ -22,10 +22,15 @@
                 <div class="category-header"><h3>{{ $category->name }}</h3></div>
                 <ul class="product-list">
                     @foreach($category->products as $product)
-                    <li class="product-row">
+                    <li class="product-row{{ $product->promo_price !== null ? ' has-promo' : '' }}">
                         <span class="product-name">{{ $product->name }}</span>
                         <span class="dot-leader"></span>
+                        @if($product->promo_price !== null)
+                        <span class="product-price-old">{{ number_format($product->price, 0, ',', ' ') }} &euro;</span>
+                        <span class="product-price promo">{{ number_format($product->promo_price, 0, ',', ' ') }} &euro;</span>
+                        @else
                         <span class="product-price">{{ number_format($product->price, 0, ',', ' ') }} &euro;</span>
+                        @endif
                     </li>
                     @endforeach
                 </ul>
@@ -38,10 +43,15 @@
                 <div class="category-header"><h3>{{ $category->name }}</h3></div>
                 <ul class="product-list">
                     @foreach($category->products as $product)
-                    <li class="product-row">
+                    <li class="product-row{{ $product->promo_price !== null ? ' has-promo' : '' }}">
                         <span class="product-name">{{ $product->name }}</span>
                         <span class="dot-leader"></span>
+                        @if($product->promo_price !== null)
+                        <span class="product-price-old">{{ number_format($product->price, 0, ',', ' ') }} &euro;</span>
+                        <span class="product-price promo">{{ number_format($product->promo_price, 0, ',', ' ') }} &euro;</span>
+                        @else
                         <span class="product-price">{{ number_format($product->price, 0, ',', ' ') }} &euro;</span>
+                        @endif
                     </li>
                     @endforeach
                 </ul>

@@ -56,6 +56,32 @@
 /* ============================================
    RESPONSIVE PRODUITS
    ============================================ */
+
+/* ============================================
+   PROMO PRICE
+   ============================================ */
+.product-price-old {
+    flex: 0 0 auto;
+    color: #666;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    text-decoration: line-through;
+    text-align: right;
+    white-space: nowrap;
+    margin-right: 6px;
+    opacity: 0.7;
+}
+
+.product-price.promo {
+    color: #cc0000;
+}
+
+.has-promo .product-name {
+    color: #cc0000;
+    font-weight: 700;
+}
+
 @media (max-width: 740px) {
     .categories-grid { grid-template-columns: 1fr; }
     .category-block[data-col="left"],

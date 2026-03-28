@@ -52,6 +52,12 @@ class ProductResource extends Resource
                 ->numeric()
                 ->required()
                 ->suffix('€'),
+            Forms\Components\TextInput::make('promo_price')
+                ->label('Prix promo')
+                ->numeric()
+                ->nullable()
+                ->suffix('€')
+                ->helperText('Laisser vide si pas de promo. Le prix normal sera barré.'),
             Forms\Components\Toggle::make('is_retail')
                 ->label('Disponible en boutique (retail)')
                 ->default(true),
@@ -86,6 +92,9 @@ class ProductResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('price')->label('Vente')->sortable()
                     ->formatStateUsing(fn ($state) => number_format($state, 0, ',', ' ') . ' €'),
+                Tables\Columns\TextColumn::make('promo_price')->label('Promo')->sortable()
+                    ->formatStateUsing(fn ($state) => $state !== null ? number_format($state, 0, ',', ' ') . ' €' : '—')
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('enterprise_price')->label('Prix entreprise')->sortable()
                     ->formatStateUsing(fn ($state) => $state !== null ? number_format($state, 0, ',', ' ') . ' €' : '—')
                     ->toggleable(isToggledHiddenByDefault: true),

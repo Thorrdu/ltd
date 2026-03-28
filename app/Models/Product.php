@@ -10,13 +10,14 @@ class Product extends Model
 {
     protected $fillable = [
         'category_id', 'name', 'purchase_price', 'usual_price', 'price',
-        'enterprise_price', 'is_retail', 'is_enterprise', 'sort_order',
+        'promo_price', 'enterprise_price', 'is_retail', 'is_enterprise', 'sort_order',
     ];
 
     protected $casts = [
         'purchase_price' => 'integer',
         'usual_price' => 'integer',
         'price' => 'integer',
+        'promo_price' => 'integer',
         'enterprise_price' => 'integer',
         'is_retail' => 'boolean',
         'is_enterprise' => 'boolean',
