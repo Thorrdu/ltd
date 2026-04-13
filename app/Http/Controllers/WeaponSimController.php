@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 class WeaponSimController extends Controller
 {
     private const FILE = 'weapon-sim.json';
-    private const PASSWORD = 'lost territory';
+    private const PASSWORD = 'lost2026';
 
     private function authorize(Request $request): bool
     {
