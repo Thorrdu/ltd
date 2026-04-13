@@ -10,12 +10,13 @@
 <div class="menu-board">
     <div class="inner-board">
 
-        <div class="header">
+        <div class="header lost-header">
+            <div class="lost-emblem">⚙</div>
             <div class="logo-row">
-                <div class="station-title">Simulateur Craft Armes</div>
+                <div class="station-title lost-title">LOST MC</div>
             </div>
-            <div class="station-stars">★ ★ ★ ★ ★</div>
-            <div class="station-subtitle">BXL Life — Atelier clandestin</div>
+            <div class="lost-tagline">SIMULATEUR CRAFT ARMES</div>
+            <div class="station-subtitle lost-sub">BXL Life — Atelier clandestin</div>
         </div>
 
         {{-- Weapon selector --}}
