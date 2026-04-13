@@ -50,7 +50,7 @@
     // ===== STATE =====
     var password = '';
     var contracts = [];
-    var stock = { plans: 0, ressort: 0, canon: 0, poignee: 0, corp: 0, metal: 0, polymere: 0, minerai: 0, petrole: 0 };
+    var stock = { plans_wn29: 0, plans_ceramic: 0, plans_pistol: 0, plans_heavy: 0, plans_cal50: 0, ressort: 0, canon: 0, poignee: 0, corp: 0, metal: 0, polymere: 0, minerai: 0, petrole: 0 };
     var pendingContractWeapons = []; // weapons being added while creating a contract
     var saveTimer = null;
 
@@ -290,7 +290,7 @@
             contractLock.style.display = 'none';
             contractContent.style.display = '';
             contracts = data.contracts || [];
-            stock = data.stock || { plans: 0, ressort: 0, canon: 0, poignee: 0, corp: 0, metal: 0, polymere: 0, minerai: 0, petrole: 0 };
+            stock = data.stock || { plans_wn29: 0, plans_ceramic: 0, plans_pistol: 0, plans_heavy: 0, plans_cal50: 0, ressort: 0, canon: 0, poignee: 0, corp: 0, metal: 0, polymere: 0, minerai: 0, petrole: 0 };
             renderStock();
             renderContracts();
             calculateContracts();
@@ -477,11 +477,14 @@
         var totalMinerai = totalMetalPieces * METAL_MINERAI_RATE + mineraiForRessorts;
         var totalPetrole = piecesNeeded.polymere * POLYMERE_PETROLE_RATE;
 
-        // Plans: 1 plan item = 4 uses. Needed plans(uses) = piecesNeeded.plans
-        // Available plans uses = stock.plans * 4
-        var plansUsesNeeded = piecesNeeded.plans;
-        var plansPhysical = stock.plans || 0;
-        var plansUsesAvailable = plansPhysical * PLANS_PER_ITEM;
+        // Plans per weapon: 1 plan item = 4 uses, specific to each weapon
+        var plansPerWeapon = {};
+        Object.keys(weapons).forEach(function (key) {
+            var usesNeeded = (totalWeaponsNeeded[key] || 0) * weapons[key].pieces.plans;
+            var physical = stock['plans_' + key] || 0;
+            var usesAvailable = physical * PLANS_PER_ITEM;
+            plansPerWeapon[key] = { usesNeeded: usesNeeded, physical: physical, usesAvailable: usesAvailable };
+        });
 
         // Total needed summary (pieces + raw)
         var html = '';
@@ -495,7 +498,7 @@
         Object.keys(pieceNames).forEach(function (p) {
             if (piecesNeeded[p] > 0) {
                 var label = pieceNames[p];
-                if (p === 'plans') label += ' (utilisations)';
+                if (p === 'plans') label += ' (utilisations totales)';
                 html += makeRow(label, fmt(piecesNeeded[p]));
             }
         });
@@ -506,8 +509,24 @@
 
         // Remaining (needed - stock)
         html = '';
+        // Plans per weapon
+        Object.keys(weapons).forEach(function (key) {
+            var pw = plansPerWeapon[key];
+            if (pw.usesNeeded <= 0) return;
+            var physNeeded = Math.ceil(pw.usesNeeded / PLANS_PER_ITEM);
+            var diff = physNeeded - pw.physical;
+            var cls, val;
+            if (diff <= 0) {
+                cls = 'ok';
+                val = '✓ OK' + (pw.physical > physNeeded ? ' (+' + fmt(pw.physical - physNeeded) + ')' : '');
+            } else {
+                cls = 'need';
+                val = '▲ ' + fmt(diff) + ' manquant' + (diff > 1 ? 's' : '');
+            }
+            html += makeRow('Plans ' + weapons[key].name + ' — besoin ' + fmt(physNeeded) + ' / stock ' + fmt(pw.physical), val, cls);
+        });
+
         var items = [
-            { label: 'Plans (physiques, ×4)', needed: Math.ceil(plansUsesNeeded / PLANS_PER_ITEM), have: plansPhysical },
             { label: 'Ressorts', needed: piecesNeeded.ressort, have: stock.ressort || 0 },
             { label: 'Canons', needed: piecesNeeded.canon, have: stock.canon || 0 },
             { label: 'Poignées', needed: piecesNeeded.poignee, have: stock.poignee || 0 },
@@ -532,18 +551,23 @@
         });
         contractRemaining.innerHTML = html;
 
-        // Plans detail
+        // Plans detail per weapon
         html = '';
-        html += makeRow('Plans physiques en stock', fmt(plansPhysical));
-        html += makeRow('Utilisations disponibles', fmt(plansUsesAvailable));
-        html += makeRow('Utilisations nécessaires', fmt(plansUsesNeeded));
-        var plansRemaining = plansUsesAvailable - plansUsesNeeded;
-        if (plansRemaining >= 0) {
-            html += makeRow('Utilisations restantes après craft', fmt(plansRemaining), 'ok');
-        } else {
-            var physicalNeeded = Math.ceil(Math.abs(plansRemaining) / PLANS_PER_ITEM);
-            html += makeRow('Plans physiques à récupérer', fmt(physicalNeeded), 'need');
-        }
+        Object.keys(weapons).forEach(function (key) {
+            var pw = plansPerWeapon[key];
+            if (pw.usesNeeded <= 0) return;
+            html += makeSectionHeader('Plans ' + weapons[key].name);
+            html += makeRow('Plans physiques en stock', fmt(pw.physical));
+            html += makeRow('Utilisations disponibles (×4)', fmt(pw.usesAvailable));
+            html += makeRow('Utilisations nécessaires', fmt(pw.usesNeeded));
+            var remaining = pw.usesAvailable - pw.usesNeeded;
+            if (remaining >= 0) {
+                html += makeRow('Utilisations restantes après craft', fmt(remaining), 'ok');
+            } else {
+                var physNeeded = Math.ceil(Math.abs(remaining) / PLANS_PER_ITEM);
+                html += makeRow('Plans physiques à récupérer', fmt(physNeeded), 'need');
+            }
+        });
         contractPlansDetail.innerHTML = html;
     }
 })();

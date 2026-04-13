@@ -148,11 +148,27 @@
                 {{-- Stock / Inventaire --}}
                 <div class="sim-section">
                     <div class="sim-section-title">Stock actuel</div>
-                    <div class="stock-info">Plans : 1 plan = 4 utilisations. Indiquez le nombre de plans physiques.</div>
+                    <div class="stock-info">Plans : 1 plan = 4 utilisations, spécifique à chaque arme.</div>
                     <div class="stock-grid" id="stockGrid">
                         <div class="stock-item">
-                            <label>Plans (×4 utilisations)</label>
-                            <input type="number" class="stock-input" data-stock="plans" value="0" min="0">
+                            <label>Plans WN 29 (×4)</label>
+                            <input type="number" class="stock-input" data-stock="plans_wn29" value="0" min="0">
+                        </div>
+                        <div class="stock-item">
+                            <label>Plans Ceramic (×4)</label>
+                            <input type="number" class="stock-input" data-stock="plans_ceramic" value="0" min="0">
+                        </div>
+                        <div class="stock-item">
+                            <label>Plans Pistol (×4)</label>
+                            <input type="number" class="stock-input" data-stock="plans_pistol" value="0" min="0">
+                        </div>
+                        <div class="stock-item">
+                            <label>Plans Heavy (×4)</label>
+                            <input type="number" class="stock-input" data-stock="plans_heavy" value="0" min="0">
+                        </div>
+                        <div class="stock-item">
+                            <label>Plans Cal .50 (×4)</label>
+                            <input type="number" class="stock-input" data-stock="plans_cal50" value="0" min="0">
                         </div>
                         <div class="stock-item">
                             <label>Ressorts</label>

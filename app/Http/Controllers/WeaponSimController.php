@@ -36,7 +36,11 @@ class WeaponSimController extends Controller
     private function defaultStock(): array
     {
         return [
-            'plans' => 0,
+            'plans_wn29' => 0,
+            'plans_ceramic' => 0,
+            'plans_pistol' => 0,
+            'plans_heavy' => 0,
+            'plans_cal50' => 0,
             'ressort' => 0,
             'canon' => 0,
             'poignee' => 0,
