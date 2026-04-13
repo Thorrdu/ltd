@@ -1,0 +1,218 @@
+/* ============================================
+   SIMULATEUR ARMES
+   ============================================ */
+
+.simulateur-armes .inner-board {
+    padding: 12px 16px 14px;
+}
+
+/* Section blocks */
+.sim-section {
+    margin-top: 10px;
+}
+
+.sim-section-title {
+    text-align: center;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #0d2347 0%, #1a3a6e 100%);
+    border-radius: 3px;
+    margin-bottom: 6px;
+    margin-top: 10px;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* ============================================
+   WEAPON CARDS GRID
+   ============================================ */
+.weapons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.weapon-card {
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    border: 1px solid #2a2a4a;
+    border-radius: 5px;
+    padding: 8px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: default;
+}
+
+.weapon-card:hover {
+    border-color: #c0392b;
+    box-shadow: 0 0 8px rgba(192, 57, 43, 0.3);
+}
+
+.weapon-card.active {
+    border-color: #c0392b;
+    background: linear-gradient(145deg, #2a1020, #1a0a18);
+    box-shadow: 0 0 12px rgba(192, 57, 43, 0.4);
+}
+
+.weapon-name {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #f5f0e6;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+.weapon-craft-time {
+    font-size: 10px;
+    color: #888;
+    margin-bottom: 6px;
+}
+
+.weapon-qty-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.qty-btn {
+    width: 26px;
+    height: 26px;
+    border: 1px solid #444;
+    background: #2a2a3a;
+    color: #f5f0e6;
+    border-radius: 3px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+    padding: 0;
+}
+
+.qty-btn:hover {
+    background: #c0392b;
+    border-color: #c0392b;
+}
+
+.qty-input {
+    width: 38px;
+    height: 26px;
+    text-align: center;
+    border: 1px solid #444;
+    background: #111;
+    color: #f5f0e6;
+    border-radius: 3px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Segoe UI', sans-serif;
+    -moz-appearance: textfield;
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* ============================================
+   RESULTS TABLES
+   ============================================ */
+.results-table {
+    margin-bottom: 6px;
+}
+
+.result-row {
+    display: flex;
+    align-items: center;
+    padding: 3px 8px;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 12px;
+    border-radius: 2px;
+}
+
+.result-row:nth-child(even) {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.result-row .label {
+    flex: 1;
+    color: #333;
+    font-weight: 500;
+}
+
+.result-row .dot-leader {
+    flex: 1;
+    border-bottom: 1px dotted #bbb;
+    margin: 0 6px;
+    min-width: 20px;
+    align-self: flex-end;
+    margin-bottom: 3px;
+}
+
+.result-row .value {
+    flex: 0 0 auto;
+    font-weight: 700;
+    color: #0d2347;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.result-row .value.highlight {
+    color: #c0392b;
+    font-size: 13px;
+}
+
+.result-row.section-header {
+    background: rgba(13, 35, 71, 0.08);
+    font-weight: 700;
+    color: #0d2347;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    padding: 4px 8px;
+    border-radius: 2px;
+}
+
+.result-row.section-header .label {
+    font-weight: 700;
+    color: #0d2347;
+}
+
+/* ============================================
+   CRAFT TIME DISPLAY
+   ============================================ */
+.craft-time-display {
+    text-align: center;
+    padding: 8px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #c0392b;
+    background: rgba(192, 57, 43, 0.06);
+    border-radius: 4px;
+    letter-spacing: 1px;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 600px) {
+    .weapons-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 380px) {
+    .weapons-grid {
+        grid-template-columns: 1fr;
+    }
+}
