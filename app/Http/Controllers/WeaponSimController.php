@@ -21,6 +21,26 @@ class WeaponSimController extends Controller
         if (Storage::exists(self::FILE)) {
             $data = json_decode(Storage::get(self::FILE), true);
             if (is_array($data)) {
+                // Merge saved stock with defaults to handle new/removed keys
+                $defaults = $this->defaultStock();
+                $savedStock = $data['stock'] ?? [];
+
+                // Migrate old single "plans" to per-weapon plans
+                if (isset($savedStock['plans']) && is_numeric($savedStock['plans'])) {
+                    $oldPlans = (int) $savedStock['plans'];
+                    foreach (['plans_wn29', 'plans_ceramic', 'plans_pistol', 'plans_heavy', 'plans_cal50'] as $k) {
+                        if (! isset($savedStock[$k]) || $savedStock[$k] === 0) {
+                            $savedStock[$k] = $oldPlans;
+                        }
+                    }
+                    unset($savedStock['plans']);
+                }
+
+                $data['stock'] = array_intersect_key(
+                    array_merge($defaults, $savedStock),
+                    $defaults
+                );
+
                 return $data;
             }
         }
