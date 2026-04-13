@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\WeaponSimController;
 use App\Http\Middleware\AllowIframe;
 use Illuminate\Support\Facades\Route;
 
@@ -12,3 +13,5 @@ Route::middleware(AllowIframe::class)->group(function () {
 });
 
 Route::get('/simulateur-armes', fn () => view('simulateur-armes'))->name('simulateur-armes');
+Route::get('/simulateur-armes/data', [WeaponSimController::class, 'getData']);
+Route::post('/simulateur-armes/data', [WeaponSimController::class, 'saveData']);

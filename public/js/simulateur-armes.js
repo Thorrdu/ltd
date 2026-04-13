@@ -30,7 +30,6 @@
         }
     };
 
-    // Friendly names for pieces
     var pieceNames = {
         plans: 'Plans',
         ressort: 'Ressort',
@@ -41,28 +40,48 @@
         polymere: 'Polymère'
     };
 
-    // ===== MATERIAL CRAFTING RATES =====
-    // 1 Polymère = 5 Pétroles (or buy at 4500€ each)
-    // 1 Pièce de métal = 5 Minerais de fer
-    // 1 Ressort = 1 Pièce de métal + 3 Minerais de fer = 8 Minerais de fer
-    // 2 Fragments de métal = 1 Minerai de fer
-
     var POLYMERE_PETROLE_RATE = 5;
     var POLYMERE_COST = 4500;
     var METAL_MINERAI_RATE = 5;
-    var RESSORT_METAL_RATE = 1;   // 1 pièce de métal per ressort
-    var RESSORT_MINERAI_RATE = 3; // + 3 minerais de fer per ressort
+    var RESSORT_METAL_RATE = 1;
+    var RESSORT_MINERAI_RATE = 3;
+    var PLANS_PER_ITEM = 4; // 1 plan = 4 uses
+
+    // ===== STATE =====
+    var password = '';
+    var contracts = [];
+    var stock = { plans: 0, ressort: 0, canon: 0, poignee: 0, corp: 0, metal: 0, polymere: 0, minerai: 0, petrole: 0 };
+    var pendingContractWeapons = []; // weapons being added while creating a contract
+    var saveTimer = null;
 
     // ===== DOM REFS =====
     var resultsSection = document.getElementById('resultsSection');
     var piecesTable = document.getElementById('piecesTable');
-    var totalPieces = document.getElementById('totalPieces');
+    var totalPiecesEl = document.getElementById('totalPieces');
     var materialCraft = document.getElementById('materialCraft');
     var rawMaterials = document.getElementById('rawMaterials');
     var costTable = document.getElementById('costTable');
     var craftTimeEl = document.getElementById('craftTime');
 
+    var contractLock = document.getElementById('contractLock');
+    var contractContent = document.getElementById('contractContent');
+    var contractPwInput = document.getElementById('contractPwInput');
+    var contractPwBtn = document.getElementById('contractPwBtn');
+    var contractPwError = document.getElementById('contractPwError');
+    var contractsList = document.getElementById('contractsList');
+    var contractWeaponList = document.getElementById('contractWeaponList');
+    var contractResultsSection = document.getElementById('contractResultsSection');
+    var contractTotalNeeded = document.getElementById('contractTotalNeeded');
+    var contractRemaining = document.getElementById('contractRemaining');
+    var contractPlansDetail = document.getElementById('contractPlansDetail');
+
     // ===== HELPERS =====
+    function esc(s) {
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
     function makeRow(label, value, cls) {
         return '<div class="result-row">' +
             '<span class="label">' + label + '</span>' +
@@ -75,7 +94,7 @@
         return '<div class="result-row section-header"><span class="label">' + label + '</span></div>';
     }
 
-    function formatNumber(n) {
+    function fmt(n) {
         return n.toLocaleString('fr-FR');
     }
 
@@ -87,7 +106,59 @@
         return m + ' min ' + s + ' sec';
     }
 
-    // ===== CALCULATION =====
+    function uid() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    function csrfToken() {
+        var el = document.querySelector('meta[name="csrf-token"]');
+        return el ? el.getAttribute('content') : '';
+    }
+
+    // ===== API =====
+    function apiGet(cb) {
+        fetch('/simulateur-armes/data', {
+            headers: { 'X-Sim-Password': password, 'Accept': 'application/json' }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { cb(null, data); })
+        .catch(function (e) { cb(e); });
+    }
+
+    function apiSave(cb) {
+        fetch('/simulateur-armes/data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Sim-Password': password,
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ contracts: contracts, stock: stock })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { if (cb) cb(null, data); })
+        .catch(function (e) { if (cb) cb(e); });
+    }
+
+    function debounceSave() {
+        if (saveTimer) clearTimeout(saveTimer);
+        saveTimer = setTimeout(function () { apiSave(); }, 400);
+    }
+
+    // ===== TAB SWITCHING =====
+    document.querySelectorAll('.tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.getAttribute('data-tab')).classList.add('active');
+        });
+    });
+
+    // ============================================
+    // TAB 1: SIMULATOR (public, unchanged logic)
+    // ============================================
     function calculate() {
         var orders = {};
         var hasAny = false;
@@ -102,7 +173,6 @@
             if (qty > 0) hasAny = true;
         });
 
-        // Toggle active state on cards
         document.querySelectorAll('.weapon-card').forEach(function (card) {
             var w = card.getAttribute('data-weapon');
             card.classList.toggle('active', orders[w] > 0);
@@ -114,7 +184,6 @@
         }
         resultsSection.style.display = '';
 
-        // --- Per weapon pieces ---
         var html = '';
         var totals = { plans: 0, ressort: 0, canon: 0, poignee: 0, corp: 0, metal: 0, polymere: 0 };
 
@@ -126,23 +195,19 @@
             Object.keys(w.pieces).forEach(function (p) {
                 var need = w.pieces[p] * qty;
                 totals[p] += need;
-                html += makeRow(pieceNames[p], formatNumber(need));
+                html += makeRow(pieceNames[p], fmt(need));
             });
         });
         piecesTable.innerHTML = html;
 
-        // --- Total pieces ---
         html = '';
         Object.keys(pieceNames).forEach(function (p) {
             if (totals[p] > 0) {
-                html += makeRow(pieceNames[p], formatNumber(totals[p]));
+                html += makeRow(pieceNames[p], fmt(totals[p]));
             }
         });
-        totalPieces.innerHTML = html;
+        totalPiecesEl.innerHTML = html;
 
-        // --- Material crafting ---
-        // Ressort needs: totals.ressort ressorts
-        //   Each ressort = 1 pièce de métal + 3 minerais de fer
         var metalForRessorts = totals.ressort * RESSORT_METAL_RATE;
         var mineraiForRessorts = totals.ressort * RESSORT_MINERAI_RATE;
         var totalMetalNeeded = totals.metal + metalForRessorts;
@@ -151,75 +216,334 @@
         var totalPetrole = totals.polymere * POLYMERE_PETROLE_RATE;
 
         html = '';
-        html += makeSectionHeader('Craft des Ressorts (' + formatNumber(totals.ressort) + ')');
-        html += makeRow('Pièces de métal (pour ressorts)', formatNumber(metalForRessorts));
-        html += makeRow('Minerais de fer (pour ressorts)', formatNumber(mineraiForRessorts));
-        html += makeSectionHeader('Craft des Pièces de métal (' + formatNumber(totalMetalNeeded) + ')');
-        html += makeRow('Pièces directes', formatNumber(totals.metal));
-        html += makeRow('Pièces pour ressorts', formatNumber(metalForRessorts));
-        html += makeRow('Minerais de fer nécessaires', formatNumber(totalMineraiForMetal));
-        html += makeSectionHeader('Craft des Polymères (' + formatNumber(totals.polymere) + ')');
-        html += makeRow('Pétroles nécessaires', formatNumber(totalPetrole));
+        html += makeSectionHeader('Craft des Ressorts (' + fmt(totals.ressort) + ')');
+        html += makeRow('Pièces de métal (pour ressorts)', fmt(metalForRessorts));
+        html += makeRow('Minerais de fer (pour ressorts)', fmt(mineraiForRessorts));
+        html += makeSectionHeader('Craft des Pièces de métal (' + fmt(totalMetalNeeded) + ')');
+        html += makeRow('Pièces directes', fmt(totals.metal));
+        html += makeRow('Pièces pour ressorts', fmt(metalForRessorts));
+        html += makeRow('Minerais de fer nécessaires', fmt(totalMineraiForMetal));
+        html += makeSectionHeader('Craft des Polymères (' + fmt(totals.polymere) + ')');
+        html += makeRow('Pétroles nécessaires', fmt(totalPetrole));
         materialCraft.innerHTML = html;
 
-        // --- Raw materials ---
         html = '';
-        html += makeRow('Minerais de fer', formatNumber(totalMineraiTotal), 'highlight');
-        html += makeRow('Pétroles', formatNumber(totalPetrole), 'highlight');
-        html += makeRow('Plans', formatNumber(totals.plans));
-        html += makeRow('Canons', formatNumber(totals.canon));
-        html += makeRow('Poignées', formatNumber(totals.poignee));
-        html += makeRow('Corps de pistolet', formatNumber(totals.corp));
+        html += makeRow('Minerais de fer', fmt(totalMineraiTotal), 'highlight');
+        html += makeRow('Pétroles', fmt(totalPetrole), 'highlight');
+        html += makeRow('Plans', fmt(totals.plans));
+        html += makeRow('Canons', fmt(totals.canon));
+        html += makeRow('Poignées', fmt(totals.poignee));
+        html += makeRow('Corps de pistolet', fmt(totals.corp));
         rawMaterials.innerHTML = html;
 
-        // --- Cost ---
         var polymereCost = totals.polymere * POLYMERE_COST;
         html = '';
-        html += makeRow('Polymères achetés au tunnel (' + formatNumber(totals.polymere) + ' × ' + formatNumber(POLYMERE_COST) + '€)', formatNumber(polymereCost) + ' €', 'highlight');
+        html += makeRow('Polymères achetés au tunnel (' + fmt(totals.polymere) + ' × ' + fmt(POLYMERE_COST) + '€)', fmt(polymereCost) + ' €', 'highlight');
         costTable.innerHTML = html;
 
-        // --- Craft time ---
         var totalTime = 0;
         var hasUnknown = false;
         Object.keys(weapons).forEach(function (key) {
             var qty = orders[key];
             if (qty === 0) return;
             var w = weapons[key];
-            if (w.craftTime === null) {
-                hasUnknown = true;
-            } else {
-                totalTime += w.craftTime * qty;
-            }
+            if (w.craftTime === null) hasUnknown = true;
+            else totalTime += w.craftTime * qty;
         });
         var timeStr = formatTime(totalTime);
-        if (hasUnknown) {
-            timeStr += ' + temps inconnu (Heavy/Cal .50)';
-        }
+        if (hasUnknown) timeStr += ' + temps inconnu (Heavy/Cal .50)';
         craftTimeEl.textContent = timeStr;
     }
 
-    // ===== EVENT BINDING =====
     document.querySelectorAll('.qty-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             var w = this.getAttribute('data-weapon');
             var input = document.getElementById('qty-' + w);
             var val = parseInt(input.value, 10) || 0;
-            if (this.classList.contains('plus')) {
-                val = Math.min(val + 1, 99);
-            } else {
-                val = Math.max(val - 1, 0);
-            }
+            if (this.classList.contains('plus')) val = Math.min(val + 1, 99);
+            else val = Math.max(val - 1, 0);
             input.value = val;
             calculate();
         });
     });
 
     document.querySelectorAll('.qty-input').forEach(function (input) {
-        input.addEventListener('input', function () {
-            calculate();
+        input.addEventListener('input', calculate);
+        input.addEventListener('change', calculate);
+    });
+
+    // ============================================
+    // TAB 2: CONTRACTS & STOCK (password-protected, shared storage)
+    // ============================================
+
+    // --- Password ---
+    function tryUnlock() {
+        var pw = contractPwInput.value;
+        password = pw;
+        apiGet(function (err, data) {
+            if (err || (data && data.error)) {
+                contractPwError.classList.add('visible');
+                password = '';
+                return;
+            }
+            contractPwError.classList.remove('visible');
+            contractLock.style.display = 'none';
+            contractContent.style.display = '';
+            contracts = data.contracts || [];
+            stock = data.stock || { plans: 0, ressort: 0, canon: 0, poignee: 0, corp: 0, metal: 0, polymere: 0, minerai: 0, petrole: 0 };
+            renderStock();
+            renderContracts();
+            calculateContracts();
         });
-        input.addEventListener('change', function () {
-            calculate();
+    }
+
+    contractPwBtn.addEventListener('click', tryUnlock);
+    contractPwInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') tryUnlock();
+    });
+
+    // --- Stock ---
+    function renderStock() {
+        document.querySelectorAll('.stock-input').forEach(function (input) {
+            var key = input.getAttribute('data-stock');
+            input.value = stock[key] || 0;
+        });
+    }
+
+    document.querySelectorAll('.stock-input').forEach(function (input) {
+        input.addEventListener('input', function () {
+            var key = this.getAttribute('data-stock');
+            stock[key] = Math.max(0, parseInt(this.value, 10) || 0);
+            calculateContracts();
+            debounceSave();
         });
     });
+
+    // --- Contract creation ---
+    function renderPendingWeapons() {
+        var html = '';
+        pendingContractWeapons.forEach(function (w, i) {
+            html += '<span class="contract-weapon-tag">' +
+                esc(weapons[w.key].name) + ' ×' + w.qty +
+                ' <span class="remove-tag" data-idx="' + i + '">✕</span></span>';
+        });
+        contractWeaponList.innerHTML = html;
+
+        contractWeaponList.querySelectorAll('.remove-tag').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                pendingContractWeapons.splice(parseInt(this.getAttribute('data-idx'), 10), 1);
+                renderPendingWeapons();
+            });
+        });
+    }
+
+    document.getElementById('contractAddWeapon').addEventListener('click', function () {
+        var key = document.getElementById('contractWeaponSelect').value;
+        var qty = Math.max(1, parseInt(document.getElementById('contractWeaponQty').value, 10) || 1);
+        pendingContractWeapons.push({ key: key, qty: qty });
+        document.getElementById('contractWeaponQty').value = 1;
+        renderPendingWeapons();
+    });
+
+    document.getElementById('contractSaveBtn').addEventListener('click', function () {
+        var name = document.getElementById('contractName').value.trim();
+        if (!name) return;
+        if (pendingContractWeapons.length === 0) return;
+
+        // Build done object: { weaponKey: 0 } for each weapon in contract
+        var done = {};
+        pendingContractWeapons.forEach(function (w) {
+            done[w.key] = (done[w.key] || 0); // start at 0 done
+        });
+
+        contracts.push({
+            id: uid(),
+            name: name,
+            weapons: pendingContractWeapons.slice(),
+            done: done
+        });
+
+        // Reset form
+        document.getElementById('contractName').value = '';
+        pendingContractWeapons = [];
+        contractWeaponList.innerHTML = '';
+
+        renderContracts();
+        calculateContracts();
+        apiSave();
+    });
+
+    // --- Contracts list ---
+    function renderContracts() {
+        if (contracts.length === 0) {
+            contractsList.innerHTML = '<div style="text-align:center;color:#6a5a40;font-size:11px;padding:12px;">Aucun contrat</div>';
+            return;
+        }
+
+        var html = '';
+        contracts.forEach(function (c) {
+            html += '<div class="contract-card" data-id="' + esc(c.id) + '">';
+            html += '<div class="contract-card-header">';
+            html += '<span class="contract-card-name">' + esc(c.name) + '</span>';
+            html += '<div class="contract-card-actions">';
+            html += '<button class="contract-action-btn delete" data-id="' + esc(c.id) + '">Supprimer</button>';
+            html += '</div></div>';
+
+            // weapons summary
+            var wDesc = c.weapons.map(function (w) {
+                return (weapons[w.key] ? weapons[w.key].name : w.key) + ' ×' + w.qty;
+            }).join(', ');
+            html += '<div class="contract-card-weapons">' + esc(wDesc) + '</div>';
+
+            // done inputs per weapon
+            html += '<div class="contract-card-done">';
+            c.weapons.forEach(function (w) {
+                var doneVal = c.done[w.key] || 0;
+                var isComplete = doneVal >= w.qty;
+                html += '<div class="contract-done-row">';
+                html += '<label>' + esc(weapons[w.key] ? weapons[w.key].name : w.key) + '</label>';
+                html += '<input type="number" min="0" max="' + w.qty + '" value="' + doneVal + '" ' +
+                    'data-contract="' + esc(c.id) + '" data-weapon="' + esc(w.key) + '" class="contract-done-input">';
+                html += '<span class="of-total">/ ' + w.qty + '</span>';
+                if (isComplete) html += ' <span class="complete">✓</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            html += '</div>';
+        });
+        contractsList.innerHTML = html;
+
+        // Bind delete
+        contractsList.querySelectorAll('.contract-action-btn.delete').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = this.getAttribute('data-id');
+                contracts = contracts.filter(function (c) { return c.id !== id; });
+                renderContracts();
+                calculateContracts();
+                apiSave();
+            });
+        });
+
+        // Bind done inputs
+        contractsList.querySelectorAll('.contract-done-input').forEach(function (input) {
+            input.addEventListener('input', function () {
+                var cid = this.getAttribute('data-contract');
+                var wKey = this.getAttribute('data-weapon');
+                var val = Math.max(0, parseInt(this.value, 10) || 0);
+                contracts.forEach(function (c) {
+                    if (c.id === cid) {
+                        c.done[wKey] = val;
+                    }
+                });
+                calculateContracts();
+                debounceSave();
+            });
+        });
+    }
+
+    // --- Calculate contract totals vs stock ---
+    function calculateContracts() {
+        if (contracts.length === 0) {
+            contractResultsSection.style.display = 'none';
+            return;
+        }
+        contractResultsSection.style.display = '';
+
+        // Total weapons remaining across all contracts
+        var totalWeaponsNeeded = {};
+        contracts.forEach(function (c) {
+            c.weapons.forEach(function (w) {
+                var remaining = Math.max(0, w.qty - (c.done[w.key] || 0));
+                totalWeaponsNeeded[w.key] = (totalWeaponsNeeded[w.key] || 0) + remaining;
+            });
+        });
+
+        // Total pieces needed (from remaining weapons)
+        var piecesNeeded = { plans: 0, ressort: 0, canon: 0, poignee: 0, corp: 0, metal: 0, polymere: 0 };
+        Object.keys(totalWeaponsNeeded).forEach(function (key) {
+            var qty = totalWeaponsNeeded[key];
+            if (qty <= 0 || !weapons[key]) return;
+            var w = weapons[key];
+            Object.keys(w.pieces).forEach(function (p) {
+                piecesNeeded[p] += w.pieces[p] * qty;
+            });
+        });
+
+        // Expand to raw materials
+        var metalForRessorts = piecesNeeded.ressort * RESSORT_METAL_RATE;
+        var mineraiForRessorts = piecesNeeded.ressort * RESSORT_MINERAI_RATE;
+        var totalMetalPieces = piecesNeeded.metal + metalForRessorts;
+        var totalMinerai = totalMetalPieces * METAL_MINERAI_RATE + mineraiForRessorts;
+        var totalPetrole = piecesNeeded.polymere * POLYMERE_PETROLE_RATE;
+
+        // Plans: 1 plan item = 4 uses. Needed plans(uses) = piecesNeeded.plans
+        // Available plans uses = stock.plans * 4
+        var plansUsesNeeded = piecesNeeded.plans;
+        var plansPhysical = stock.plans || 0;
+        var plansUsesAvailable = plansPhysical * PLANS_PER_ITEM;
+
+        // Total needed summary (pieces + raw)
+        var html = '';
+        html += makeSectionHeader('Armes restantes');
+        Object.keys(totalWeaponsNeeded).forEach(function (key) {
+            if (totalWeaponsNeeded[key] > 0) {
+                html += makeRow(weapons[key].name, fmt(totalWeaponsNeeded[key]));
+            }
+        });
+        html += makeSectionHeader('Pièces intermédiaires');
+        Object.keys(pieceNames).forEach(function (p) {
+            if (piecesNeeded[p] > 0) {
+                var label = pieceNames[p];
+                if (p === 'plans') label += ' (utilisations)';
+                html += makeRow(label, fmt(piecesNeeded[p]));
+            }
+        });
+        html += makeSectionHeader('Matières premières');
+        html += makeRow('Minerais de fer', fmt(totalMinerai));
+        html += makeRow('Pétroles', fmt(totalPetrole));
+        contractTotalNeeded.innerHTML = html;
+
+        // Remaining (needed - stock)
+        html = '';
+        var items = [
+            { label: 'Plans (physiques, ×4)', needed: Math.ceil(plansUsesNeeded / PLANS_PER_ITEM), have: plansPhysical },
+            { label: 'Ressorts', needed: piecesNeeded.ressort, have: stock.ressort || 0 },
+            { label: 'Canons', needed: piecesNeeded.canon, have: stock.canon || 0 },
+            { label: 'Poignées', needed: piecesNeeded.poignee, have: stock.poignee || 0 },
+            { label: 'Corps de pistolet', needed: piecesNeeded.corp, have: stock.corp || 0 },
+            { label: 'Pièces de métal', needed: totalMetalPieces, have: stock.metal || 0 },
+            { label: 'Polymères', needed: piecesNeeded.polymere, have: stock.polymere || 0 },
+            { label: 'Minerais de fer', needed: totalMinerai, have: stock.minerai || 0 },
+            { label: 'Pétroles', needed: totalPetrole, have: stock.petrole || 0 }
+        ];
+
+        items.forEach(function (it) {
+            var diff = it.needed - it.have;
+            var cls, val;
+            if (diff <= 0) {
+                cls = 'ok';
+                val = '✓ OK' + (it.have > it.needed ? ' (+' + fmt(it.have - it.needed) + ')' : '');
+            } else {
+                cls = 'need';
+                val = '▲ ' + fmt(diff) + ' manquant' + (diff > 1 ? 's' : '');
+            }
+            html += makeRow(it.label + ' — besoin ' + fmt(it.needed) + ' / stock ' + fmt(it.have), val, cls);
+        });
+        contractRemaining.innerHTML = html;
+
+        // Plans detail
+        html = '';
+        html += makeRow('Plans physiques en stock', fmt(plansPhysical));
+        html += makeRow('Utilisations disponibles', fmt(plansUsesAvailable));
+        html += makeRow('Utilisations nécessaires', fmt(plansUsesNeeded));
+        var plansRemaining = plansUsesAvailable - plansUsesNeeded;
+        if (plansRemaining >= 0) {
+            html += makeRow('Utilisations restantes après craft', fmt(plansRemaining), 'ok');
+        } else {
+            var physicalNeeded = Math.ceil(Math.abs(plansRemaining) / PLANS_PER_ITEM);
+            html += makeRow('Plans physiques à récupérer', fmt(physicalNeeded), 'need');
+        }
+        contractPlansDetail.innerHTML = html;
+    }
 })();
