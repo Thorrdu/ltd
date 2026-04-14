@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="white">
+  <!-- Shield shape -->
+  <path d="M100 10 L170 50 L170 120 Q170 170 100 190 Q30 170 30 120 L30 50 Z" fill="none" stroke="white" stroke-width="4"/>
+  <!-- Wings left -->
+  <path d="M30 80 Q5 60 10 30 Q20 50 40 55 Q25 65 30 80Z" fill="white"/>
+  <path d="M30 90 Q-5 75 5 40 Q15 60 35 65 Q20 75 30 90Z" fill="white" opacity="0.7"/>
+  <path d="M28 100 Q-10 90 0 55 Q12 70 32 75 Q18 85 28 100Z" fill="white" opacity="0.4"/>
+  <!-- Wings right -->
+  <path d="M170 80 Q195 60 190 30 Q180 50 160 55 Q175 65 170 80Z" fill="white"/>
+  <path d="M170 90 Q205 75 195 40 Q185 60 165 65 Q180 75 170 90Z" fill="white" opacity="0.7"/>
+  <path d="M172 100 Q210 90 200 55 Q188 70 168 75 Q182 85 172 100Z" fill="white" opacity="0.4"/>
+  <!-- MC text -->
+  <text x="100" y="115" text-anchor="middle" font-family="Impact, Arial Black, sans-serif" font-size="32" font-weight="bold" fill="white">MC</text>
+  <!-- Decorative line -->
+  <line x1="70" y1="125" x2="130" y2="125" stroke="white" stroke-width="2"/>
+</svg>

@@ -12,6 +12,14 @@ Route::middleware(AllowIframe::class)->group(function () {
     Route::get('/entreprises', [PageController::class, 'entreprises'])->name('entreprises');
 });
 
-Route::get('/simulateur-armes', fn () => view('simulateur-armes'))->name('simulateur-armes');
-Route::get('/simulateur-armes/data', [WeaponSimController::class, 'getData']);
-Route::post('/simulateur-armes/data', [WeaponSimController::class, 'saveData']);
+Route::get('/simulateur-armes', [WeaponSimController::class, 'index'])->name('simulateur-armes');
+Route::post('/simulateur-armes/api/login', [WeaponSimController::class, 'login']);
+Route::get('/simulateur-armes/api/data', [WeaponSimController::class, 'apiData']);
+Route::post('/simulateur-armes/api/sale', [WeaponSimController::class, 'createSale']);
+Route::post('/simulateur-armes/api/movement', [WeaponSimController::class, 'createMovement']);
+Route::post('/simulateur-armes/api/contract', [WeaponSimController::class, 'createContract']);
+Route::put('/simulateur-armes/api/contract/{id}', [WeaponSimController::class, 'updateContract']);
+Route::put('/simulateur-armes/api/contract-item/{id}', [WeaponSimController::class, 'updateContractItem']);
+Route::post('/simulateur-armes/api/member', [WeaponSimController::class, 'createMember']);
+Route::put('/simulateur-armes/api/member/{id}', [WeaponSimController::class, 'updateMember']);
+Route::post('/simulateur-armes/api/change-pin', [WeaponSimController::class, 'changePin']);

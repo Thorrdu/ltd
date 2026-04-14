@@ -1,0 +1,235 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use App\Models\Weapon;
+use App\Models\WeaponContract;
+use App\Models\WeaponContractItem;
+use App\Models\WeaponSale;
+use App\Models\WeaponStock;
+use App\Models\WeaponStockMovement;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+
+class WeaponSimController extends Controller
+{
+    private const PASSWORD = 'lost2026';
+
+    public function index()
+    {
+        $weapons = Weapon::active()->orderBy('sort_order')->get();
+        $members = User::orderBy('name')->get(['id', 'name']);
+
+        return view('simulateur-armes', [
+            'weaponsJson' => $weapons->toJson(),
+            'membersJson' => $members->toJson(),
+        ]);
+    }
+
+    private function checkPassword(Request $request): bool
+    {
+        return $request->header('X-Sim-Password') === self::PASSWORD;
+    }
+
+    public function apiData(Request $request): JsonResponse
+    {
+        if (! $this->checkPassword($request)) {
+            return response()->json(['error' => 'unauthorized'], 403);
+        }
+
+        $contracts = WeaponContract::with(['items.weapon', 'createdBy'])
+            ->whereIn('status', ['pending', 'in_progress'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($c) {
+                return [
+                    'id' => $c->id,
+                    'name' => $c->name,
+                    'client' => $c->client_name,
+                    'status' => $c->status,
+                    'status_label' => WeaponContract::STATUSES[$c->status] ?? $c->status,
+                    'created_by' => $c->createdBy->name ?? '?',
+                    'progress' => $c->progress,
+                    'items' => $c->items->map(fn ($i) => [
+                        'weapon' => $i->weapon->name ?? '?',
+                        'weapon_slug' => $i->weapon->slug ?? '?',
+                        'qty_ordered' => $i->qty_ordered,
+                        'qty_delivered' => $i->qty_delivered,
+                        'remaining' => $i->remaining,
+                    ]),
+                ];
+            });
+
+        $stock = WeaponStock::orderBy('category')->orderBy('sort_order')
+            ->get()
+            ->map(fn ($s) => [
+                'id' => $s->id,
+                'category' => $s->category,
+                'name' => $s->name,
+                'slug' => $s->slug,
+                'quantity' => $s->quantity,
+                'weapon_id' => $s->weapon_id,
+            ]);
+
+        $movements = WeaponStockMovement::with(['stock', 'user', 'attributedTo', 'contract'])
+            ->orderBy('created_at', 'desc')
+            ->limit(30)
+            ->get()
+            ->map(fn ($m) => [
+                'stock_name' => $m->stock->name ?? '?',
+                'quantity_change' => $m->quantity_change,
+                'reason' => $m->reason,
+                'reason_label' => WeaponStockMovement::REASONS[$m->reason] ?? $m->reason,
+                'unit_cost' => $m->unit_cost,
+                'contract' => $m->contract->name ?? null,
+                'user' => $m->user->name ?? '?',
+                'attributed_to' => $m->attributedTo->name ?? null,
+                'notes' => $m->notes,
+                'date' => $m->created_at?->format('d/m H:i'),
+            ]);
+
+        $sales = WeaponSale::with(['weapon', 'user', 'soldBy', 'contract'])
+            ->orderBy('created_at', 'desc')
+            ->limit(30)
+            ->get()
+            ->map(fn ($s) => [
+                'weapon' => $s->weapon->name ?? '?',
+                'quantity' => $s->quantity,
+                'unit_price' => $s->unit_price,
+                'total' => $s->total,
+                'buyer' => $s->buyer_name,
+                'contract' => $s->contract->name ?? null,
+                'user' => $s->user->name ?? '?',
+                'sold_by' => $s->soldBy->name ?? null,
+                'notes' => $s->notes,
+                'date' => $s->created_at?->format('d/m H:i'),
+            ]);
+
+        $totalRevenue = WeaponSale::selectRaw('SUM(quantity * unit_price) as total')->value('total') ?? 0;
+
+        // Low stock alerts
+        $lowStock = WeaponStock::where('quantity', '<=', 2)
+            ->whereIn('category', ['piece', 'plan', 'raw_material'])
+            ->get(['name', 'quantity', 'category']);
+
+        return response()->json([
+            'contracts' => $contracts,
+            'stock' => $stock,
+            'movements' => $movements,
+            'sales' => $sales,
+            'finance' => ['total_revenue' => $totalRevenue],
+            'alerts' => $lowStock,
+            'reasons' => WeaponStockMovement::REASONS,
+        ]);
+    }
+
+    public function createSale(Request $request): JsonResponse
+    {
+        if (! $this->checkPassword($request)) {
+            return response()->json(['error' => 'unauthorized'], 403);
+        }
+
+        $v = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'weapon_id' => 'required|exists:weapons,id',
+            'quantity' => 'required|integer|min:1|max:99',
+            'unit_price' => 'required|numeric|min:0',
+            'buyer_name' => 'required|string|max:100',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        if ($v->fails()) {
+            return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
+        }
+
+        $weapon = Weapon::findOrFail($request->weapon_id);
+        $qty = (int) $request->quantity;
+
+        // Check finished weapon stock — warn but allow
+        $weaponStock = WeaponStock::where('slug', 'weapon_' . $weapon->slug)->first();
+        $warning = null;
+        if (! $weaponStock || $weaponStock->quantity < $qty) {
+            $have = $weaponStock->quantity ?? 0;
+            $warning = "⚠ Stock insuffisant ({$have} en stock, {$qty} vendus). Le stock passe en négatif.";
+        }
+
+        // Deduct stock (can go negative)
+        if ($weaponStock) {
+            $weaponStock->decrement('quantity', $qty);
+        }
+
+        // Log movement
+        if ($weaponStock) {
+            WeaponStockMovement::create([
+                'weapon_stock_id' => $weaponStock->id,
+                'quantity_change' => -$qty,
+                'reason' => 'sale',
+                'user_id' => $request->user_id,
+                'notes' => 'Vente: ' . $qty . '× ' . $weapon->name . ' → ' . $request->buyer_name,
+                'created_at' => now(),
+            ]);
+        }
+
+        // Create sale record
+        WeaponSale::create([
+            'weapon_id' => $request->weapon_id,
+            'quantity' => $qty,
+            'unit_price' => $request->unit_price,
+            'buyer_name' => $request->buyer_name,
+            'user_id' => $request->user_id,
+            'notes' => $request->notes,
+        ]);
+
+        $msg = $qty . '× ' . $weapon->name . ' vendu(s) à ' . $request->buyer_name;
+
+        return response()->json(['ok' => true, 'message' => $msg, 'warning' => $warning]);
+    }
+
+    public function createMovement(Request $request): JsonResponse
+    {
+        if (! $this->checkPassword($request)) {
+            return response()->json(['error' => 'unauthorized'], 403);
+        }
+
+        $v = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'weapon_stock_id' => 'required|exists:weapon_stocks,id',
+            'quantity_change' => 'required|integer|not_in:0',
+            'reason' => 'required|string|in:' . implode(',', array_keys(WeaponStockMovement::REASONS)),
+            'unit_cost' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        if ($v->fails()) {
+            return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
+        }
+
+        $stock = WeaponStock::findOrFail($request->weapon_stock_id);
+        $change = (int) $request->quantity_change;
+
+        // Don't allow negative stock
+        if ($change < 0 && $stock->quantity < abs($change)) {
+            return response()->json(['error' => 'Stock insuffisant (' . $stock->quantity . ' en stock)'], 400);
+        }
+
+        $stock->increment('quantity', $change);
+
+        $unitCost = $request->reason === 'purchase' ? $request->unit_cost : null;
+
+        WeaponStockMovement::create([
+            'weapon_stock_id' => $stock->id,
+            'quantity_change' => $change,
+            'reason' => $request->reason,
+            'unit_cost' => $unitCost,
+            'user_id' => $request->user_id,
+            'notes' => $request->notes,
+            'created_at' => now(),
+        ]);
+
+        $action = $change > 0 ? 'ajouté' : 'retiré';
+        return response()->json(['ok' => true, 'message' => abs($change) . '× ' . $stock->name . ' ' . $action]);
+    }
+}

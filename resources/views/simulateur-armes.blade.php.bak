@@ -12,16 +12,17 @@
     <div class="inner-board">
 
         <div class="header lost-header">
-            <img src="{{ asset('img/lost-mc-logo.png') }}" alt="Lost MC" class="lost-emblem"
-                 onerror="this.src='{{ asset('img/lost-mc-logo.svg') }}'">
+            <div class="lost-emblem">⚙</div>
+            <div class="logo-row">
+                <div class="station-title lost-title">LOST MC</div>
+            </div>
             <div class="lost-tagline">SYSTÈME ARMURERIE</div>
-            <div class="lost-motto">« Le Tout-Puissant pardonne. Pas les Lost. »</div>
         </div>
 
         {{-- TAB NAVIGATION --}}
         <div class="tab-bar">
-            <button class="tab-btn active" data-tab="simulateur">Simulateur</button>
-            <button class="tab-btn" data-tab="membres">Espace Membres</button>
+            <button class="tab-btn active" data-tab="simulateur">🔧 Simulateur</button>
+            <button class="tab-btn" data-tab="membres">🏠 Espace Membres</button>
         </div>
 
         {{-- ============================================ --}}
@@ -40,12 +41,6 @@
                 <div class="sim-section-title">Total pièces nécessaires</div>
                 <div class="results-table" id="totalPieces"></div>
 
-                {{-- Stock comparison (logged-in only) --}}
-                <div id="simStockCompare" style="display:none;">
-                    <div class="sim-section-title">Comparaison avec le stock</div>
-                    <div class="results-table" id="simStockTable"></div>
-                </div>
-
                 <div class="sim-section-title">Craft de matériaux (table du sud)</div>
                 <div class="results-table" id="materialCraft"></div>
 
@@ -61,41 +56,53 @@
         </div>
 
         {{-- ============================================ --}}
-        {{-- TAB 2: ESPACE MEMBRES --}}
+        {{-- TAB 2: ESPACE MEMBRES (password → dashboard) --}}
         {{-- ============================================ --}}
         <div class="tab-content" id="tab-membres">
 
-            {{-- Step 1: Select member + enter PIN --}}
+            {{-- Step 1: Password --}}
             <div class="contract-lock" id="lockMembres">
                 <div class="lock-icon">🔒</div>
-                <div class="lock-text">Connexion membre — Lost MC</div>
-                <select class="lock-input" id="loginMemberSelect" style="width:260px;margin:0 auto 8px;display:block;">
-                    <option value="">— Qui êtes-vous ? —</option>
-                </select>
-                <input type="password" class="lock-input" id="loginPin" placeholder="PIN" autocomplete="off" maxlength="20">
-                <button class="lock-btn" id="btnLogin">Se connecter</button>
-                <div class="lock-error" id="errLogin"></div>
+                <div class="lock-text">Accès réservé — Lost MC</div>
+                <input type="password" class="lock-input" id="pwMembres" placeholder="Mot de passe" autocomplete="off">
+                <button class="lock-btn" id="btnMembres">Déverrouiller</button>
+                <div class="lock-error" id="errMembres">Mot de passe incorrect</div>
             </div>
 
-            {{-- Dashboard --}}
+            {{-- Step 2: Who are you? --}}
+            <div id="memberSelect" style="display:none;">
+                <div class="member-select-wrap">
+                    <div class="lock-icon">👤</div>
+                    <div class="lock-text">Qui êtes-vous ?</div>
+                    <select class="lock-input" id="memberSelectInput" style="width:260px;margin:0 auto 12px;display:block;">
+                        <option value="">— Choisir —</option>
+                    </select>
+                    <button class="lock-btn" id="btnSelectMember">Entrer</button>
+                </div>
+            </div>
+
+            {{-- Step 3: Full member dashboard --}}
             <div id="memberDashboard" style="display:none;">
 
+                {{-- Member bar --}}
                 <div class="member-bar">
                     <span class="member-bar-name" id="currentMemberName"></span>
-                    <span class="member-bar-role" id="currentMemberRole"></span>
-                    <button class="member-bar-btn" id="btnLogout">Déconnexion</button>
-                    <a class="member-bar-btn admin-btn" href="/armurerie" target="_blank">Admin</a>
+                    <button class="member-bar-btn" id="btnChangeMember">Changer</button>
+                    <a class="member-bar-btn admin-btn" href="/armurerie" target="_blank">⚙ Admin</a>
                 </div>
 
+                {{-- Alert banner --}}
                 <div id="alertBanner" class="alert-banner" style="display:none;"></div>
+
+                {{-- Toast --}}
                 <div id="toast" class="toast"></div>
 
+                {{-- Sub-tabs --}}
                 <div class="sub-tab-bar">
                     <button class="sub-tab active" data-subtab="overview">Vue d'ensemble</button>
-                    <button class="sub-tab" data-subtab="actions">Actions</button>
+                    <button class="sub-tab" data-subtab="actions">Actions rapides</button>
                     <button class="sub-tab" data-subtab="contrats">Contrats</button>
                     <button class="sub-tab" data-subtab="historique">Historique</button>
-                    <button class="sub-tab" data-subtab="gestion" id="subTabGestion" style="display:none;">Gestion</button>
                 </div>
 
                 {{-- SUB: Overview --}}
@@ -109,10 +116,10 @@
                     <div class="stock-mini-grid" id="stockRawGrid"></div>
                 </div>
 
-                {{-- SUB: Actions --}}
+                {{-- SUB: Actions rapides --}}
                 <div class="sub-content" id="sub-actions">
                     <div class="action-card">
-                        <div class="action-card-title">Déclarer une vente</div>
+                        <div class="action-card-title">💰 Déclarer une vente</div>
                         <div class="action-form">
                             <div class="form-row">
                                 <div class="form-group"><label>Arme</label><select id="saleWeapon" class="fm-input"></select></div>
@@ -120,16 +127,16 @@
                                 <div class="form-group sm"><label>Prix unit. €</label><input type="number" id="salePrice" class="fm-input" value="0" min="0"></div>
                             </div>
                             <div class="form-row">
-                                <div class="form-group"><label>Acheteur</label><input type="text" id="saleBuyer" class="fm-input" placeholder="Nom du client"></div>
+                                <div class="form-group"><label>Acheteur</label><input type="text" id="saleBuyer" class="fm-input" placeholder="Nom"></div>
                                 <div class="form-group"><label>Notes <span class="optional">(opt.)</span></label><input type="text" id="saleNotes" class="fm-input" placeholder="..."></div>
                             </div>
                             <div class="sale-preview" id="salePreview"></div>
-                            <button class="action-btn sale-btn" id="btnSale">Enregistrer la vente</button>
+                            <button class="action-btn sale-btn" id="btnSale">💰 Enregistrer la vente</button>
                         </div>
                     </div>
 
                     <div class="action-card">
-                        <div class="action-card-title">Mouvement de stock</div>
+                        <div class="action-card-title">📦 Mouvement de stock</div>
                         <p class="action-hint">Coffre, récolte, achat, ajustement...</p>
                         <div class="action-form">
                             <div class="form-row">
@@ -140,50 +147,26 @@
                                 <div class="form-group">
                                     <label>Direction</label>
                                     <div class="direction-toggle">
-                                        <button class="dir-btn active" data-dir="in" id="mvDirIn">+ Entrée</button>
-                                        <button class="dir-btn" data-dir="out" id="mvDirOut">− Sortie</button>
+                                        <button class="dir-btn active" data-dir="in" id="mvDirIn">⬆ Entrée</button>
+                                        <button class="dir-btn" data-dir="out" id="mvDirOut">⬇ Sortie</button>
                                     </div>
                                 </div>
                                 <div class="form-group"><label>Raison</label><select id="mvReason" class="fm-input"></select></div>
                             </div>
                             <div class="form-row" id="mvCostRow" style="display:none;">
-                                <div class="form-group sm"><label>Prix unit. €</label><input type="number" id="mvUnitCost" class="fm-input" value="0" min="0"></div>
+                                <div class="form-group sm"><label>Prix unitaire €</label><input type="number" id="mvUnitCost" class="fm-input" value="0" min="0"></div>
                                 <div class="form-group"><div class="mv-cost-preview" id="mvCostPreview"></div></div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group full"><label>Notes <span class="optional">(opt.)</span></label><input type="text" id="mvNotes" class="fm-input" placeholder="Ex: pris 2 WN du coffre"></div>
                             </div>
-                            <button class="action-btn mv-btn" id="btnMovement">Enregistrer le mouvement</button>
+                            <button class="action-btn mv-btn" id="btnMovement">📦 Enregistrer le mouvement</button>
                         </div>
                     </div>
                 </div>
 
                 {{-- SUB: Contrats --}}
                 <div class="sub-content" id="sub-contrats">
-                    {{-- New contract form --}}
-                    <div class="action-card" id="newContractCard">
-                        <div class="action-card-title">Nouveau contrat</div>
-                        <div class="action-form">
-                            <div class="form-row">
-                                <div class="form-group"><label>Nom du contrat</label><input type="text" id="ctName" class="fm-input" placeholder="Ex: 3x Cal 50 pour Morana"></div>
-                                <div class="form-group"><label>Client</label><input type="text" id="ctClient" class="fm-input" placeholder="Nom du client"></div>
-                            </div>
-                            <div class="sim-section-title" style="font-size:11px;">Armes commandées</div>
-                            <div id="ctItemsContainer">
-                                <div class="form-row ct-item-row">
-                                    <div class="form-group"><select class="fm-input ct-weapon"></select></div>
-                                    <div class="form-group sm"><input type="number" class="fm-input ct-qty" value="1" min="1" max="999" placeholder="Qté"></div>
-                                </div>
-                            </div>
-                            <button type="button" class="action-btn-sm" id="btnAddCtItem">+ Ajouter une arme</button>
-                            <div class="form-row" style="margin-top:6px;">
-                                <div class="form-group full"><label>Notes <span class="optional">(opt.)</span></label><input type="text" id="ctNotes" class="fm-input" placeholder="..."></div>
-                            </div>
-                            <button class="action-btn sale-btn" id="btnCreateContract">Créer le contrat</button>
-                        </div>
-                    </div>
-
-                    <div class="sim-section-title" style="margin-top:12px;">Contrats actifs</div>
                     <div id="contractsList"></div>
 
                     <div class="sim-section-title" style="margin-top:12px;">À fabriquer (stock déduit)</div>
@@ -192,18 +175,19 @@
                     <div id="contractFullBreakdown" style="display:none;">
                         <div class="sim-section-title">Pièces nécessaires (pour la fabrication)</div>
                         <div class="results-table" id="contractPiecesNeeded"></div>
+
                         <div class="sim-section-title">Craft de matériaux (table du sud)</div>
                         <div class="results-table" id="contractMaterialCraft"></div>
+
                         <div class="sim-section-title">Matières premières totales</div>
                         <div class="results-table" id="contractRawMaterials"></div>
+
                         <div class="sim-section-title">Coût estimé</div>
                         <div class="results-table" id="contractCostTable"></div>
+
                         <div class="sim-section-title">Temps de craft total</div>
                         <div class="craft-time-display" id="contractCraftTime"></div>
                     </div>
-
-                    <div class="sim-section-title" style="margin-top:16px;">Tous les contrats</div>
-                    <div id="allContractsList"></div>
                 </div>
 
                 {{-- SUB: Historique --}}
@@ -212,40 +196,6 @@
                     <div class="movements-list" id="movementsList"></div>
                     <div class="sim-section-title" style="margin-top:10px;">Dernières ventes</div>
                     <div class="movements-list" id="salesList"></div>
-                </div>
-
-                {{-- SUB: Gestion (officers only) --}}
-                <div class="sub-content" id="sub-gestion">
-                    <div class="action-card">
-                        <div class="action-card-title">Ajouter un membre</div>
-                        <div class="action-form">
-                            <div class="form-row">
-                                <div class="form-group"><label>Nom RP</label><input type="text" id="newMemberName" class="fm-input" placeholder="Prénom Nom"></div>
-                                <div class="form-group sm"><label>PIN</label><input type="text" id="newMemberPin" class="fm-input" placeholder="1234" maxlength="20"></div>
-                                <div class="form-group sm"><label>Rôle</label>
-                                    <select id="newMemberRole" class="fm-input">
-                                        <option value="member">Membre</option>
-                                        <option value="officer">Officier</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <button class="action-btn sale-btn" id="btnCreateMember">Créer le membre</button>
-                        </div>
-                    </div>
-
-                    <div class="sim-section-title">Membres</div>
-                    <div id="membersList"></div>
-
-                    <div class="action-card" style="margin-top:10px;">
-                        <div class="action-card-title">Changer mon PIN</div>
-                        <div class="action-form">
-                            <div class="form-row">
-                                <div class="form-group"><label>PIN actuel</label><input type="password" id="pinCurrent" class="fm-input" maxlength="20"></div>
-                                <div class="form-group"><label>Nouveau PIN</label><input type="password" id="pinNew" class="fm-input" maxlength="20"></div>
-                            </div>
-                            <button class="action-btn mv-btn" id="btnChangePin">Modifier</button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

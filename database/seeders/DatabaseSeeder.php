@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             EnterpriseSeeder::class,
             MenuSeeder::class,
             UserSeeder::class,
+            WeaponSeeder::class,
         ]);
     }
 }

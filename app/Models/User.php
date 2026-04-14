@@ -23,6 +23,8 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'role',
+        'sim_pin',
     ];
 
     /**
@@ -33,6 +35,7 @@ class User extends Authenticatable implements FilamentUser
     protected $hidden = [
         'password',
         'remember_token',
+        'sim_pin',
     ];
 
     /**
@@ -51,5 +54,19 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return true;
+    }
+
+    public function isOfficer(): bool
+    {
+        return $this->role === 'officer';
+    }
+
+    public function checkSimPin(string $pin): bool
+    {
+        if (! $this->sim_pin) {
+            return false;
+        }
+
+        return \Illuminate\Support\Facades\Hash::check($pin, $this->sim_pin);
     }
 }
