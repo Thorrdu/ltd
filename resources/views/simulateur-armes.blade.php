@@ -11,12 +11,11 @@
 <div class="menu-board" style="width:960px;">
     <div class="inner-board">
 
-        <div class="header lost-header">
-            <img src="{{ asset('img/lost-mc-logo.png') }}" alt="Lost MC" class="lost-emblem"
-                 onerror="this.src='{{ asset('img/lost-mc-logo.svg') }}'">
-            <div class="lost-tagline">SYSTÈME ARMURERIE</div>
-            <div class="lost-motto">« Le Tout-Puissant pardonne. Pas les Lost. »</div>
-        </div>
+		<div class="header lost-header">
+			<img src="{{ asset('img/3651.webp') }}" alt="Lost MC" class="lost-emblem">
+			<div class="lost-tagline">SYSTÈME ARMURERIE</div>
+			<div class="lost-motto">« Le Tout-Puissant pardonne. Pas les Lost. »</div>
+		</div>
 
         {{-- TAB NAVIGATION --}}
         <div class="tab-bar">
