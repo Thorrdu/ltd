@@ -124,7 +124,6 @@
                                 <th>Σ fer ach.</th>
                                 <th>Σ fer réc.</th>
                                 <th>Σ plans</th>
-                                <th>Achat arme</th>
                                 <th>Vente</th>
                                 <th>M fer ach.</th>
                                 <th>M fer réc.</th>
@@ -134,7 +133,7 @@
                         <tbody id="weaponCraftBody"></tbody>
                         <tfoot>
                             <tr class="ammo-craft-foot">
-                                <td colspan="14">Σ fer ach. = tout acheté (dont métal). Σ fer réc. = sans pièces de métal payantes. Σ plans = utilisations de plan seules. SNS : <strong>Achat arme</strong> ; marge de revente dans la colonne « M fer ach. », tirets ailleurs.</td>
+                                <td colspan="13">Σ fer ach. = tout acheté (dont métal). Σ fer réc. = sans pièces de métal payantes. Σ plans = utilisations de plan seules. SNS : prix d’achat de référence (ex. 30k) et vente restent en base pour le simulateur ; marge de revente dans « M fer ach. ».</td>
                             </tr>
                         </tfoot>
                     </table>

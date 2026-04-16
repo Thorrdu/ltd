@@ -20,6 +20,7 @@
             id: w.id, name: w.name, slug: w.slug,
             craftTime: w.craft_time_seconds,
             sellPrice: sp,
+            /** SNS : prix d’achat réf. (non affiché dans le tableau craft ; utilisé objectif / marges). */
             referencePurchasePrice: rp,
             isBoughtWeapon: w.slug === 'sns',
             pieces: {
@@ -597,7 +598,6 @@
             if (bought) {
                 html += '<td>—</td><td>—</td><td>—</td><td>—</td>';
                 html += '<td>—</td><td>—</td><td>—</td>';
-                html += '<td>' + (refBuy > 0 ? fmtEuro(refBuy) : '—') + '</td>';
             } else {
                 html += '<td>' + fmtEuro(b.costPlans) + '</td>';
                 html += '<td>' + fmtEuro(b.costCorp) + '</td>';
@@ -606,7 +606,6 @@
                 html += '<td>' + fmtEuro(b.total) + '</td>';
                 html += '<td>' + fmtEuro(bFerRecOne) + '</td>';
                 html += '<td>' + fmtEuro(g) + '</td>';
-                html += '<td>—</td>';
             }
             if (sell > 0) {
                 html += '<td>' + fmtEuro(sell) + '</td>';
