@@ -32,6 +32,32 @@
                 <div class="weapons-grid" id="weaponsGrid"></div>
             </div>
 
+            <div class="sim-section" id="resultsSection" style="display:none;">
+                <div class="sim-section-title">Pièces par arme</div>
+                <div class="results-table" id="piecesTable"></div>
+
+                <div class="sim-section-title">Total pièces nécessaires</div>
+                <div class="results-table" id="totalPieces"></div>
+
+                {{-- Stock comparison (logged-in only) --}}
+                <div id="simStockCompare" style="display:none;">
+                    <div class="sim-section-title">Comparaison avec le stock</div>
+                    <div class="results-table" id="simStockTable"></div>
+                </div>
+
+                <div class="sim-section-title">Craft de matériaux (table du sud)</div>
+                <div class="results-table" id="materialCraft"></div>
+
+                <div class="sim-section-title">Matières premières totales</div>
+                <div class="results-table" id="rawMaterials"></div>
+
+                <div class="sim-section-title">Coût estimé</div>
+                <div class="results-table" id="costTable"></div>
+
+                <div class="sim-section-title">Temps de craft total</div>
+                <div class="craft-time-display" id="craftTime"></div>
+            </div>
+
             <div class="sim-section" id="ammoCraftSection">
                 <div class="sim-section-title">Craft munitions</div>
                 <p class="ammo-sim-intro">Recette : <strong>1 craft = 10 munitions</strong>. Poudre <strong>100 €</strong>/u, fer au prix saisi, <strong>1 fer → 2 fragments</strong>. <strong>Toutes les colonnes du tableau sont par munition</strong> (coûts = revient matière pour une munition au prix fer actuel). Vente <strong>par munition</strong> : <strong>.45 ACP 100 €</strong>, <strong>7.62×39 290 €</strong> (réf.) ; autres <strong>estimés</strong> pour une marge positive avec fer à <strong>30 €</strong> et poudre à <strong>100 €</strong>. Marges négatives en <strong>ambre</strong> si vous changez le prix du fer.</p>
@@ -76,32 +102,6 @@
                     </div>
                     <div class="results-table ammo-target-results" id="ammoTargetResults"></div>
                 </div>
-            </div>
-
-            <div class="sim-section" id="resultsSection" style="display:none;">
-                <div class="sim-section-title">Pièces par arme</div>
-                <div class="results-table" id="piecesTable"></div>
-
-                <div class="sim-section-title">Total pièces nécessaires</div>
-                <div class="results-table" id="totalPieces"></div>
-
-                {{-- Stock comparison (logged-in only) --}}
-                <div id="simStockCompare" style="display:none;">
-                    <div class="sim-section-title">Comparaison avec le stock</div>
-                    <div class="results-table" id="simStockTable"></div>
-                </div>
-
-                <div class="sim-section-title">Craft de matériaux (table du sud)</div>
-                <div class="results-table" id="materialCraft"></div>
-
-                <div class="sim-section-title">Matières premières totales</div>
-                <div class="results-table" id="rawMaterials"></div>
-
-                <div class="sim-section-title">Coût estimé</div>
-                <div class="results-table" id="costTable"></div>
-
-                <div class="sim-section-title">Temps de craft total</div>
-                <div class="craft-time-display" id="craftTime"></div>
             </div>
         </div>
 
