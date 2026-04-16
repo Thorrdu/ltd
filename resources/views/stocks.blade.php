@@ -55,8 +55,16 @@
                     <p class="action-hint">
                         L'article sort du stock central du MC et est marque comme « en possession » du membre.
                         Celui-ci pourra le reconcilier (vendu / retour / perte / don) depuis son espace.
+                        Cochez « hors stock » si la marchandise vient de l'exterieur sans passage par le coffre (trace seule, sans decrement).
                     </p>
                     <div class="action-form">
+                        <div class="form-row">
+                            <div class="form-group full">
+                                <label class="cb-inline" style="margin-bottom:8px;">
+                                    <input type="checkbox" id="aFromExternal"> Hors stock central (provenance exterieure, pas de sortie de coffre)
+                                </label>
+                            </div>
+                        </div>
                         <div class="form-row">
                             <div class="form-group full">
                                 <label>Article</label>
@@ -66,7 +74,7 @@
                         <div class="form-row">
                             <div class="form-group sm">
                                 <label>Quantite</label>
-                                <input type="number" id="aQty" class="fm-input" value="1" min="1" max="9999">
+                                <input type="number" id="aQty" class="fm-input" value="1" min="1" max="999999999">
                             </div>
                             <div class="form-group">
                                 <label>Beneficiaire</label>

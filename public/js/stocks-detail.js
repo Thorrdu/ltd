@@ -146,8 +146,9 @@
         }
         el.innerHTML = rows.map(function (a) {
             var statusClass = a.status || 'open';
+            var extB = a.from_external ? ' <span class="a-status pending">Hors stock</span>' : '';
             return '<div class="att-row">' +
-                '<div class="a-item">' + esc(a.attributed_to_name || '?') + '</div>' +
+                '<div class="a-item">' + esc(a.attributed_to_name || '?') + extB + '</div>' +
                 '<div class="a-qty">x' + a.quantity_abs + '</div>' +
                 '<div class="a-meta">par ' + esc(a.by_name) + '<br>' + esc(a.date_full) + '</div>' +
                 '<div class="a-meta"><span class="a-status ' + statusClass + '">' + (statusClass === 'pending' ? 'Attente' : 'En cours') + '</span>' +

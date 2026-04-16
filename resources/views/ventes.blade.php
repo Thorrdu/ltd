@@ -83,7 +83,7 @@
                         <div class="form-row">
                             <div class="form-group sm">
                                 <label>Quantite</label>
-                                <input type="number" id="vQty" class="fm-input" value="1" min="1" max="9999">
+                                <input type="number" id="vQty" class="fm-input" value="1" min="1" max="999999999">
                             </div>
                             <div class="form-group sm">
                                 <label>Total ($)</label>

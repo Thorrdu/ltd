@@ -106,8 +106,11 @@ class StockController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Aggregate open attribution quantities per stock_item.
+        // Quantites « sorties du coffre » (hors attributions marquees « hors stock »).
         $attributed = StockMovement::openAttribution()
+            ->where(function ($q) {
+                $q->where('from_external', false)->orWhereNull('from_external');
+            })
             ->select('stock_item_id', DB::raw('SUM(ABS(quantity_change)) as qty'))
             ->groupBy('stock_item_id')
             ->pluck('qty', 'stock_item_id');
@@ -171,12 +174,17 @@ class StockController extends Controller
             return response()->json(['error' => 'Article introuvable'], 404);
         }
 
-        $openAttr = StockMovement::openAttribution()
+        $openAttrModels = StockMovement::openAttribution()
             ->where('stock_item_id', $item->id)
             ->with(['attributedTo:id,name,role', 'user:id,name'])
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(fn (StockMovement $m) => $this->mapMovement($m, withAttribution: true));
+            ->get();
+
+        $openAttr = $openAttrModels->map(fn (StockMovement $m) => $this->mapMovement($m, withAttribution: true));
+
+        $outAttributedVault = (int) $openAttrModels
+            ->filter(fn (StockMovement $m) => ! $m->from_external)
+            ->sum(fn (StockMovement $m) => abs((int) $m->quantity_change));
 
         $movements = StockMovement::where('stock_item_id', $item->id)
             ->with(['user:id,name', 'attributedTo:id,name,role'])
@@ -196,7 +204,7 @@ class StockController extends Controller
                 'slug'               => $item->slug,
                 'name'               => $item->name,
                 'quantity'           => (int) $item->quantity,
-                'out_attributed'     => (int) $openAttr->sum('quantity_abs'),
+                'out_attributed'     => $outAttributedVault,
                 'unit_weight_g'      => $item->unit_weight_g,
                 'default_sell_price' => $item->default_sell_price,
                 'default_purchase_price' => $item->default_purchase_price,
@@ -439,9 +447,10 @@ class StockController extends Controller
 
         $v = Validator::make($request->all(), [
             'stock_item_id'         => 'required|integer|exists:stock_items,id',
-            'quantity'              => 'required|integer|min:1|max:9999',
+            'quantity'              => 'required|integer|min:1|max:999999999',
             'attributed_to_user_id' => 'required|integer|exists:users,id',
             'notes'                 => 'nullable|string|max:500',
+            'from_external'         => 'sometimes|boolean',
         ]);
         if ($v->fails()) {
             return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
@@ -458,6 +467,7 @@ class StockController extends Controller
         }
 
         $qty = (int) $request->input('quantity');
+        $fromExternal = $request->boolean('from_external');
 
         $threshold = (int) Setting::get('attribution_approval_threshold', 0);
         $unitPrice = (int) ($item->default_sell_price ?? 0);
@@ -465,12 +475,20 @@ class StockController extends Controller
         $requiresApproval = $threshold > 0 && $valueTotal >= $threshold && ! $user->isTreasurer();
 
         $warning = null;
-        if ($item->quantity < $qty) {
+        if (! $fromExternal && $item->quantity < $qty) {
             $warning = 'Stock insuffisant (' . $item->quantity . ' disponibles). Le stock passera en negatif.';
         }
 
-        DB::transaction(function () use ($item, $qty, $user, $target, $request, $requiresApproval) {
-            $item->decrement('quantity', $qty);
+        $notes = trim((string) $request->input('notes', ''));
+        if ($fromExternal) {
+            $suffix = '[Hors stock central — trace uniquement]';
+            $notes = $notes === '' ? $suffix : $notes . ' ' . $suffix;
+        }
+
+        DB::transaction(function () use ($item, $qty, $user, $target, $notes, $requiresApproval, $fromExternal) {
+            if (! $fromExternal) {
+                $item->decrement('quantity', $qty);
+            }
             StockMovement::create([
                 'stock_item_id'         => $item->id,
                 'quantity_change'       => -$qty,
@@ -478,8 +496,9 @@ class StockController extends Controller
                 'unit_cost'             => $item->default_purchase_price,
                 'user_id'               => $user->id,
                 'attributed_to_user_id' => $target->id,
-                'notes'                 => $request->input('notes'),
+                'notes'                 => $notes !== '' ? $notes : null,
                 'requires_approval'     => $requiresApproval,
+                'from_external'         => $fromExternal,
                 'created_at'            => now(),
             ]);
         });
@@ -487,6 +506,7 @@ class StockController extends Controller
         return response()->json([
             'ok'      => true,
             'message' => $qty . '× ' . $item->name . ' attribue(s) a ' . $target->name
+                . ($fromExternal ? ' (hors stock central)' : '')
                 . ($requiresApproval ? ' (en attente de validation tresorier)' : ''),
             'warning' => $warning,
             'requires_approval' => $requiresApproval,
@@ -525,70 +545,92 @@ class StockController extends Controller
         }
 
         $v = Validator::make($request->all(), [
-            'action' => 'required|in:return,loss,gift',
-            'notes'  => 'nullable|string|max:500',
+            'action'   => 'required|in:return,loss,gift',
+            'notes'    => 'nullable|string|max:500',
+            'quantity' => 'nullable|integer|min:1|max:999999999',
         ]);
         if ($v->fails()) {
             return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
         }
 
-        $action = $request->input('action');
-        $notes  = $request->input('notes');
-        $qty    = abs((int) $movement->quantity_change);
-        $item   = $movement->stockItem;
+        $action  = (string) $request->input('action');
+        $notes   = $request->input('notes');
+        $origAbs = abs((int) $movement->quantity_change);
+        $part    = (int) ($request->input('quantity') ?? $origAbs);
+        if ($part < 1 || $part > $origAbs) {
+            return response()->json(['error' => 'Quantite entre 1 et ' . $origAbs . ' (reste sur cette attribution)'], 422);
+        }
 
-        $reason = 'adjustment';
-        $change = 0;
-        $label  = '';
+        $item = $movement->stockItem;
+        if (! $item) {
+            return response()->json(['error' => 'Article introuvable'], 404);
+        }
+
+        $reason     = 'adjustment';
+        $stockDelta = 0;
+        $label      = '';
 
         switch ($action) {
             case 'return':
-                $change = +$qty;
-                $label  = 'Retour stock';
+                $stockDelta = $part;
+                $label = $part < $origAbs ? 'Retour stock (partiel)' : 'Retour stock';
                 break;
             case 'loss':
-                $change = 0;
-                $label  = 'Perte / saisie';
-                if (empty($notes)) {
+                $stockDelta = 0;
+                $label = $part < $origAbs ? 'Perte / saisie (partiel)' : 'Perte / saisie';
+                if (trim((string) $notes) === '') {
                     return response()->json(['error' => 'Notes obligatoires pour une perte'], 422);
                 }
                 break;
             case 'gift':
-                $change = 0;
-                $label  = 'Don';
-                if (empty($notes)) {
+                $stockDelta = 0;
+                $label = $part < $origAbs ? 'Don (partiel)' : 'Don';
+                if (trim((string) $notes) === '') {
                     return response()->json(['error' => 'Preciser le beneficiaire dans les notes'], 422);
                 }
                 break;
         }
 
-        $reconciliation = DB::transaction(function () use ($movement, $item, $change, $user, $notes, $label, $reason, $qty) {
+        $remainder  = $origAbs - $part;
+        $noteSuffix = 'attrib. #' . $movement->id . ' · ' . $part . '/' . $origAbs . 'x';
+
+        $reconciliation = DB::transaction(function () use ($movement, $item, $stockDelta, $user, $notes, $label, $reason, $remainder, $noteSuffix) {
             $mv = StockMovement::create([
                 'stock_item_id'         => $item->id,
-                'quantity_change'       => $change,
+                'quantity_change'       => $stockDelta,
                 'reason'                => $reason,
                 'user_id'               => $user->id,
                 'attributed_to_user_id' => $movement->attributed_to_user_id,
-                'notes'                 => trim($label . ' (attrib. #' . $movement->id . ' · ' . $qty . 'x): ' . ($notes ?? '')),
+                'notes'                 => trim($label . ' (' . $noteSuffix . '): ' . ($notes ?? '')),
                 'created_at'            => now(),
             ]);
 
-            if ($change !== 0) {
-                $item->increment('quantity', $change);
+            if ($stockDelta !== 0) {
+                $item->increment('quantity', $stockDelta);
             }
 
-            $movement->update([
-                'reconciled_at'              => now(),
-                'reconciled_by_movement_id'  => $mv->id,
-            ]);
+            if ($remainder > 0) {
+                $movement->update([
+                    'quantity_change' => -$remainder,
+                ]);
+            } else {
+                $movement->update([
+                    'reconciled_at'             => now(),
+                    'reconciled_by_movement_id' => $mv->id,
+                ]);
+            }
 
             return $mv;
         });
 
+        $msgQty = $part . ($remainder > 0 ? '/' . $origAbs : '') . '× ' . $item->name;
+
         return response()->json([
-            'ok'       => true,
-            'message'  => $label . ' enregistre pour ' . $qty . '× ' . $item->name,
-            'movement' => $this->mapMovement($reconciliation->fresh(['user', 'attributedTo'])),
+            'ok'        => true,
+            'message'   => $label . ' enregistre pour ' . $msgQty
+                . ($remainder > 0 ? ' — il reste ' . $remainder . ' en attribution' : ''),
+            'movement'  => $this->mapMovement($reconciliation->fresh(['user', 'attributedTo'])),
+            'remainder' => $remainder,
         ]);
     }
 
@@ -666,17 +708,18 @@ class StockController extends Controller
         $qty = abs((int) $movement->quantity_change);
 
         DB::transaction(function () use ($movement, $user, $request, $qty) {
-            // Reverse the stock decrement by creating a compensating adjustment.
-            StockMovement::create([
-                'stock_item_id'         => $movement->stock_item_id,
-                'quantity_change'       => +$qty,
-                'reason'                => 'adjustment',
-                'user_id'               => $user->id,
-                'attributed_to_user_id' => $movement->attributed_to_user_id,
-                'notes'                 => 'Rejet attribution #' . $movement->id . ' par tresorier : ' . $request->input('reason'),
-                'created_at'            => now(),
-            ]);
-            $movement->stockItem->increment('quantity', $qty);
+            if (! $movement->from_external) {
+                StockMovement::create([
+                    'stock_item_id'         => $movement->stock_item_id,
+                    'quantity_change'       => +$qty,
+                    'reason'                => 'adjustment',
+                    'user_id'               => $user->id,
+                    'attributed_to_user_id' => $movement->attributed_to_user_id,
+                    'notes'                 => 'Rejet attribution #' . $movement->id . ' par tresorier : ' . $request->input('reason'),
+                    'created_at'            => now(),
+                ]);
+                $movement->stockItem->increment('quantity', $qty);
+            }
 
             $movement->update([
                 'rejected_at'       => now(),
@@ -685,7 +728,12 @@ class StockController extends Controller
             ]);
         });
 
-        return response()->json(['ok' => true, 'message' => 'Attribution rejetee, stock rendu au coffre']);
+        return response()->json([
+            'ok'      => true,
+            'message' => $movement->from_external
+                ? 'Attribution rejetee (hors stock : aucun mouvement de coffre)'
+                : 'Attribution rejetee, stock rendu au coffre',
+        ]);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -877,6 +925,7 @@ class StockController extends Controller
                 : ($m->reconciled_at
                     ? 'reconciled'
                     : ($m->requires_approval ? 'pending' : 'open'));
+            $data['from_external'] = (bool) $m->from_external;
         }
 
         return $data;

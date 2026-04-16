@@ -30,6 +30,7 @@
         histPeriod: 'today',
         attributionId: null,
         attributionLocked: false,
+        attributionMaxQty: null,
         adHoc: false
     };
 
@@ -95,9 +96,11 @@
         if (attributionId) {
             state.attributionId = attributionId;
             state.attributionLocked = true;
+            state.attributionMaxQty = qty || 1;
             showAttributionBanner(item, qty);
             if (itemTs) itemTs.disable();
-            $('vQty').readOnly = true;
+            $('vQty').readOnly = false;
+            $('vQty').setAttribute('max', String(state.attributionMaxQty));
         }
     }
 
@@ -110,8 +113,8 @@
         banner.id = 'vAttrBanner';
         banner.className = 'alert-banner';
         banner.style.cssText = 'margin-bottom:10px; padding:8px 12px; background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.3); border-radius:4px; color:#93c5fd; font-size:12px;';
-        banner.innerHTML = '<strong>Reconciliation d\'attribution</strong> : cette vente cloturera votre attribution ' +
-            'de ' + qty + '&times; ' + esc(item.name) + '. ' +
+        banner.innerHTML = '<strong>Reconciliation d\'attribution</strong> : indiquez la quantite vendue (au plus ' +
+            esc(String(qty)) + '). Le solde restant restera ouvert tant que tout n\'est pas vendu. ' +
             '<a href="/ventes" style="color:#93c5fd; text-decoration:underline;">Annuler</a>';
         container.insertBefore(banner, container.firstChild.nextSibling);
     }
@@ -227,6 +230,10 @@
         }
 
         if (!qty || qty < 1) { auth.showToast('Quantite invalide', 'error'); return; }
+        if (state.attributionLocked && state.attributionMaxQty && qty > state.attributionMaxQty) {
+            auth.showToast('Quantite max. pour cette attribution : ' + state.attributionMaxQty, 'error');
+            return;
+        }
         if (!total || total < 0) { auth.showToast('Montant total invalide', 'error'); return; }
         if (!buyer) { auth.showToast('Indiquez l\'acheteur', 'error'); return; }
 
@@ -263,19 +270,44 @@
             if (data.warning) {
                 setTimeout(function () { auth.showToast(data.warning, 'error'); }, 900);
             }
-            // If the sale reconciled an attribution, clean up the URL and the banner.
             if (state.attributionId) {
-                state.attributionId = null;
-                state.attributionLocked = false;
-                if (itemTs) itemTs.enable();
-                $('vQty').readOnly = false;
-                var banner = document.getElementById('vAttrBanner');
-                if (banner) banner.remove();
-                if (window.history && window.history.replaceState) {
-                    window.history.replaceState({}, '', '/ventes');
+                var rem = data.attribution_remaining;
+                if (typeof rem === 'number' && rem > 0) {
+                    state.attributionMaxQty = rem;
+                    var sid = parseInt($('vItem').value, 10);
+                    var newQs = '?stock_item_id=' + sid + '&quantity=' + rem + '&attribution_id=' + state.attributionId;
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState({}, '', '/ventes' + newQs);
+                    }
+                    var it = state.catalogById[sid];
+                    if (it) showAttributionBanner(it, rem);
+                    auth.showToast('Il reste ' + rem + ' unite(s) sur cette attribution', 'info');
+                    $('vBuyer').value = '';
+                    $('vNotes').value = '';
+                    $('vQty').value = String(rem);
+                    $('vQty').setAttribute('max', String(rem));
+                    if (it && it.default_sell_price) {
+                        $('vTotal').value = it.default_sell_price * rem;
+                    } else {
+                        $('vTotal').value = '';
+                    }
+                    recomputeUnit();
+                } else {
+                    state.attributionId = null;
+                    state.attributionLocked = false;
+                    state.attributionMaxQty = null;
+                    if (itemTs) itemTs.enable();
+                    $('vQty').removeAttribute('max');
+                    var banner = document.getElementById('vAttrBanner');
+                    if (banner) banner.remove();
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState({}, '', '/ventes');
+                    }
+                    resetForm();
                 }
+            } else {
+                resetForm();
             }
-            resetForm();
             tryLoad();
         });
     }

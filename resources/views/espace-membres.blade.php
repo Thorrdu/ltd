@@ -250,7 +250,8 @@ window.MC_CATEGORIES = @json(\App\Models\StockItem::CATEGORIES);
                 btn.addEventListener('click', function () {
                     var id = parseInt(btn.getAttribute('data-id'), 10);
                     var action = btn.getAttribute('data-em-action');
-                    handleReconcile(id, action);
+                    var maxQ = parseInt(btn.getAttribute('data-max'), 10) || 0;
+                    handleReconcile(id, action, maxQ);
                 });
             });
         });
@@ -270,14 +271,17 @@ window.MC_CATEGORIES = @json(\App\Models\StockItem::CATEGORIES);
             var qs = '?stock_item_id=' + a.stock_item_id + '&quantity=' + a.quantity_abs + '&attribution_id=' + a.id;
             actions =
                 '<a class="btn-xs sell" href="/ventes' + qs + '">Vendu</a>' +
-                '<button class="btn-xs return" data-em-action="return" data-id="' + a.id + '">Retour</button>' +
-                '<button class="btn-xs loss" data-em-action="loss" data-id="' + a.id + '">Perte</button>' +
-                '<button class="btn-xs gift" data-em-action="gift" data-id="' + a.id + '">Don</button>';
+                '<button class="btn-xs return" data-em-action="return" data-id="' + a.id + '" data-max="' + a.quantity_abs + '">Retour</button>' +
+                '<button class="btn-xs loss" data-em-action="loss" data-id="' + a.id + '" data-max="' + a.quantity_abs + '">Perte</button>' +
+                '<button class="btn-xs gift" data-em-action="gift" data-id="' + a.id + '" data-max="' + a.quantity_abs + '">Don</button>';
         }
+
+        var extBadge = a.from_external ? ' <span class="a-status pending">Hors stock</span>' : '';
 
         return '<div class="att-row">' +
             '<div class="a-item">' + esc(a.item_name) +
                 ' <span class="ts-role-badge role-' + esc(a.category || 'misc') + '">' + esc(CATEGORIES[a.category] || a.category) + '</span>' +
+                extBadge +
             '</div>' +
             '<div class="a-qty">x' + a.quantity_abs + '</div>' +
             '<div class="a-meta">Attribue par <strong>' + esc(a.by_name) + '</strong><br>' + esc(a.date_full) + '</div>' +
@@ -289,7 +293,15 @@ window.MC_CATEGORIES = @json(\App\Models\StockItem::CATEGORIES);
             '</div>';
     }
 
-    function handleReconcile(id, action) {
+    function handleReconcile(id, action, maxQty) {
+        var qtyStr = prompt('Quantite concernee (max ' + maxQty + ') :', String(maxQty));
+        if (qtyStr === null) return;
+        var qty = parseInt(qtyStr, 10);
+        if (!qty || qty < 1 || qty > maxQty) {
+            auth.showToast('Quantite invalide (1 a ' + maxQty + ')', 'error');
+            return;
+        }
+
         var notes = '';
         if (action === 'loss') {
             notes = prompt('Motif de la perte (obligatoire) :', '');
@@ -303,7 +315,8 @@ window.MC_CATEGORIES = @json(\App\Models\StockItem::CATEGORIES);
 
         auth.apiPost('/stocks/api/reconcile/' + id, {
             action: action,
-            notes: notes || null
+            notes: notes || null,
+            quantity: qty
         }, function (err, data) {
             if (err || !data || data.error) {
                 auth.showToast((data && data.error) || 'Erreur', 'error');

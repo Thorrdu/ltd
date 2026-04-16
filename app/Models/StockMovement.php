@@ -25,7 +25,7 @@ class StockMovement extends Model
         'weapon_contract_id', 'user_id', 'attributed_to_user_id',
         'notes', 'created_at',
         'reconciled_at', 'reconciled_by_movement_id',
-        'requires_approval', 'approved_by_user_id', 'approved_at',
+        'requires_approval', 'from_external', 'approved_by_user_id', 'approved_at',
         'rejected_at', 'rejection_reason',
     ];
 
@@ -35,6 +35,7 @@ class StockMovement extends Model
         'approved_at'       => 'datetime',
         'rejected_at'       => 'datetime',
         'requires_approval' => 'boolean',
+        'from_external'     => 'boolean',
     ];
 
     public function stockItem(): BelongsTo

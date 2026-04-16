@@ -138,7 +138,7 @@ class SaleController extends Controller
 
         $v = Validator::make($request->all(), [
             'stock_item_id'  => 'nullable|integer|exists:stock_items,id',
-            'quantity'       => 'required|integer|min:1|max:9999',
+            'quantity'       => 'required|integer|min:1|max:999999999',
             'total_price'    => 'required|integer|min:0',
             'buyer_name'     => 'required|string|max:100',
             'notes'          => 'nullable|string|max:500',
@@ -206,8 +206,9 @@ class SaleController extends Controller
             if ($attribution->stock_item_id !== $item->id) {
                 return response()->json(['error' => 'Article incoherent avec l\'attribution'], 422);
             }
-            if ((int) $qty !== abs((int) $attribution->quantity_change)) {
-                return response()->json(['error' => 'Quantite differente de l\'attribution'], 422);
+            $attribRemaining = abs((int) $attribution->quantity_change);
+            if ($qty < 1 || $qty > $attribRemaining) {
+                return response()->json(['error' => 'Quantite entre 1 et ' . $attribRemaining . ' (reste attribution)'], 422);
             }
         }
 
@@ -235,7 +236,9 @@ class SaleController extends Controller
                 'reason'                => 'sale',
                 'user_id'               => $user->id,
                 'attributed_to_user_id' => $user->id,
-                'notes'                 => 'Vente sur attribution #' . $attribution->id . ': ' . $qty . '× ' . $item->name . ' → ' . $request->buyer_name,
+                'notes'                 => 'Vente sur attribution #' . $attribution->id
+                    . ($qty < $attribRemaining ? ' (partiel)' : '')
+                    . ': ' . $qty . '× ' . $item->name . ' → ' . $request->buyer_name,
                 'created_at'            => now(),
             ]);
         }
@@ -250,20 +253,34 @@ class SaleController extends Controller
             'notes'           => $request->input('notes'),
         ]);
 
-        // Mark the attribution as reconciled.
+        $attributionRemaining = null;
         if ($attribution) {
-            $attribution->update([
-                'reconciled_at'             => now(),
-                'reconciled_by_movement_id' => $saleMovement?->id,
-            ]);
+            $newRemainder = $attribRemaining - $qty;
+            if ($newRemainder > 0) {
+                $attribution->update([
+                    'quantity_change' => -$newRemainder,
+                ]);
+                $attributionRemaining = $newRemainder;
+            } else {
+                $attribution->update([
+                    'reconciled_at'             => now(),
+                    'reconciled_by_movement_id' => $saleMovement?->id,
+                ]);
+                $attributionRemaining = 0;
+            }
         }
 
         return response()->json([
             'ok'      => true,
             'message' => $qty . '× ' . $item->name . ' vendu(s) à ' . $request->input('buyer_name')
-                . ($attribution ? ' (attribution reconciliée)' : ''),
+                . ($attribution
+                    ? ($attributionRemaining > 0
+                        ? ' (il reste ' . $attributionRemaining . ' sur l\'attribution)'
+                        : ' (attribution reconciliée)')
+                    : ''),
             'warning' => $warning,
             'sale'    => $this->mapSale($sale->fresh(['soldBy', 'stockItem'])),
+            'attribution_remaining' => $attributionRemaining,
         ]);
     }
 
