@@ -7,12 +7,12 @@
 | Jacques Noir      | Officier | `1337` |
 | Franz Lanroel     | Officier | `4291` |
 | Marcus Freeman    | Officier | `7813` |
-| Arthur Murphy     | Membre   | `3547` |
-| Johnny B          | Membre   | `6102` |
-| Erwan Fox         | Membre   | `8439` |
-| Jack Cadillac     | Membre   | `5276` |
-| Aroune Diakite    | Membre   | `9034` |
-| Mamadou Doumbe    | Membre   | `2658` |
-| Olaf Williams     | Membre   | `7391` |
+| Arthur Murphy     | Officier | `3547` |
+| Johnny B          | Officier | `6102` |
+| Erwan Fox         | Officier | `8439` |
+| Jack Cadillac     | Officier | `5276` |
+| Aroune Diakite    | Officier | `9034` |
+| Mamadou Doumbe    | Officier | `2658` |
+| Olaf Williams     | Officier | `7391` |
 
 Chaque membre peut changer son PIN depuis l'onglet **Gestion > Changer mon PIN** (les officiers ont accès à l'onglet Gestion par défaut, les membres uniquement pour le changement de PIN via leur profil).

@@ -1393,6 +1393,192 @@ select.fm-input option {
 }
 
 /* ============================================
+   AMMO CRAFT SIMULATOR
+   ============================================ */
+.ammo-sim-intro {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 11px;
+    color: #888;
+    line-height: 1.45;
+    margin: 0 0 8px;
+    text-align: center;
+}
+
+.ammo-sim-intro strong {
+    color: #bbb;
+    font-weight: 600;
+}
+
+.ammo-sim-params {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.ammo-sim-label {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 12px;
+    color: #aaa;
+}
+
+.ammo-sim-input {
+    width: 100px;
+    padding: 5px 8px;
+    border: 1px solid #333;
+    background: #0a0a0a;
+    color: #fff;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.ammo-sim-input:focus {
+    outline: none;
+    border-color: #666;
+}
+
+.ammo-sim-input-sm {
+    width: 64px;
+}
+
+.ammo-sim-input-muns {
+    width: 100px;
+}
+
+.ammo-sim-select {
+    min-width: 140px;
+    max-width: 200px;
+    padding: 5px 8px;
+    border: 1px solid #333;
+    background: #0a0a0a;
+    color: #fff;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.ammo-sim-select:focus {
+    outline: none;
+    border-color: #666;
+}
+
+.ammo-target-block {
+    margin-top: 14px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ammo-sim-intro-tight {
+    margin-bottom: 6px;
+}
+
+.ammo-target-params {
+    margin-bottom: 6px;
+}
+
+.ammo-target-results {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.ammo-craft-wrap {
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.ammo-craft-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 11px;
+}
+
+.ammo-craft-table th,
+.ammo-craft-table td {
+    padding: 6px 8px;
+    text-align: right;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    color: #ccc;
+    white-space: nowrap;
+}
+
+.ammo-craft-table th:first-child,
+.ammo-craft-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: #e8e8e8;
+}
+
+.ammo-craft-table thead th {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-weight: 700;
+    font-size: 9px;
+    letter-spacing: 0.35px;
+    text-transform: uppercase;
+}
+
+.ammo-craft-table tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ammo-craft-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.ammo-craft-table td.ammo-fer-delta {
+    color: #6ab06a;
+    font-weight: 600;
+}
+
+.ammo-craft-table .ammo-sell-ref {
+    font-size: 9px;
+    font-weight: 600;
+    color: #8ab88a;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.ammo-craft-table .ammo-sell-est {
+    font-size: 9px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.ammo-craft-table .ammo-ben-pos {
+    color: #6ab06a;
+    font-weight: 600;
+}
+
+.ammo-craft-table .ammo-ben-neg {
+    color: #c9a456;
+    font-weight: 600;
+}
+
+.ammo-craft-table .ammo-ben-zero {
+    color: #888;
+}
+
+.ammo-craft-table tfoot td,
+.ammo-craft-table tr.ammo-craft-foot td {
+    font-size: 10px;
+    color: #666;
+    font-weight: 400;
+    text-align: left;
+    padding: 8px 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.35);
+    white-space: normal;
+}
+
+/* ============================================
    DECORATIVE DIVIDERS
    ============================================ */
 .lost-divider {

@@ -32,6 +32,52 @@
                 <div class="weapons-grid" id="weaponsGrid"></div>
             </div>
 
+            <div class="sim-section" id="ammoCraftSection">
+                <div class="sim-section-title">Craft munitions</div>
+                <p class="ammo-sim-intro">Recette : <strong>1 craft = 10 munitions</strong>. Poudre <strong>100 €</strong>/u, fer au prix saisi, <strong>1 fer → 2 fragments</strong>. <strong>Toutes les colonnes du tableau sont par munition</strong> (coûts = revient matière pour une munition au prix fer actuel). Vente <strong>par munition</strong> : <strong>.45 ACP 100 €</strong>, <strong>7.62×39 290 €</strong> (réf.) ; autres <strong>estimés</strong> pour une marge positive avec fer à <strong>30 €</strong> et poudre à <strong>100 €</strong>. Marges négatives en <strong>ambre</strong> si vous changez le prix du fer.</p>
+                <div class="ammo-sim-params">
+                    <label class="ammo-sim-label" for="ammoFerPrice">Prix du fer (€ / unité)</label>
+                    <input type="number" class="ammo-sim-input" id="ammoFerPrice" min="0" step="0.01" value="30" inputmode="decimal">
+                </div>
+                <div class="ammo-craft-wrap">
+                    <table class="ammo-craft-table" aria-label="Coûts et marges des munitions">
+                        <thead>
+                            <tr>
+                                <th>Munition</th>
+                                <th>Tps craft</th>
+                                <th>Pdr / craft</th>
+                                <th>Frag / craft</th>
+                                <th>Coût / mun (F ach.)</th>
+                                <th>Coût / mun (F réc.)</th>
+                                <th>Vente / mun</th>
+                                <th>Marge / mun (F ach.)</th>
+                                <th>Marge / mun (F réc.)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ammoCraftBody"></tbody>
+                        <tfoot>
+                            <tr class="ammo-craft-foot">
+                                <td colspan="9">Toutes les valeurs monétaires : € par munition. Pdr/Frag = quantités pour <strong>un</strong> craft. (réf.) prix RP ; (estim.) calibrés pour marge positive à fer 30 € et poudre 100 €.</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="ammo-target-block">
+                    <div class="sim-section-title">Objectif en munitions</div>
+                    <p class="ammo-sim-intro ammo-sim-intro-tight">Saisissez le <strong>nombre de munitions</strong> à fabriquer (ex. 1000 munitions, pas 1000 crafts). Les crafts se font par lots de <strong>10 munitions</strong> : le nombre de crafts est arrondi au supérieur. Le <strong>prix de vente / munition</strong> est pris du tableau par défaut ; vous pouvez le <strong>remplacer</strong> pour tester une marge.</p>
+                    <div class="ammo-sim-params ammo-target-params">
+                        <label class="ammo-sim-label" for="ammoTargetSlug">Calibre</label>
+                        <select id="ammoTargetSlug" class="ammo-sim-select" aria-label="Calibre pour la simulation"></select>
+                        <label class="ammo-sim-label" for="ammoTargetMuns">Munitions à fabriquer</label>
+                        <input type="number" class="ammo-sim-input ammo-sim-input-muns" id="ammoTargetMuns" min="1" max="9999999" step="1" value="1000" inputmode="numeric">
+                        <label class="ammo-sim-label" for="ammoTargetSellPriceMun">Prix vente / mun (optionnel)</label>
+                        <input type="number" class="ammo-sim-input" id="ammoTargetSellPriceMun" min="0" step="0.01" placeholder="Tableau" inputmode="decimal" title="Vide = prix du tableau pour ce calibre">
+                    </div>
+                    <div class="results-table ammo-target-results" id="ammoTargetResults"></div>
+                </div>
+            </div>
+
             <div class="sim-section" id="resultsSection" style="display:none;">
                 <div class="sim-section-title">Pièces par arme</div>
                 <div class="results-table" id="piecesTable"></div>
