@@ -36,6 +36,10 @@
                 <span class="mc-hub-btn-label">Espace membres</span>
                 <span class="mc-hub-btn-desc">Stocks, contrats, historique</span>
             </a>
+            <a href="/stocks" class="mc-hub-btn mc-hub-btn-officer" style="display:none;">
+                <span class="mc-hub-btn-label">Stocks generiques</span>
+                <span class="mc-hub-btn-desc">Vue globale, attributions, import (Officier+)</span>
+            </a>
             <a href="/membres" class="mc-hub-btn mc-hub-btn-vp" style="display:none;">
                 <span class="mc-hub-btn-label">Gestion membres</span>
                 <span class="mc-hub-btn-desc">Roles, acces, PIN (VP+)</span>

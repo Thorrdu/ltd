@@ -25,7 +25,8 @@
 
             <div class="sub-tab-bar">
                 <button class="sub-tab active" data-subtab="overview">Stocks</button>
-                <button class="sub-tab" data-subtab="actions">Ventes</button>
+                <button class="sub-tab" data-subtab="attributions">Mes attributions</button>
+                <button class="sub-tab" data-subtab="actions">Mouvements</button>
                 <button class="sub-tab" data-subtab="contrats">Contrats</button>
                 <button class="sub-tab" data-subtab="historique">Historique</button>
                 <button class="sub-tab" data-subtab="profil">Mon profil</button>
@@ -42,25 +43,38 @@
                 <div class="stock-mini-grid" id="stockRawGrid"></div>
             </div>
 
-            {{-- SUB: Ventes & Mouvements --}}
-            <div class="sub-content" id="sub-actions">
+            {{-- SUB: Mes attributions --}}
+            <div class="sub-content" id="sub-attributions">
                 <div class="action-card">
-                    <div class="action-card-title">Declarer une vente</div>
-                    <div class="action-form">
-                        <div class="form-row">
-                            <div class="form-group"><label>Arme</label><select id="saleWeapon" class="fm-input"></select></div>
-                            <div class="form-group sm"><label>Qte</label><input type="number" id="saleQty" class="fm-input" value="1" min="1" max="99"></div>
-                            <div class="form-group sm"><label>Prix unit. EUR</label><input type="number" id="salePrice" class="fm-input" value="0" min="0"></div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group"><label>Acheteur</label><input type="text" id="saleBuyer" class="fm-input" placeholder="Nom du client"></div>
-                            <div class="form-group"><label>Notes <span class="optional">(opt.)</span></label><input type="text" id="saleNotes" class="fm-input" placeholder="..."></div>
-                        </div>
-                        <div class="sale-preview" id="salePreview"></div>
-                        <button class="action-btn sale-btn" id="btnSale">Enregistrer la vente</button>
+                    <div class="action-card-title">Mes attributions en cours</div>
+                    <p class="action-hint">
+                        Articles confies par un officier et qui n'ont pas encore ete reconcilies.
+                        Quand l'article est vendu, utilisez le bouton "Vendu" (redirige vers la page Ventes).
+                        En cas de retour au coffre, perte, saisie ou don, utilisez les autres boutons.
+                    </p>
+                    <div class="members-toolbar">
+                        <select id="emAttStatus" class="fm-input">
+                            <option value="open" selected>En cours</option>
+                            <option value="reconciled">Reconciliees</option>
+                            <option value="rejected">Rejetees</option>
+                            <option value="all">Toutes</option>
+                        </select>
+                    </div>
+                    <div class="members-table" id="emAttList">
+                        <div class="empty-msg">Chargement...</div>
                     </div>
                 </div>
+                <div class="action-card" style="margin-top:10px;">
+                    <div class="action-card-title">Besoin d'enregistrer une vente ?</div>
+                    <p class="action-hint">
+                        Pour toute nouvelle vente (sans attribution prealable), rendez-vous sur la page dediee.
+                    </p>
+                    <a href="/ventes" class="action-btn sale-btn" style="text-decoration:none; display:inline-block;">Aller a la page Ventes</a>
+                </div>
+            </div>
 
+            {{-- SUB: Mouvements de stock --}}
+            <div class="sub-content" id="sub-actions">
                 <div class="action-card">
                     <div class="action-card-title">Mouvement de stock</div>
                     <p class="action-hint">Coffre, recolte, achat, ajustement...</p>
@@ -191,6 +205,7 @@
 <script>
 window.WEAPONS = {!! $weaponsJson !!};
 window.MEMBERS = {!! $membersJson !!};
+window.MC_CATEGORIES = @json(\App\Models\StockItem::CATEGORIES);
 </script>
 <script src="{{ asset('js/simulateur-armes.js') }}"></script>
 <script>
@@ -201,12 +216,111 @@ window.MEMBERS = {!! $membersJson !!};
         var loggedIn = window.McAuth && window.McAuth.isLoggedIn;
         if (dash) dash.style.display = loggedIn ? '' : 'none';
         if (msg) msg.style.display = loggedIn ? 'none' : '';
+        if (loggedIn) loadMyAttributions();
     }
     toggle();
     if (window.McAuth) {
         window.McAuth.onLogin(toggle);
         window.McAuth.onLogout(toggle);
     }
+
+    // ---- Mes attributions (Phase 3.3) ----
+    var auth = window.McAuth;
+    var CATEGORIES = window.MC_CATEGORIES || {};
+    function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function money(n) { return '$' + (parseInt(n, 10) || 0).toLocaleString('fr-FR'); }
+
+    function loadMyAttributions() {
+        if (!auth || !auth.isLoggedIn) return;
+        var status = document.getElementById('emAttStatus').value || 'open';
+        auth.apiGet('/stocks/api/attributions?scope=mine&status=' + encodeURIComponent(status), function (err, data) {
+            var el = document.getElementById('emAttList');
+            if (!el) return;
+            if (err || !data || data.error) {
+                el.innerHTML = '<div class="empty-msg">Erreur de chargement.</div>';
+                return;
+            }
+            var rows = data.attributions || [];
+            if (!rows.length) {
+                el.innerHTML = '<div class="empty-msg">Aucune attribution dans ce statut.</div>';
+                return;
+            }
+            el.innerHTML = rows.map(renderAttRow).join('');
+            el.querySelectorAll('[data-em-action]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = parseInt(btn.getAttribute('data-id'), 10);
+                    var action = btn.getAttribute('data-em-action');
+                    handleReconcile(id, action);
+                });
+            });
+        });
+    }
+
+    function renderAttRow(a) {
+        var statusClass = a.status || 'open';
+        var statusLabel = {
+            open: 'En cours',
+            pending: 'Attente tresorier',
+            reconciled: 'Reconciliee',
+            rejected: 'Rejetee'
+        }[statusClass] || statusClass;
+
+        var actions = '';
+        if (a.status === 'open' || a.status === 'pending') {
+            var qs = '?stock_item_id=' + a.stock_item_id + '&quantity=' + a.quantity_abs + '&attribution_id=' + a.id;
+            actions =
+                '<a class="btn-xs sell" href="/ventes' + qs + '">Vendu</a>' +
+                '<button class="btn-xs return" data-em-action="return" data-id="' + a.id + '">Retour</button>' +
+                '<button class="btn-xs loss" data-em-action="loss" data-id="' + a.id + '">Perte</button>' +
+                '<button class="btn-xs gift" data-em-action="gift" data-id="' + a.id + '">Don</button>';
+        }
+
+        return '<div class="att-row">' +
+            '<div class="a-item">' + esc(a.item_name) +
+                ' <span class="ts-role-badge role-' + esc(a.category || 'misc') + '">' + esc(CATEGORIES[a.category] || a.category) + '</span>' +
+            '</div>' +
+            '<div class="a-qty">x' + a.quantity_abs + '</div>' +
+            '<div class="a-meta">Attribue par <strong>' + esc(a.by_name) + '</strong><br>' + esc(a.date_full) + '</div>' +
+            '<div class="a-meta"><span class="a-status ' + statusClass + '">' + esc(statusLabel) + '</span>' +
+                (a.estimated_value ? '<br>' + money(a.estimated_value) : '') +
+                (a.notes ? '<br><em>' + esc(a.notes) + '</em>' : '') +
+            '</div>' +
+            '<div class="att-actions">' + actions + '</div>' +
+            '</div>';
+    }
+
+    function handleReconcile(id, action) {
+        var notes = '';
+        if (action === 'loss') {
+            notes = prompt('Motif de la perte (obligatoire) :', '');
+            if (!notes) return;
+        } else if (action === 'gift') {
+            notes = prompt('Beneficiaire du don (obligatoire) :', '');
+            if (!notes) return;
+        } else if (action === 'return') {
+            notes = prompt('Notes (optionnel) :', '') || '';
+        }
+
+        auth.apiPost('/stocks/api/reconcile/' + id, {
+            action: action,
+            notes: notes || null
+        }, function (err, data) {
+            if (err || !data || data.error) {
+                auth.showToast((data && data.error) || 'Erreur', 'error');
+                return;
+            }
+            auth.showToast(data.message || 'Reconciliee', 'success');
+            loadMyAttributions();
+        });
+    }
+
+    var statusEl = document.getElementById('emAttStatus');
+    if (statusEl) statusEl.addEventListener('change', loadMyAttributions);
+
+    // Reload when the sub-tab is activated.
+    document.querySelectorAll('.sub-tab[data-subtab="attributions"]').forEach(function (b) {
+        b.addEventListener('click', loadMyAttributions);
+    });
 })();
 </script>
 @endsection

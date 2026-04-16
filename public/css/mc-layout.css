@@ -877,3 +877,305 @@
         gap: 10px;
     }
 }
+
+/* ============================================
+   STOCKS PAGE (Phase 3)
+   ============================================ */
+.stocks-capacity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255, 215, 0, 0.06);
+    border: 1px solid rgba(255, 215, 0, 0.18);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    color: #e5e5e5;
+}
+.stocks-capacity .cap-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.stocks-capacity .cap-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4ade80 0%, #facc15 70%, #ef4444 100%);
+    transition: width 0.3s ease;
+}
+.stocks-capacity .cap-label {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-weight: 700;
+    color: #ffd700;
+    min-width: 120px;
+    text-align: right;
+}
+
+.stocks-totals {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.stocks-total-card {
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.stocks-total-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 215, 0, 0.3);
+}
+.stocks-total-card.active {
+    background: rgba(255, 215, 0, 0.08);
+    border-color: rgba(255, 215, 0, 0.5);
+}
+.stocks-total-card .cat-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+}
+.stocks-total-card .cat-qty {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 2px;
+}
+.stocks-total-card .cat-meta {
+    font-size: 10px;
+    color: #888;
+    margin-top: 2px;
+}
+.stocks-total-card .cat-meta .out {
+    color: #fb923c;
+    font-weight: 700;
+}
+
+.stocks-list {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.stocks-list .cat-header {
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #ffd700;
+}
+.stocks-row {
+    display: grid;
+    grid-template-columns: 2.2fr 0.9fr 0.9fr 1fr 0.9fr 0.6fr;
+    gap: 10px;
+    padding: 9px 12px;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+.stocks-row:nth-child(even) { background: rgba(255, 255, 255, 0.012); }
+.stocks-row:hover { background: rgba(255, 255, 255, 0.035); }
+.stocks-row.stocks-head {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    background: rgba(255, 255, 255, 0.02);
+    font-weight: 700;
+}
+.stocks-row .s-name { color: #fff; font-weight: 700; }
+.stocks-row .s-name a { color: #fff; text-decoration: none; }
+.stocks-row .s-name a:hover { color: #ffd700; }
+.stocks-row .s-name .s-slug { color: #666; font-size: 10px; margin-left: 6px; }
+.stocks-row .s-qty {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #4ade80;
+}
+.stocks-row .s-qty.zero { color: #ef4444; }
+.stocks-row .s-qty.low  { color: #fb923c; }
+.stocks-row .s-out {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-weight: 700;
+    color: #fb923c;
+}
+.stocks-row .s-out.none { color: #444; font-weight: 400; }
+.stocks-row .s-price,
+.stocks-row .s-weight {
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: #ccc;
+}
+.stocks-row .s-actions { text-align: right; }
+.stocks-row .s-actions a {
+    display: inline-block;
+    padding: 4px 8px;
+    background: rgba(255, 215, 0, 0.08);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 3px;
+    color: #ffd700;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-decoration: none;
+    letter-spacing: 1px;
+}
+.stocks-row .s-actions a:hover { background: rgba(255, 215, 0, 0.15); }
+
+@media (max-width: 720px) {
+    .stocks-row {
+        grid-template-columns: 1fr auto;
+        gap: 4px;
+    }
+    .stocks-row.stocks-head { display: none; }
+    .stocks-row .s-qty::before   { content: 'Stock: '; color: #666; font-size: 10px; font-weight: 400; }
+    .stocks-row .s-out::before   { content: 'Ext.: '; color: #666; font-size: 10px; font-weight: 400; }
+    .stocks-row .s-price::before { content: 'Px: '; color: #666; font-size: 10px; }
+    .stocks-row .s-weight::before { content: 'W: '; color: #666; font-size: 10px; }
+}
+
+/* Attributions list + actions */
+.att-row {
+    display: grid;
+    grid-template-columns: 1.6fr 0.9fr 1fr 1fr auto;
+    gap: 10px;
+    padding: 10px 12px;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+.att-row:nth-child(even) { background: rgba(255, 255, 255, 0.012); }
+.att-row:hover { background: rgba(255, 255, 255, 0.03); }
+.att-row .a-item { color: #fff; font-weight: 700; }
+.att-row .a-qty {
+    font-family: 'Consolas', 'Courier New', monospace;
+    color: #ffd700;
+    font-weight: 700;
+}
+.att-row .a-status {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.att-row .a-status.open       { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+.att-row .a-status.pending    { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.att-row .a-status.reconciled { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.att-row .a-status.rejected   { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.att-row .a-meta { color: #888; font-size: 11px; }
+.att-row .a-meta strong { color: #ddd; }
+
+.att-actions {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.att-actions .btn-xs {
+    padding: 4px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    color: #ccc;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-decoration: none;
+    font-family: 'Segoe UI', sans-serif;
+}
+.att-actions .btn-xs:hover { background: rgba(255, 255, 255, 0.08); }
+.att-actions .btn-xs.sell   { border-color: rgba(74, 222, 128, 0.3); color: #4ade80; }
+.att-actions .btn-xs.return { border-color: rgba(96, 165, 250, 0.3); color: #60a5fa; }
+.att-actions .btn-xs.loss   { border-color: rgba(239, 68, 68, 0.3); color: #f87171; }
+.att-actions .btn-xs.gift   { border-color: rgba(168, 85, 247, 0.3); color: #c084fc; }
+.att-actions .btn-xs.approve { border-color: rgba(74, 222, 128, 0.3); color: #4ade80; background: rgba(74, 222, 128, 0.08); }
+.att-actions .btn-xs.reject  { border-color: rgba(239, 68, 68, 0.3); color: #f87171; background: rgba(239, 68, 68, 0.08); }
+
+@media (max-width: 720px) {
+    .att-row { grid-template-columns: 1fr; gap: 4px; }
+    .att-actions { justify-content: flex-start; }
+}
+
+/* Detail page grid */
+.stocks-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.sd-stat {
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+}
+.sd-stat .sd-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+}
+.sd-stat .sd-value {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 3px;
+}
+.sd-stat.warn .sd-value { color: #fb923c; }
+.sd-stat.ok   .sd-value { color: #4ade80; }
+.sd-stat.bad  .sd-value { color: #ef4444; }
+
+/* Category-specific badges for stocks (extends existing ts-role-badge palette) */
+.ts-role-badge.role-weapon_finished { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.ts-role-badge.role-weapon_plan     { background: rgba(234, 179, 8, 0.15); color: #facc15; }
+.ts-role-badge.role-weapon_piece    { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+.ts-role-badge.role-raw_material    { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+.ts-role-badge.role-drug_raw        { background: rgba(168, 85, 247, 0.10); color: #a78bfa; }
+.ts-role-badge.role-farm_consumable { background: rgba(74, 222, 128, 0.10); color: #86efac; }
+.ts-role-badge.role-tool            { background: rgba(251, 146, 60, 0.10); color: #fdba74; }
+.ts-role-badge.role-electronic      { background: rgba(34, 211, 238, 0.10); color: #67e8f9; }
+.ts-role-badge.role-misc            { background: rgba(148, 163, 184, 0.10); color: #94a3b8; }
+
+/* Import preview */
+.imp-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+    gap: 8px;
+    padding: 6px 10px;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+.imp-row.imp-head {
+    font-size: 10px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(255, 255, 255, 0.02);
+}
+.imp-row .imp-delta.pos { color: #4ade80; font-weight: 700; }
+.imp-row .imp-delta.neg { color: #f87171; font-weight: 700; }
+.imp-row .imp-delta.zero { color: #666; }

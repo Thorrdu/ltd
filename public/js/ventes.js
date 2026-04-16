@@ -27,7 +27,9 @@
         todaySales: [],
         histSales: [],
         histScope: 'mine',
-        histPeriod: 'today'
+        histPeriod: 'today',
+        attributionId: null,
+        attributionLocked: false
     };
 
     state.catalog.forEach(function (it) { state.catalogById[it.id] = it; });
@@ -63,8 +65,54 @@
             state.todaySales = data.sales || [];
             renderToday(data.totals || {});
             populateItemSelect();
+            applyPrefill();
             refreshHistory();
         });
+    }
+
+    function applyPrefill() {
+        var params = new URLSearchParams(window.location.search);
+        var itemId = parseInt(params.get('stock_item_id'), 10);
+        var qty = parseInt(params.get('quantity'), 10);
+        var attributionId = parseInt(params.get('attribution_id'), 10);
+        if (!itemId) return;
+
+        var item = state.catalogById[itemId];
+        if (!item) return;
+
+        if (itemTs) {
+            itemTs.setValue(String(itemId), true);
+        } else {
+            $('vItem').value = String(itemId);
+        }
+        if (qty && qty > 0) $('vQty').value = qty;
+        if (item.default_sell_price) {
+            $('vTotal').value = item.default_sell_price * (qty || 1);
+        }
+        recomputeUnit();
+
+        if (attributionId) {
+            state.attributionId = attributionId;
+            state.attributionLocked = true;
+            showAttributionBanner(item, qty);
+            if (itemTs) itemTs.disable();
+            $('vQty').readOnly = true;
+        }
+    }
+
+    function showAttributionBanner(item, qty) {
+        var container = document.querySelector('#sub-new .action-card');
+        if (!container) return;
+        var existing = document.getElementById('vAttrBanner');
+        if (existing) existing.remove();
+        var banner = document.createElement('div');
+        banner.id = 'vAttrBanner';
+        banner.className = 'alert-banner';
+        banner.style.cssText = 'margin-bottom:10px; padding:8px 12px; background:rgba(96,165,250,0.08); border:1px solid rgba(96,165,250,0.3); border-radius:4px; color:#93c5fd; font-size:12px;';
+        banner.innerHTML = '<strong>Reconciliation d\'attribution</strong> : cette vente cloturera votre attribution ' +
+            'de ' + qty + '&times; ' + esc(item.name) + '. ' +
+            '<a href="/ventes" style="color:#93c5fd; text-decoration:underline;">Annuler</a>';
+        container.insertBefore(banner, container.firstChild.nextSibling);
     }
 
     // ── ITEM SELECT ────────────────────────────────────────
@@ -181,7 +229,8 @@
             quantity: qty,
             total_price: total,
             buyer_name: buyer,
-            notes: notes || null
+            notes: notes || null,
+            attribution_id: state.attributionId || null
         }, function (err, data) {
             btn.disabled = false;
             btn.textContent = 'Enregistrer la vente';
@@ -196,6 +245,18 @@
             auth.showToast(data.message || 'Vente enregistree', 'success');
             if (data.warning) {
                 setTimeout(function () { auth.showToast(data.warning, 'error'); }, 900);
+            }
+            // If the sale reconciled an attribution, clean up the URL and the banner.
+            if (state.attributionId) {
+                state.attributionId = null;
+                state.attributionLocked = false;
+                if (itemTs) itemTs.enable();
+                $('vQty').readOnly = false;
+                var banner = document.getElementById('vAttrBanner');
+                if (banner) banner.remove();
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, '', '/ventes');
+                }
             }
             resetForm();
             tryLoad();

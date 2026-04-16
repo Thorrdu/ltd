@@ -1,9 +1,82 @@
 # Active Context - Station LTD / Toolbox Lost MC
 
 ## Travail en cours
-Phase H **LIVRÉE** le 16 avril 2026 (soir tardif) : rationalisation complète du schéma
-stock / mouvements / ventes. Il ne reste plus qu'UNE SEULE table pour chaque concept.
-Les tables `weapon_stocks`, `weapon_stock_movements` et `weapon_sales` ont disparu.
+Phase 3 **LIVRÉE** le 16 avril 2026 (soir) : module stocks générique complet avec page
+`/stocks` (officier+), formulaire d'attribution, page détail `/stocks/{slug}`, flux de
+réconciliation, validations trésorier (seuil configurable) et import CSV. Le formulaire
+de vente résiduel de `/espace-membres` a été supprimé : la saisie passe exclusivement
+par `/ventes` (redirige avec `stock_item_id`/`quantity`/`attribution_id` en query string).
+
+## Phase 3 - Module stocks générique (16 avril 2026, soir) -- LIVRÉE
+
+### Fonctionnalités livrées
+- **Page `/stocks`** (officier+) avec sous-onglets :
+  - Vue d'ensemble : jauge capacité (kg), totaux par catégorie, tableau filtrable par
+    catégorie + recherche texte. Affiche quantité en stock ET quantité "en exterieur"
+    (somme des attributions ouvertes).
+  - Attribuer : formulaire `stock_item_id` + `quantity` + `attributed_to_user_id` + notes.
+  - Attributions en cours : liste des attributions ouvertes (scope `all` pour officier,
+    `mine` pour member), boutons Vendu / Retour / Perte / Don.
+  - Validations : tresorier+ seulement. Liste des attributions en attente d'approbation.
+  - Import : tresorier+ seulement. Textarea CSV, preview, commit.
+- **Page `/stocks/{slug}`** : détail complet d'un item (stats, attributions en cours,
+  mouvements récents).
+- **Onglet "Mes attributions"** sur `/espace-membres` : liste des attributions ouvertes
+  du membre connecté avec boutons de réconciliation. L'ancien onglet "Ventes" est
+  renommé "Mouvements" (historique seul). L'ancienne carte "Déclarer une vente" du
+  dashboard redirige désormais vers `/ventes` (pas de saisie in-place).
+
+### Backend ajouté
+- **Migration additive** `2026_04_16_181908_add_attribution_fields_to_stock_movements` :
+  `reconciled_at`, `reconciled_by_movement_id` (self FK), `requires_approval`,
+  `approved_by_user_id`, `approved_at`, `rejected_at`, `rejection_reason`.
+- **`StockMovement`** : scopes `openAttribution()`, `pendingApproval()`, méthode
+  `isOpenAttribution()`, relations `approvedBy()` et `reconciledByMovement()`.
+- **`StockController`** (nouveau) : méthodes `index()`, `show($slug)`, `apiList()`,
+  `apiItem($slug)`, `apiAttributions()`, `apiAttribute()`, `apiReconcile($id)`,
+  `apiValidationsList()`, `apiApprove($id)`, `apiReject($id)`, `apiImportPreview()`,
+  `apiImportCommit()`. Auth via header `X-Sim-User` + vérification rôle via
+  `page_access_rules`.
+- **`SaleController::apiCreate`** : accepte un `attribution_id` optionnel. Si présent
+  et valide, l'attribution est réconciliée (lien `reconciled_by_movement_id` vers la
+  vente) et le stock n'est PAS redécrémenté (déjà décrémenté par l'attribution).
+- **Routes** `routes/web.php` : GET `/stocks`, GET `/stocks/{slug}`, + endpoints API
+  `/stocks/api/list`, `/stocks/api/item/{slug}`, `/stocks/api/attributions`,
+  `/stocks/api/attribute`, `/stocks/api/reconcile/{id}`, `/stocks/api/validations`,
+  `/stocks/api/approve/{id}`, `/stocks/api/reject/{id}`, `/stocks/api/import/preview`,
+  `/stocks/api/import/commit`. Le wildcard `{slug}` est placé après les API pour
+  éviter les collisions.
+
+### Seeders mis à jour
+- `PageAccessRuleSeeder` : nouvelles règles `stocks_generique` (officer+),
+  `stocks_validations` (treasurer+), `stocks_import` (treasurer+).
+- `SettingSeeder` : groupe `stocks` avec `attribution_approval_threshold` (int, default 0
+  = validation désactivée) et `stock_max_capacity_kg` (int, default 1000).
+
+### Frontend ajouté
+- `resources/views/stocks.blade.php` + `public/js/stocks.js` : page principale.
+- `resources/views/stocks-detail.blade.php` + `public/js/stocks-detail.js` : page détail.
+- `resources/views/espace-membres.blade.php` : onglet "Mes attributions" avec inline JS,
+  suppression du formulaire de vente (carte avec bouton "Ventes rapides" qui redirige).
+- `public/js/simulateur-armes.js` : quick-sell cards redirigent vers `/ventes?stock_item_id=X&quantity=Y`
+  au lieu de remplir un formulaire in-page.
+- `public/css/mc-layout.css` : styles `.stocks-*`, `.att-*`, `.imp-*` ajoutés.
+- `resources/views/layouts/mc.blade.php` + `mc-hub.blade.php` : lien "Stocks" (officier+).
+
+### Tests
+Script de test (supprimé après exécution) exerçant le flux complet :
+attribute → listAttributions → reconcile(return) → stock restauré ; nouvelle attribution
+→ sale avec `attribution_id` → réconciliation sans double-decrement ; import CSV preview
+avec detection des slugs inconnus. Tous les cas passent (HTTP 200, quantités cohérentes,
+`reconciled_at` renseigné).
+
+## Phase H - Harmonisation du stock (16 avril 2026, soir tardif) -- LIVRÉE
+
+### Avant : désordre
+- `weapon_stocks` (armurerie) + `weapon_stock_movements` + `weapon_sales`
+- `sales` (générique, créée Phase 2) avec item_type/item_id
+- `stock_items` (doublon de weapon_stocks, créé brièvement puis supprimé)
+- Deux chemins écrivant dans des tables différentes : `/espace-membres` vs `/ventes`
 
 ## Phase H - Harmonisation du stock (16 avril 2026, soir tardif) -- LIVRÉE
 
@@ -92,15 +165,16 @@ Les tables `weapon_stocks`, `weapon_stock_movements` et `weapon_sales` ont dispa
   `/espace-membres`=200, `/simulateur-armes`=200, `/armurerie`=302 (redirige vers login, OK).
 
 ## Prochaines étapes
-1. **Phase 3 – stocks génériques** : UI d'attribution officier → membre sur le journal
-   `stock_movements`, reason `attribution`. La structure est en place (colonne
-   `attributed_to_user_id`).
-2. **Phase 4 – drogues** : flux complet achat orga / attribution / reconciliation.
-   Les 14 items `drug` sont déjà seedés, il reste le frontend.
-3. **Phase 5 – armes blanches** : 10 items `melee` déjà seedés, à brancher sur `/ventes`.
-4. **Phase 6 – classements + fiches membres** : leaderboard global/mois/semaine.
-5. **Phase 7 – comptabilité MC** : argent sale/propre, transactions, cotisations.
-6. **Phase 8 – polissage** : responsive, notifications, dashboards par rôle.
+1. **Phase 4 – drogues** : flux complet achat orga / attribution / reconciliation.
+   Les 14 items `drug` sont déjà seedés, `/stocks` les gère déjà en lecture. Il reste
+   le formulaire d'achat orga dédié et le dashboard drogue (profit/perte cumulé).
+2. **Phase 5 – armes blanches** : 10 items `melee` déjà seedés et vendables via `/ventes`.
+   Reste uniquement à rendre le multiplicateur x1.5 configurable via `settings`.
+3. **Phase 6 – classements + fiches membres** : leaderboard global/mois/semaine,
+   pages `/membres/{id}` avec historique complet (attributions, ventes, cotisations).
+4. **Phase 7 – comptabilité MC** : argent sale/propre, transactions, cotisations
+   avec validation trésorier.
+5. **Phase 8 – polissage** : responsive, notifications, dashboards par rôle.
 
 ## Décisions actives
 - Laravel 12 + Filament 5.3, deux panneaux Filament (admin / armurerie).
@@ -117,7 +191,8 @@ Les tables `weapon_stocks`, `weapon_stock_movements` et `weapon_sales` ont dispa
 
 ## Problèmes connus
 - Vhost Laragon pointe encore sur la racine du projet ; on accède via `/public/<route>`.
-- Le formulaire de vente de `/espace-membres` reste actif et écrit dans la même table
-  `sales` via `WeaponSimController::createSale` : plus de doublon fonctionnel,
-  mais à terme on peut supprimer ce formulaire et rediriger vers `/ventes` (un seul
-  endroit pour saisir une vente).
+- Le formulaire de vente résiduel de `/espace-membres` a été retiré en Phase 3 :
+  toute saisie de vente se fait désormais via `/ventes` (point d'entrée unique).
+- Les POST vers les endpoints `/stocks/api/*` nécessitent le header `X-CSRF-TOKEN`
+  (fournit par `window.McAuth.getCsrfToken()`). Tests automatisés doivent bypass le
+  middleware ou instancier les contrôleurs directement.

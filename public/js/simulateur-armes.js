@@ -1036,22 +1036,24 @@
         banner.style.display = '';
     }
 
+    // Quick-sell card click: redirect to the unified /ventes page, pre-filled for the weapon.
+    // The legacy in-page sale form has been removed (Phase 3 cleanup).
     document.addEventListener('click', function (e) {
         var card = e.target.closest('.stock-card[data-quicksell]');
         if (!card) return;
         var wid = parseInt(card.getAttribute('data-quicksell'), 10);
         if (!wid) return;
-        document.querySelectorAll('.sub-tab').forEach(function (b) { b.classList.remove('active'); });
-        document.querySelectorAll('.sub-content').forEach(function (c) { c.classList.remove('active'); });
-        var actionsTab = document.querySelector('.sub-tab[data-subtab="actions"]');
-        if (actionsTab) actionsTab.classList.add('active');
-        var actionsContent = $('sub-actions');
-        if (actionsContent) actionsContent.classList.add('active');
-        var sw = $('saleWeapon');
-        if (sw) { sw.value = wid; onSaleWeaponChange(); }
-        $('saleQty').value = 1;
-        var buyerEl = $('saleBuyer');
-        if (buyerEl) buyerEl.focus();
+        var w = weaponById[wid];
+        if (!w || !cachedData || !cachedData.stock) { window.location.href = '/ventes'; return; }
+        var stockItem = null;
+        cachedData.stock.forEach(function (s) {
+            if (s.slug === 'weapon_' + w.slug) stockItem = s;
+        });
+        if (stockItem && stockItem.id) {
+            window.location.href = '/ventes?stock_item_id=' + stockItem.id + '&quantity=1';
+        } else {
+            window.location.href = '/ventes';
+        }
     });
 
     // ===== CONTRACTS =====

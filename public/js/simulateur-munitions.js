@@ -4,21 +4,19 @@
     var AMMO_GUNPOWDER_PRICE = 100;
     var AMMO_YIELD_PER_CRAFT = 10;
     var AMMO_FRAGMENTS_PER_FER_UNIT = 2;
+    // Prix de vente fixes par munition (source : stock_items.default_sell_price en DB).
+    // Regle commune : prix vente = 2 x prix sans fer = 2 x (poudre_recette x 100 / 10) = poudre_recette x 20.
     var AMMO_RECIPES = [
-        { name: '9mm', craftSec: 5, poudre: 5, fragment: 10 },
-        { name: '.38 LC', craftSec: 10, poudre: 15, fragment: 10 },
-        { name: '.45 ACP', craftSec: 5, poudre: 5, fragment: 10 },
-        { name: '.50 AE', craftSec: 5, poudre: 10, fragment: 10 },
-        { name: '5.56x45', craftSec: 10, poudre: 20, fragment: 25 },
-        { name: '7.62x39', craftSec: 10, poudre: 20, fragment: 25 },
-        { name: '12 Gauge', craftSec: 10, poudre: 30, fragment: 20 },
-        { name: '7.62x51', craftSec: 10, poudre: 20, fragment: 30 },
-        { name: '.50 BMG', craftSec: 10, poudre: 20, fragment: 35 }
+        { name: '9mm',      craftSec: 5,  poudre: 5,  fragment: 10, sell: 100 },
+        { name: '.38 LC',   craftSec: 10, poudre: 15, fragment: 10, sell: 300 },
+        { name: '.45 ACP',  craftSec: 5,  poudre: 5,  fragment: 10, sell: 100 },
+        { name: '.50 AE',   craftSec: 5,  poudre: 10, fragment: 10, sell: 200 },
+        { name: '5.56x45',  craftSec: 10, poudre: 20, fragment: 25, sell: 400 },
+        { name: '7.62x39',  craftSec: 10, poudre: 20, fragment: 25, sell: 400 },
+        { name: '12 Gauge', craftSec: 10, poudre: 30, fragment: 20, sell: 600 },
+        { name: '7.62x51',  craftSec: 10, poudre: 20, fragment: 30, sell: 400 },
+        { name: '.50 BMG',  craftSec: 10, poudre: 20, fragment: 35, sell: 400 }
     ];
-    var AMMO_SELL_POWDER_THRESHOLD_EUR = 50;
-    var AMMO_SELL_MARKUP_SMALL = 2;
-    var AMMO_SELL_MARKUP_LARGE = 1.5;
-    var AMMO_SELL_PRETTY_EUR = { '5.56x45': 350, '7.62x39': 500, '12 Gauge': 400 };
 
     function $(id) { return document.getElementById(id); }
     function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
@@ -57,17 +55,9 @@
         return (achatPoudre + ferUnits * pf) / AMMO_YIELD_PER_CRAFT;
     }
 
-    function ammoCostPoudrePerMun(r) {
-        return (r.poudre * AMMO_GUNPOWDER_PRICE) / AMMO_YIELD_PER_CRAFT;
-    }
-
-    function ammoSellPriceForRecipe(r, prixFer) {
+    function ammoSellPriceForRecipe(r /*, prixFer */) {
         if (!r) return 0;
-        if (AMMO_SELL_PRETTY_EUR[r.name] != null) return AMMO_SELL_PRETTY_EUR[r.name];
-        var sansFer = ammoCostPoudrePerMun(r);
-        var c = ammoCostPerMun(r, prixFer);
-        var sell = sansFer <= AMMO_SELL_POWDER_THRESHOLD_EUR ? sansFer * AMMO_SELL_MARKUP_SMALL : c * AMMO_SELL_MARKUP_LARGE;
-        return Math.round(sell / 10) * 10;
+        return r.sell != null ? r.sell : 0;
     }
 
     function parseEuroOptionalInput(raw) {

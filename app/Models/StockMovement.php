@@ -24,10 +24,17 @@ class StockMovement extends Model
         'stock_item_id', 'quantity_change', 'reason', 'unit_cost',
         'weapon_contract_id', 'user_id', 'attributed_to_user_id',
         'notes', 'created_at',
+        'reconciled_at', 'reconciled_by_movement_id',
+        'requires_approval', 'approved_by_user_id', 'approved_at',
+        'rejected_at', 'rejection_reason',
     ];
 
     protected $casts = [
-        'created_at' => 'datetime',
+        'created_at'        => 'datetime',
+        'reconciled_at'     => 'datetime',
+        'approved_at'       => 'datetime',
+        'rejected_at'       => 'datetime',
+        'requires_approval' => 'boolean',
     ];
 
     public function stockItem(): BelongsTo
@@ -50,8 +57,43 @@ class StockMovement extends Model
         return $this->belongsTo(User::class, 'attributed_to_user_id');
     }
 
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by_user_id');
+    }
+
+    public function reconciledByMovement(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'reconciled_by_movement_id');
+    }
+
     public function getReasonLabelAttribute(): string
     {
         return self::REASONS[$this->reason] ?? $this->reason;
+    }
+
+    /**
+     * Open attribution = attribution reason, not reconciled, not rejected.
+     * Approved-but-pending attributions are still considered "open" from the beneficiary's POV.
+     */
+    public function scopeOpenAttribution($query)
+    {
+        return $query->where('reason', 'attribution')
+            ->whereNull('reconciled_at')
+            ->whereNull('rejected_at');
+    }
+
+    public function scopePendingApproval($query)
+    {
+        return $query->where('requires_approval', true)
+            ->whereNull('approved_at')
+            ->whereNull('rejected_at');
+    }
+
+    public function isOpenAttribution(): bool
+    {
+        return $this->reason === 'attribution'
+            && $this->reconciled_at === null
+            && $this->rejected_at === null;
     }
 }

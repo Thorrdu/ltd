@@ -3,6 +3,7 @@
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\StockController;
 use App\Http\Controllers\WeaponSimController;
 use App\Http\Middleware\AllowIframe;
 use Illuminate\Support\Facades\Route;
@@ -46,3 +47,23 @@ Route::get('/ventes', [SaleController::class, 'index'])->name('ventes');
 Route::get('/ventes/api/list', [SaleController::class, 'apiList']);
 Route::get('/ventes/api/catalog', [SaleController::class, 'apiCatalog']);
 Route::post('/ventes/api/create', [SaleController::class, 'apiCreate']);
+
+// Stocks generiques (Phase 3)
+Route::get('/stocks', [StockController::class, 'index'])->name('stocks');
+Route::get('/stocks/api/list', [StockController::class, 'apiList']);
+Route::get('/stocks/api/attributions', [StockController::class, 'apiAttributions']);
+Route::get('/stocks/api/validations', [StockController::class, 'apiValidationsList']);
+Route::get('/stocks/api/item/{slug}', [StockController::class, 'apiItem'])
+    ->where('slug', '[a-z0-9_\-]+');
+Route::post('/stocks/api/attribute', [StockController::class, 'apiAttribute']);
+Route::post('/stocks/api/reconcile/{id}', [StockController::class, 'apiReconcile'])
+    ->where('id', '[0-9]+');
+Route::post('/stocks/api/validations/{id}/approve', [StockController::class, 'apiApprove'])
+    ->where('id', '[0-9]+');
+Route::post('/stocks/api/validations/{id}/reject', [StockController::class, 'apiReject'])
+    ->where('id', '[0-9]+');
+Route::post('/stocks/api/import/preview', [StockController::class, 'apiImportPreview']);
+Route::post('/stocks/api/import/commit', [StockController::class, 'apiImportCommit']);
+Route::get('/stocks/{slug}', [StockController::class, 'show'])
+    ->where('slug', '[a-z0-9_\-]+')
+    ->name('stocks.show');

@@ -15,11 +15,15 @@ class SaleController extends Controller
     private const PAGE_KEY = 'ventes_rapides';
 
     /**
-     * Categories affichees dans le select de /ventes. On exclut les pieces/plans/matieres
-     * qui n'ont pas vocation a etre vendues au public.
+     * Categories affichees dans le select de /ventes. Toutes les categories du catalogue
+     * sont vendables : un membre peut revendre du stock brut (matières, pièces, plans)
+     * comme des produits finis. Le flag `is_sellable` sur l'item permet de desactiver
+     * individuellement (ex : un plan consommé).
      */
     private const SELLABLE_CATEGORIES = [
-        'weapon_finished', 'ammo', 'melee', 'drug', 'drug_raw', 'misc',
+        'weapon_finished', 'weapon_plan', 'weapon_piece', 'raw_material',
+        'ammo', 'melee', 'drug', 'drug_raw', 'farm_consumable', 'tool',
+        'electronic', 'misc',
     ];
 
     /**
@@ -27,10 +31,16 @@ class SaleController extends Controller
      */
     private const TYPE_SHORT = [
         'weapon_finished' => 'Arme',
+        'weapon_plan'     => 'Plan',
+        'weapon_piece'    => 'Pièce',
+        'raw_material'    => 'Matière',
         'ammo'            => 'Munition',
         'melee'           => 'Arme blanche',
         'drug'            => 'Drogue',
-        'drug_raw'        => 'Drogue (matiere)',
+        'drug_raw'        => 'Drogue (matière)',
+        'farm_consumable' => 'Consommable',
+        'tool'            => 'Outil',
+        'electronic'      => 'Électronique',
         'misc'            => 'Divers',
     ];
 
@@ -126,11 +136,12 @@ class SaleController extends Controller
         $user = $this->authUser($request);
 
         $v = Validator::make($request->all(), [
-            'stock_item_id' => 'required|integer|exists:stock_items,id',
-            'quantity'      => 'required|integer|min:1|max:9999',
-            'total_price'   => 'required|integer|min:0',
-            'buyer_name'    => 'required|string|max:100',
-            'notes'         => 'nullable|string|max:500',
+            'stock_item_id'  => 'required|integer|exists:stock_items,id',
+            'quantity'       => 'required|integer|min:1|max:9999',
+            'total_price'    => 'required|integer|min:0',
+            'buyer_name'     => 'required|string|max:100',
+            'notes'          => 'nullable|string|max:500',
+            'attribution_id' => 'nullable|integer|exists:stock_movements,id',
         ]);
 
         if ($v->fails()) {
@@ -148,22 +159,59 @@ class SaleController extends Controller
         $qty   = (int) $request->input('quantity');
         $total = (int) $request->input('total_price');
         $unit  = (int) round($total / max($qty, 1));
+        $attributionId = $request->input('attribution_id');
+
+        // If this sale reconciles an attribution, validate it and skip stock decrement
+        // (the stock was already decremented when the attribution was created).
+        $attribution = null;
+        if ($attributionId) {
+            $attribution = StockMovement::where('id', $attributionId)
+                ->where('reason', 'attribution')
+                ->whereNull('reconciled_at')
+                ->whereNull('rejected_at')
+                ->first();
+            if (! $attribution) {
+                return response()->json(['error' => 'Attribution invalide ou deja reconciliee'], 422);
+            }
+            if ($attribution->attributed_to_user_id !== $user->id) {
+                return response()->json(['error' => 'Cette attribution n\'est pas la votre'], 403);
+            }
+            if ($attribution->stock_item_id !== $item->id) {
+                return response()->json(['error' => 'Article incoherent avec l\'attribution'], 422);
+            }
+            if ((int) $qty !== abs((int) $attribution->quantity_change)) {
+                return response()->json(['error' => 'Quantite differente de l\'attribution'], 422);
+            }
+        }
 
         $warning = null;
 
-        // Les armes finies sont trackees en stock : on decremente + mouvement.
-        if ($item->category === 'weapon_finished') {
+        // Toute vente décremente le stock du stock_item + crée un mouvement sale.
+        // Si la vente reconcilie une attribution, le stock a deja ete decremente a l'attribution.
+        $saleMovement = null;
+        if (! $attribution) {
             if ($item->quantity < $qty) {
                 $warning = 'Stock insuffisant (' . $item->quantity . ' en stock). Le stock passe en négatif.';
             }
             $item->decrement('quantity', $qty);
-            StockMovement::create([
+            $saleMovement = StockMovement::create([
                 'stock_item_id'   => $item->id,
                 'quantity_change' => -$qty,
                 'reason'          => 'sale',
                 'user_id'         => $user->id,
                 'notes'           => 'Vente rapide: ' . $qty . '× ' . $item->name . ' → ' . $request->buyer_name,
                 'created_at'      => now(),
+            ]);
+        } else {
+            // Document the reconciliation with a zero-qty sale movement for traceability.
+            $saleMovement = StockMovement::create([
+                'stock_item_id'         => $item->id,
+                'quantity_change'       => 0,
+                'reason'                => 'sale',
+                'user_id'               => $user->id,
+                'attributed_to_user_id' => $user->id,
+                'notes'                 => 'Vente sur attribution #' . $attribution->id . ': ' . $qty . '× ' . $item->name . ' → ' . $request->buyer_name,
+                'created_at'            => now(),
             ]);
         }
 
@@ -177,9 +225,18 @@ class SaleController extends Controller
             'notes'           => $request->input('notes'),
         ]);
 
+        // Mark the attribution as reconciled.
+        if ($attribution) {
+            $attribution->update([
+                'reconciled_at'             => now(),
+                'reconciled_by_movement_id' => $saleMovement?->id,
+            ]);
+        }
+
         return response()->json([
             'ok'      => true,
-            'message' => $qty . '× ' . $item->name . ' vendu(s) à ' . $request->input('buyer_name'),
+            'message' => $qty . '× ' . $item->name . ' vendu(s) à ' . $request->input('buyer_name')
+                . ($attribution ? ' (attribution reconciliée)' : ''),
             'warning' => $warning,
             'sale'    => $this->mapSale($sale->fresh(['soldBy', 'stockItem'])),
         ]);

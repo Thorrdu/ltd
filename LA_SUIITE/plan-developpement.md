@@ -181,13 +181,14 @@ unique table, indexee par `category` + `slug` pour le catalogue.
 - [x] Toute nouvelle ecriture de mouvement passe par `stock_movements`. Toute vente passe par `sales`.
 
 ### Reste a faire (residuel, non bloquant)
-- [ ] Supprimer le formulaire de vente du dashboard `/espace-membres` et rediriger vers `/ventes`
-      (meme table `sales` atteinte des deux cotes, mais un seul point de saisie serait plus propre).
+- [x] Supprimer le formulaire de vente du dashboard `/espace-membres` et rediriger vers `/ventes`
+      (fait en Phase 3 : onglet "Ventes" renomme en "Mouvements", quick-sell de `simulateur-armes.js`
+      et carte de vente de `espace-membres.blade.php` redirigent vers `/ventes?stock_item_id=X&quantity=Y`).
 
 ---
 
-## Phase 3 - Module stocks generique [A FAIRE]
-**Priorite : haute -- le schema existe, il reste le frontend unifie**
+## Phase 3 - Module stocks generique [TERMINEE]
+**Livree le 16 avril 2026 (soir) -- UI complete, attributions, validations et import CSV**
 
 ### Etat actuel (post-Phase H)
 - [x] Tables `stock_items` (54 items seedes) et `stock_movements` en place.
@@ -196,46 +197,72 @@ unique table, indexee par `category` + `slug` pour le catalogue.
 - [x] Colonne `attributed_to_user_id` sur `stock_movements` pour les attributions.
 - [x] `StockItemResource` Filament avec action inline "Ajuster" (cree le mouvement auto).
 - [x] `StockMovementResource` Filament en lecture seule.
+- [x] Migration additive 2026_04_16_181908 sur `stock_movements` : `reconciled_at`,
+      `reconciled_by_movement_id`, `requires_approval`, `approved_by_user_id`, `approved_at`,
+      `rejected_at`, `rejection_reason`.
 
-### 3.1 Page publique `/stocks` (officier+) [A FAIRE]
-- [ ] Creer une route `/stocks` + controller dedie, protegee par `page_access_rules` (cle
-      `stocks_generique`, min_role par defaut `officer`).
-- [ ] Vue Blade avec tableau regroupe par `category`, colonnes :
-      nom, quantite en stock, quantite attribuee en exterieur (sum des `attribution` non
-      reconciliees), prix de vente par defaut, poids total.
-- [ ] Filtres : par categorie, par recherche texte.
-- [ ] Vue detail par item : liste des attributions en cours (qui, combien, depuis quand),
-      historique des mouvements recents.
+### 3.1 Page publique `/stocks` (officier+) [FAIT]
+- [x] Route `/stocks` + `StockController`, protegee par `page_access_rules` (cle
+      `stocks_generique`, min_role `officer`).
+- [x] Vue Blade `stocks.blade.php` avec sous-onglets (Vue d'ensemble, Attribuer,
+      Attributions en cours, Validations tresorier+, Import tresorier+).
+- [x] Tableau groupe par `category` avec colonnes nom, stock, en exterieur, prix, poids.
+- [x] Filtres par categorie et recherche texte (`public/js/stocks.js`).
+- [x] Route `/stocks/{slug}` + vue `stocks-detail.blade.php` : historique des mouvements
+      et attributions en cours par item.
+- [x] Jauge de capacite (somme `quantity * unit_weight_g` / `stocks.stock_max_capacity_kg`).
 
-### 3.2 Attribution d'items a un membre/prospect (officier+) [A FAIRE]
-- [ ] Formulaire "Attribuer un item" sur `/stocks` (ou `/espace-membres`).
-- [ ] Champs : `stock_item_id` (Tom Select sellable), `quantity`, `attributed_to_user_id`,
-      `notes`. Crée un `StockMovement` avec `reason=attribution`, `quantity_change = -quantity`.
-- [ ] Endpoint API : `POST /stocks/api/attribute`.
-- [ ] Visible sur la fiche du beneficiaire (Phase 6) : items actuellement non reconcilies.
+### 3.2 Attribution d'items a un membre/prospect (officier+) [FAIT]
+- [x] Formulaire "Attribuer" sur `/stocks` (sous-onglet "Attribuer") ET sur `/espace-membres`
+      (onglet "Mes attributions" pour visualisation, creation sur `/stocks`).
+- [x] Endpoint API `POST /stocks/api/attribute` : cree un `StockMovement`
+      `reason=attribution`, `quantity_change = -quantity`, decrement atomique du stock.
+- [x] Validation : refus si stock insuffisant, user cible existant et actif.
 
-### 3.3 Reconciliation par le beneficiaire [A FAIRE]
-- [ ] Sur `/espace-membres`, section "Mes attributions en cours" listant les `attribution`
-      non reconciliees (pas de mouvement `sale|delivery|adjustment` ulterieur qui les annule).
-- [ ] Pour chaque ligne, boutons :
-  - **Vendu** : redirige vers `/ventes` pre-rempli (stock_item_id + quantity).
-  - **Retour stock** : cree un `StockMovement` `reason=adjustment` avec `quantity_change = +quantity`.
-  - **Perte / saisie** : cree un `StockMovement` `reason=adjustment` avec note obligatoire.
-  - **Don** : idem perte, note = beneficiaire du don.
+### 3.3 Reconciliation par le beneficiaire [FAIT]
+- [x] Onglet "Mes attributions" sur `/espace-membres` : liste les attributions ouvertes
+      (sans `reconciled_at`) du membre connecte.
+- [x] Endpoint `GET /stocks/api/attributions?scope=mine|all&status=open|all` (officier voit tout).
+- [x] Endpoint `POST /stocks/api/reconcile/{id}` avec `action` :
+  - **return** : `reason=adjustment`, `quantity_change = +quantity`, stock restaure.
+  - **loss** : `reason=adjustment`, `quantity_change = 0` (trace seulement), note obligatoire.
+  - **gift** : idem loss, note = beneficiaire du don.
+  - **sell** : bouton "Vendu" redirige cote front vers `/ventes?stock_item_id=X&quantity=Y&attribution_id=Z`.
+- [x] `SaleController::apiCreate()` etendu : si `attribution_id` fourni et valide, reconcilie
+      l'attribution (link `reconciled_by_movement_id`) sans double-decrement du stock.
 
-### 3.4 Validation tresorier (optionnel) [A FAIRE]
-- [ ] Ajouter colonnes `requires_approval`, `approved_by_user_id`, `approved_at` sur
-      `stock_movements` (migration additive).
-- [ ] Regle : mouvements `attribution` au-dela d'un seuil (configurable via `settings`)
-      passent en attente. Les autres restent immediats.
-- [ ] Page `/stocks/validations` (tresorier+) listant les mouvements en attente.
+### 3.4 Validation tresorier (optionnel) [FAIT]
+- [x] Migration additive : colonnes `requires_approval`, `approved_by_user_id`, `approved_at`,
+      `rejected_at`, `rejection_reason` sur `stock_movements`.
+- [x] Setting `stocks.attribution_approval_threshold` (int, defaut 0 = desactive).
+- [x] Si quantite >= seuil, l'attribution passe en `requires_approval = true` et ne
+      decremente pas immediatement (en attente).
+- [x] Sous-onglet "Validations" sur `/stocks` (tresorier+) liste les attributions en attente.
+- [x] Endpoints `POST /stocks/api/approve/{id}` et `POST /stocks/api/reject/{id}` avec
+      verification tresorier+.
 
-### 3.5 Import stock via CSV/Excel [A FAIRE]
-- [ ] Page `/stocks/import` (tresorier+) avec upload CSV/Excel (screenshots coffre via GPT).
-- [ ] Preview avant validation : creation / mise a jour des `stock_items` par `slug`.
-- [ ] L'import ecrase `stock_items.quantity` MAIS ne touche pas aux `attribution` en cours.
-- [ ] Trace dans `stock_movements` avec `reason=adjustment` + note "Import CSV du ...".
-- [ ] Historique des imports (migration `stock_imports` ou simple filtrage des mouvements).
+### 3.5 Import stock via CSV/Excel [FAIT]
+- [x] Sous-onglet "Import" sur `/stocks` (tresorier+) avec zone textarea CSV (copier/coller
+      des donnees screenshotees coffre, parse GPT en amont).
+- [x] Endpoint `POST /stocks/api/import/preview` : parse CSV, retourne preview (slug trouve,
+      ancienne qty, nouvelle qty, diff) + erreurs (slug inconnu, quantite invalide).
+- [x] Endpoint `POST /stocks/api/import/commit` : met a jour `stock_items.quantity`, cree
+      un `StockMovement` `reason=adjustment` par ligne avec note "Import CSV du ...".
+- [x] L'import ecrase le stock physique MAIS ne touche pas aux attributions ouvertes.
+
+### Fichiers
+- `database/migrations/2026_04_16_181908_add_attribution_fields_to_stock_movements.php`
+- `app/Http/Controllers/StockController.php`
+- `app/Http/Controllers/SaleController.php` (extension `attribution_id`)
+- `app/Models/StockMovement.php` (scopes `openAttribution`, `pendingApproval`)
+- `resources/views/stocks.blade.php`, `resources/views/stocks-detail.blade.php`
+- `resources/views/espace-membres.blade.php` (onglet "Mes attributions", suppression formulaire vente)
+- `public/js/stocks.js`, `public/js/stocks-detail.js`, `public/js/simulateur-armes.js` (redirect vers `/ventes`)
+- `public/css/mc-layout.css` (styles `.stocks-*`, `.att-*`, `.imp-*`)
+- `resources/views/layouts/mc.blade.php` et `resources/views/mc-hub.blade.php` (lien "Stocks")
+- `database/seeders/PageAccessRuleSeeder.php` (cles `stocks_generique`, `stocks_validations`, `stocks_import`)
+- `database/seeders/SettingSeeder.php` (settings `stocks.attribution_approval_threshold`, `stocks.stock_max_capacity_kg`)
+- Routes : `GET /stocks`, `GET /stocks/{slug}`, `GET/POST /stocks/api/*`
 
 ---
 
@@ -406,7 +433,7 @@ unique table, indexee par `category` + `slug` pour le catalogue.
 | 2 | `sales` (unifiee, FK `stock_item_id`) | CREEE |
 | H | `stock_items`, `stock_movements` (taxonomie 12 categories) | CREEES |
 | H | Suppression de `weapon_stocks`, `weapon_stock_movements`, `weapon_sales` | FAIT |
-| 3 | (optionnel) `stock_imports`, colonnes `requires_approval` sur `stock_movements` | A FAIRE |
+| 3 | Colonnes `requires_approval`, `reconciled_at` etc. sur `stock_movements` | FAIT |
 | 4 | Extension `stock_items` via categorie (`drug_raw`, `farm_consumable` a seeder) | SEEDER A ETENDRE |
 | 5 | Extension `stock_items` categorie `melee` | SEEDE |
 | 6 | -- (utilise les tables existantes) | -- |
@@ -430,7 +457,7 @@ Phase 2 (ventes rapides)      -- TERMINEE
 Phase H (harmonisation)       -- TERMINEE (tables unifiees)
   |
   v
-Phase 3 (UI stocks + attrib.) -- 2-3 jours (backend deja en place)
+Phase 3 (UI stocks + attrib.) -- TERMINEE
   |
   +---> Phase 4 (drogues flux) -- 1-2 jours (items seedes, flux a brancher)
   |
@@ -446,7 +473,7 @@ Phase 7 (comptabilite)        -- 3-4 jours
 Phase 8 (polissage)           -- continu
 ```
 
-**Estimation totale restante : ~8-12 jours de developpement (Phase 3 a 8)**
+**Estimation totale restante : ~6-9 jours de developpement (Phases 4 a 8)**
 La Phase H ayant aplani le schema, les Phases 3 a 5 beneficient deja des tables et des
 seeders. L'essentiel du travail restant est frontend (pages `/stocks`, `/drogues`, flux
 d'attribution / reconciliation) et flux metier (comptabilite, cotisations).

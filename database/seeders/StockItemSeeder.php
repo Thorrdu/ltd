@@ -10,17 +10,16 @@ use Illuminate\Database\Seeder;
  * Seeds the UNIFIED stock catalog for the whole application.
  *
  * Categories seeded here :
- *  - raw_material   : minerai, petrole
- *  - weapon_piece   : ressort, canon, poignee, corp, metal, polymere
+ *  - raw_material   : minerai, petrole, fragments, poudre (tous vendables)
+ *  - weapon_piece   : ressort, canon, poignee, corp, metal, polymere (tous vendables)
  *  - weapon_plan    : plans par arme (quantity = uses, 4 uses = 1 plan physique)
  *  - weapon_finished: armes finies (stock), lie au Weapon
- *  - ammo           : munitions (prix issus du simu)
+ *  - ammo           : munitions (prix = 2x prix sans fer)
  *  - melee          : armes blanches (prix tableau RP)
  *  - drug           : drogues finies (vente orga)
  *
- * is_sellable :
- *  - TRUE  pour weapon_finished, ammo, melee, drug, drug_raw
- *  - FALSE pour raw_material, weapon_plan, weapon_piece (stocks internes)
+ * Regle : tous les items peuvent etre vendus (is_sellable = true),
+ * leur prix par defaut est configurable en DB.
  */
 class StockItemSeeder extends Seeder
 {
@@ -38,16 +37,21 @@ class StockItemSeeder extends Seeder
     private function seedRawMaterials(): void
     {
         $items = [
-            ['slug' => 'minerai', 'name' => 'Minerai de fer', 'sort_order' => 1],
-            ['slug' => 'petrole', 'name' => 'Petrole',        'sort_order' => 2],
+            ['slug' => 'minerai',        'name' => 'Minerai de fer',      'price' => 30,   'weight' => 500, 'sort_order' => 1],
+            ['slug' => 'fragment_metal', 'name' => 'Fragment de métal',   'price' => 15,   'weight' => 250, 'sort_order' => 2],
+            ['slug' => 'petrole',        'name' => 'Pétrole',             'price' => 900,  'weight' => 500, 'sort_order' => 3],
+            ['slug' => 'poudre',         'name' => 'Poudre à canon',      'price' => 100,  'weight' => 100, 'sort_order' => 4],
         ];
         foreach ($items as $it) {
             StockItem::updateOrCreate(['slug' => $it['slug']], [
-                'category'    => 'raw_material',
-                'name'        => $it['name'],
-                'is_sellable' => false,
-                'is_active'   => true,
-                'sort_order'  => $it['sort_order'],
+                'category'               => 'raw_material',
+                'name'                   => $it['name'],
+                'default_sell_price'     => $it['price'],
+                'default_purchase_price' => $it['price'],
+                'unit_weight_g'          => $it['weight'],
+                'is_sellable'            => true,
+                'is_active'              => true,
+                'sort_order'             => $it['sort_order'],
             ]);
         }
     }
@@ -55,20 +59,22 @@ class StockItemSeeder extends Seeder
     private function seedWeaponPieces(): void
     {
         $pieces = [
-            ['slug' => 'ressort',  'name' => 'Ressort',          'sort_order' => 1],
-            ['slug' => 'canon',    'name' => 'Canon',            'sort_order' => 2],
-            ['slug' => 'poignee',  'name' => 'Poignée',          'sort_order' => 3],
-            ['slug' => 'corp',     'name' => 'Corp de pistolet', 'sort_order' => 4],
-            ['slug' => 'metal',    'name' => 'Pièce de métal',   'sort_order' => 5],
-            ['slug' => 'polymere', 'name' => 'Polymère',         'sort_order' => 6],
+            ['slug' => 'metal',    'name' => 'Pièce de métal',   'price' => 150,  'sort_order' => 1],
+            ['slug' => 'polymere', 'name' => 'Polymère',          'price' => 4500, 'sort_order' => 2],
+            ['slug' => 'ressort',  'name' => 'Ressort',           'price' => 5000, 'sort_order' => 3],
+            ['slug' => 'canon',    'name' => 'Canon',             'price' => 5000, 'sort_order' => 4],
+            ['slug' => 'poignee',  'name' => 'Poignée',           'price' => 5000, 'sort_order' => 5],
+            ['slug' => 'corp',     'name' => 'Corp de pistolet',  'price' => 15000,'sort_order' => 6],
         ];
         foreach ($pieces as $p) {
             StockItem::updateOrCreate(['slug' => $p['slug']], [
-                'category'    => 'weapon_piece',
-                'name'        => $p['name'],
-                'is_sellable' => false,
-                'is_active'   => true,
-                'sort_order'  => $p['sort_order'],
+                'category'               => 'weapon_piece',
+                'name'                   => $p['name'],
+                'default_sell_price'     => $p['price'],
+                'default_purchase_price' => $p['price'],
+                'is_sellable'            => true,
+                'is_active'               => true,
+                'sort_order'             => $p['sort_order'],
             ]);
         }
     }
@@ -78,12 +84,13 @@ class StockItemSeeder extends Seeder
         $order = 1;
         foreach (Weapon::orderBy('sort_order')->get() as $w) {
             StockItem::updateOrCreate(['slug' => 'plan_' . $w->slug], [
-                'category'    => 'weapon_plan',
-                'weapon_id'   => $w->id,
-                'name'        => 'Plan ' . $w->name,
-                'is_sellable' => false,
-                'is_active'   => true,
-                'sort_order'  => $order++,
+                'category'           => 'weapon_plan',
+                'weapon_id'          => $w->id,
+                'name'               => 'Plan ' . $w->name,
+                'default_sell_price' => 10000,
+                'is_sellable'        => true,
+                'is_active'          => true,
+                'sort_order'         => $order++,
             ]);
         }
     }
@@ -105,17 +112,23 @@ class StockItemSeeder extends Seeder
         }
     }
 
+    /**
+     * Munitions : prix de vente = 2 x prix sans fer (poudre seule).
+     * Prix sans fer = poudre_recette x 100 EUR / 10 munitions par craft = poudre_recette x 10.
+     * Donc prix de vente par munition = poudre_recette x 20.
+     */
     private function seedAmmo(): void
     {
         $items = [
-            ['slug' => 'ammo_45acp',   'name' => '.45 ACP',  'price' => 15,  'weight' => 15],
-            ['slug' => 'ammo_9mm',     'name' => '9mm',      'price' => 10,  'weight' => 7],
-            ['slug' => 'ammo_50ae',    'name' => '.50 AE',   'price' => 45,  'weight' => 45],
-            ['slug' => 'ammo_12gauge', 'name' => '12 Gauge', 'price' => 40,  'weight' => 38],
-            ['slug' => 'ammo_556x45',  'name' => '5.56x45',  'price' => 20,  'weight' => 4],
-            ['slug' => 'ammo_50bmg',   'name' => '.50 BMG',  'price' => 120, 'weight' => 50],
-            ['slug' => 'ammo_762x51',  'name' => '7.62x51',  'price' => 25,  'weight' => 9],
-            ['slug' => 'ammo_762x39',  'name' => '7.62x39',  'price' => 20,  'weight' => 8],
+            ['slug' => 'ammo_9mm',     'name' => '9mm',      'price' => 100, 'weight' => 7],
+            ['slug' => 'ammo_38lc',    'name' => '.38 LC',   'price' => 300, 'weight' => 10],
+            ['slug' => 'ammo_45acp',   'name' => '.45 ACP',  'price' => 100, 'weight' => 15],
+            ['slug' => 'ammo_50ae',    'name' => '.50 AE',   'price' => 200, 'weight' => 45],
+            ['slug' => 'ammo_556x45',  'name' => '5.56x45',  'price' => 400, 'weight' => 4],
+            ['slug' => 'ammo_762x39',  'name' => '7.62x39',  'price' => 400, 'weight' => 8],
+            ['slug' => 'ammo_12gauge', 'name' => '12 Gauge', 'price' => 600, 'weight' => 38],
+            ['slug' => 'ammo_762x51',  'name' => '7.62x51',  'price' => 400, 'weight' => 9],
+            ['slug' => 'ammo_50bmg',   'name' => '.50 BMG',  'price' => 400, 'weight' => 50],
         ];
         $order = 10;
         foreach ($items as $it) {
