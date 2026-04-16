@@ -60,7 +60,7 @@
 
             <div class="sim-section" id="ammoCraftSection">
                 <div class="sim-section-title">Craft munitions</div>
-                <p class="ammo-sim-intro">Recette : <strong>1 craft = 10 munitions</strong>. Poudre <strong>100 €</strong>/u, fer au prix saisi, <strong>1 fer → 2 fragments</strong>. <strong>Toutes les colonnes du tableau sont par munition</strong>. <strong>Prix de vente</strong> : si le coût <strong>poudre seule</strong> / mun est <strong>≤ 50 €</strong> → <strong>× 2</strong> sur ce montant ; sinon <strong>× 1,5</strong> sur le <strong>coût fer acheté</strong> (poudre + fer). Arrondi au multiple de <strong>10 €</strong> ; 5.56×45 à <strong>350 €</strong>, 7.62×39 à <strong>500 €</strong>, 12 Gauge à <strong>400 €</strong>. Tout se recalcule si vous changez le fer.</p>
+                <p class="ammo-sim-intro">Chaque craft produit <strong>10 munitions</strong>. Les co&ucirc;ts sont affich&eacute;s <strong>par munition</strong>. La poudre co&ucirc;te <strong>100 &euro;</strong>/u et <strong>1 minerai de fer = 2 fragments</strong>. Les prix de vente sont calcul&eacute;s automatiquement &agrave; partir des co&ucirc;ts (exceptions : 5.56&times;45, 7.62&times;39, 12 Gauge). Le tableau se met &agrave; jour en temps r&eacute;el si vous modifiez le prix du fer.</p>
                 <div class="ammo-sim-params">
                     <label class="ammo-sim-label" for="ammoFerPrice">Prix du fer (€ / unité)</label>
                     <input type="number" class="ammo-sim-input" id="ammoFerPrice" min="0" step="0.01" value="30" inputmode="decimal">
@@ -106,34 +106,37 @@
 
             <div class="sim-section" id="weaponCraftSection">
                 <div class="sim-section-title">Craft armes (composants)</div>
-                <p class="ammo-sim-intro">Pour les armes <strong>craftées</strong> : <strong>fer / minerai acheté</strong> = toutes les pièces au tarif du tableau, dont les <strong>pièces de métal</strong> (5&nbsp;000 €/u, issues du fer acheté). <strong>Fer récolté</strong> = vous ne payez pas les pièces de métal de la recette (ressort, canon, poignée et le reste restent facturés) ; même logique que les munitions (fer acheté / fer récolté). <strong>Σ plans</strong> = seules les utilisations de plan sont en euros (autres composants considérés récoltés). Le <strong>SNS</strong> n’est pas crafté : achat réf. + vente.</p>
+                <p class="ammo-sim-intro">Le tableau distingue deux types de composants : les <strong>composants achet&eacute;s</strong> (corp, canon, poign&eacute;e) et les <strong>mati&egrave;res craft&eacute;es</strong> &agrave; base de fer (pi&egrave;ces de m&eacute;tal, ressorts). Deux sc&eacute;narios de co&ucirc;t sont calcul&eacute;s selon que le fer est <strong>achet&eacute;</strong> ou <strong>r&eacute;colt&eacute;</strong>. Cochez <strong>Composants en stock</strong> si vous disposez d&eacute;j&agrave; des composants. Le <strong>SNS</strong> n&rsquo;est pas craft&eacute; : achat r&eacute;f. + revente.</p>
                 <div class="ammo-sim-params">
                     <label class="ammo-sim-label" for="weaponCraftPlanPrice">Prix du plan (€ / utilisation)</label>
                     <input type="number" class="ammo-sim-input" id="weaponCraftPlanPrice" min="0" step="0.01" value="" placeholder="Ex. 8000" inputmode="decimal" title="Laisser vide ou 0 si le plan est inconnu">
+                    <label class="ammo-sim-label" for="weaponCraftFerPrice">Prix du fer (€ / unité)</label>
+                    <input type="number" class="ammo-sim-input" id="weaponCraftFerPrice" min="0" step="0.01" value="30" inputmode="decimal" title="Prix d'achat d'une unité de minerai de fer">
+                    <label class="ammo-sim-label ammo-sim-label-cb" for="weaponCraftCompsInStock">
+                        <input type="checkbox" id="weaponCraftCompsInStock"> Composants en stock
+                    </label>
                 </div>
                 <div class="ammo-craft-wrap">
-                    <table class="ammo-craft-table weapon-craft-table" aria-label="Coût craft arme selon composants achetés ou récoltés">
+                    <table class="ammo-craft-table weapon-craft-table" aria-label="Coût craft arme par composants">
                         <thead>
                             <tr>
                                 <th>Arme</th>
                                 <th>Tps</th>
-                                <th>€ plans</th>
-                                <th>€ corp</th>
-                                <th>€ pièces</th>
-                                <th>€ polym.</th>
-                                <th>Σ fer ach.</th>
-                                <th>Σ fer réc.</th>
-                                <th>Σ plans</th>
+                                <th>&euro; plans</th>
+                                <th>&euro; Comp</th>
+                                <th>&euro; Mat</th>
+                                <th>&euro; polym.</th>
+                                <th>&Sigma; ach.</th>
+                                <th>&Sigma; r&eacute;c.</th>
                                 <th>Vente</th>
-                                <th>M fer ach.</th>
-                                <th>M fer réc.</th>
-                                <th>M plans</th>
+                                <th>M ach.</th>
+                                <th>M r&eacute;c.</th>
                             </tr>
                         </thead>
                         <tbody id="weaponCraftBody"></tbody>
                         <tfoot>
                             <tr class="ammo-craft-foot">
-                                <td colspan="13">Σ fer ach. = tout acheté (dont métal). Σ fer réc. = sans pièces de métal payantes. Σ plans = utilisations de plan seules. SNS : prix d’achat de référence (ex. 30k) et vente restent en base pour le simulateur ; marge de revente dans « M fer ach. ».</td>
+                                <td colspan="11">&euro; Comp = composants achet&eacute;s (corp, canon, poign&eacute;e) &mdash; 0 si &laquo;&nbsp;en stock&nbsp;&raquo;. &euro; Mat = mati&egrave;res craft&eacute;es (m&eacute;tal &times; 5 + ressort &times; 8) &times; prix fer. &Sigma; ach. = co&ucirc;t total fer achet&eacute; ; &Sigma; r&eacute;c. = co&ucirc;t si fer r&eacute;colt&eacute; (Mat = 0). SNS : achat r&eacute;f. + vente.</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -141,7 +144,7 @@
 
                 <div class="ammo-target-block">
                     <div class="sim-section-title">Objectif en armes</div>
-                    <p class="ammo-sim-intro ammo-sim-intro-tight">Nombre d’<strong>armes finies</strong> (craft) ou d’<strong>unités</strong> (SNS). Coûts craft : <strong>fer acheté</strong> (tout au tarif), <strong>fer récolté</strong> (sans payer les pièces de métal de la recette), <strong>plans seuls</strong>. Stock optionnel ci‑dessous. Prix de vente : base ou champ optionnel.</p>
+                    <p class="ammo-sim-intro ammo-sim-intro-tight">Simulez le co&ucirc;t de production d&rsquo;un lot d&rsquo;<strong>armes finies</strong> (craft) ou l&rsquo;achat d&rsquo;<strong>unit&eacute;s SNS</strong>. Deux sc&eacute;narios sont compar&eacute;s : <strong>fer achet&eacute;</strong> et <strong>fer r&eacute;colt&eacute;</strong>. Le stock de pi&egrave;ces ci-dessous r&eacute;duit le co&ucirc;t si renseign&eacute;. Le prix de vente peut &ecirc;tre ajust&eacute; manuellement.</p>
                     <div class="ammo-sim-params ammo-target-params">
                         <label class="ammo-sim-label" for="weaponTargetSlug">Arme</label>
                         <select id="weaponTargetSlug" class="ammo-sim-select" aria-label="Arme pour la simulation"></select>
@@ -152,7 +155,7 @@
                     </div>
                     <div class="weapon-stock-block">
                         <div class="weapon-stock-title">Déjà en stock (optionnel)</div>
-                        <p class="ammo-sim-intro ammo-sim-intro-tight">Unités <strong>non facturées</strong> pour cette commande : déduites du besoin (recette × quantité), dans la limite du stock saisi. <strong>Plans</strong> = utilisations de plan. <strong>SNS</strong> = armes déjà possédées (réduit seulement l’acquisition, pas le craft).</p>
+                        <p class="ammo-sim-intro ammo-sim-intro-tight">Pi&egrave;ces d&eacute;j&agrave; disponibles, d&eacute;duites automatiquement du besoin total. <strong>Plans</strong> = nombre d&rsquo;utilisations restantes. <strong>SNS</strong> = unit&eacute;s en stock (r&eacute;duit l&rsquo;achat, pas le craft).</p>
                         <div class="ammo-sim-params weapon-stock-grid">
                             <label class="ammo-sim-label" for="weaponStockPlans">Plans (util.)</label>
                             <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPlans" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
@@ -169,7 +172,7 @@
                             <label class="ammo-sim-label" for="weaponStockPolymere">Polymère</label>
                             <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPolymere" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
                             <label class="ammo-sim-label" for="weaponStockSns">SNS (armes)</label>
-                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockSns" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off" title="Utilisé seulement si l’arme choisie est le SNS">
+                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockSns" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off" title="Utilisé seulement si l'arme choisie est le SNS">
                         </div>
                     </div>
                     <div class="results-table ammo-target-results" id="weaponTargetResults"></div>

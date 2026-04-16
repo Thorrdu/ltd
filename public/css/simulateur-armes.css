@@ -1444,6 +1444,36 @@ select.fm-input option {
     width: 64px;
 }
 
+.ammo-sim-label-cb {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    user-select: none;
+    padding: 5px 10px;
+    border: 1px solid #333;
+    border-radius: 3px;
+    background: #0a0a0a;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.ammo-sim-label-cb:hover {
+    border-color: #666;
+}
+
+.ammo-sim-label-cb input[type="checkbox"] {
+    accent-color: #fff;
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+}
+
+.ammo-sim-label-cb:has(input:checked) {
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+}
+
 .ammo-sim-input-muns {
     width: 100px;
 }
@@ -1589,6 +1619,14 @@ select.fm-input option {
 /* ============================================
    DECORATIVE DIVIDERS
    ============================================ */
+.price-range {
+    display: inline-block;
+    font-size: 10px;
+    color: #aaa;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
 .lost-divider {
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
