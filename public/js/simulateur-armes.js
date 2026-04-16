@@ -1243,20 +1243,28 @@
         $('contractCraftTime').textContent = ts;
     }
 
+    function movementHistoryQtyChange(m) {
+        if (m.reason === 'attribution' && m.attribution_original_abs != null) {
+            return -m.attribution_original_abs;
+        }
+        return m.quantity_change;
+    }
+
     // ===== HISTORY =====
     function renderHistory(data) {
         var movements = data.movements || [], sales = data.sales || [];
         var html = '';
         movements.forEach(function (m) {
-            var sign = m.quantity_change > 0 ? '+' : '', cls = m.quantity_change > 0 ? 'mv-in' : 'mv-out';
+            var qc = movementHistoryQtyChange(m);
+            var sign = qc > 0 ? '+' : '', cls = qc > 0 ? 'mv-in' : 'mv-out';
             html += '<div class="movement-row ' + cls + '">';
             html += '<span class="mv-date">' + esc(m.date) + '</span>';
             html += '<span class="mv-stock">' + esc(m.stock_name) + '</span>';
-            html += '<span class="mv-qty">' + sign + m.quantity_change + '</span>';
+            html += '<span class="mv-qty">' + sign + qc + '</span>';
             html += '<span class="mv-reason">' + esc(m.reason_label) + '</span>';
             html += '<span class="mv-user">' + esc(m.user) + '</span>';
             if (m.notes) html += '<span class="mv-notes">' + esc(m.notes) + '</span>';
-            if (m.unit_cost) html += '<span class="mv-notes">' + fmt(m.unit_cost) + ' \u20ac/u (total: ' + fmt(m.unit_cost * Math.abs(m.quantity_change)) + ' \u20ac)</span>';
+            if (m.unit_cost) html += '<span class="mv-notes">' + fmt(m.unit_cost) + ' \u20ac/u (total: ' + fmt(m.unit_cost * Math.abs(qc)) + ' \u20ac)</span>';
             html += '</div>';
         });
         $('movementsList').innerHTML = html || '<div class="empty-msg">Aucun mouvement</div>';

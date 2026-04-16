@@ -490,16 +490,17 @@ class StockController extends Controller
                 $item->decrement('quantity', $qty);
             }
             StockMovement::create([
-                'stock_item_id'         => $item->id,
-                'quantity_change'       => -$qty,
-                'reason'                => 'attribution',
-                'unit_cost'             => $item->default_purchase_price,
-                'user_id'               => $user->id,
-                'attributed_to_user_id' => $target->id,
-                'notes'                 => $notes !== '' ? $notes : null,
-                'requires_approval'     => $requiresApproval,
-                'from_external'         => $fromExternal,
-                'created_at'            => now(),
+                'stock_item_id'              => $item->id,
+                'quantity_change'            => -$qty,
+                'attribution_original_abs'   => $qty,
+                'reason'                     => 'attribution',
+                'unit_cost'                  => $item->default_purchase_price,
+                'user_id'                    => $user->id,
+                'attributed_to_user_id'      => $target->id,
+                'notes'                      => $notes !== '' ? $notes : null,
+                'requires_approval'        => $requiresApproval,
+                'from_external'              => $fromExternal,
+                'created_at'                 => now(),
             ]);
         });
 
@@ -900,6 +901,9 @@ class StockController extends Controller
             'reason_label'    => StockMovement::REASONS[$m->reason] ?? $m->reason,
             'quantity_change' => (int) $m->quantity_change,
             'quantity_abs'    => abs((int) $m->quantity_change),
+            'attribution_original_abs' => $m->reason === 'attribution' && $m->attribution_original_abs !== null
+                ? (int) $m->attribution_original_abs
+                : null,
             'unit_cost'       => $m->unit_cost,
             'notes'           => $m->notes,
             'by_name'         => $m->user->name ?? '?',

@@ -138,11 +138,15 @@ class WeaponSimController extends Controller
             ->map(fn (StockMovement $m) => [
                 'stock_name'      => $m->stockItem->name ?? '?',
                 'quantity_change' => $m->quantity_change,
+                'attribution_original_abs' => $m->reason === 'attribution' && $m->attribution_original_abs !== null
+                    ? (int) $m->attribution_original_abs
+                    : null,
                 'reason'          => $m->reason,
                 'reason_label'    => StockMovement::REASONS[$m->reason] ?? $m->reason,
                 'unit_cost'       => $m->unit_cost,
                 'contract'        => $m->contract->name ?? null,
                 'user'            => $m->user->name ?? '?',
+                'user_id'         => $m->user_id,
                 'attributed_to'   => $m->attributedTo->name ?? null,
                 'notes'           => $m->notes,
                 'date'            => $m->created_at?->format('d/m H:i'),

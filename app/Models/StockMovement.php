@@ -21,7 +21,7 @@ class StockMovement extends Model
     ];
 
     protected $fillable = [
-        'stock_item_id', 'quantity_change', 'reason', 'unit_cost',
+        'stock_item_id', 'quantity_change', 'attribution_original_abs', 'reason', 'unit_cost',
         'weapon_contract_id', 'user_id', 'attributed_to_user_id',
         'notes', 'created_at',
         'reconciled_at', 'reconciled_by_movement_id',

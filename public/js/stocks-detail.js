@@ -158,6 +158,13 @@
         }).join('');
     }
 
+    function movementHistoryQtyChange(m) {
+        if (m.reason === 'attribution' && m.attribution_original_abs != null) {
+            return -m.attribution_original_abs;
+        }
+        return m.quantity_change;
+    }
+
     function renderMovements(rows) {
         var el = $('sdMovements');
         if (!rows.length) {
@@ -165,8 +172,9 @@
             return;
         }
         el.innerHTML = rows.map(function (m) {
-            var dir = m.quantity_change > 0 ? '+' : (m.quantity_change < 0 ? '-' : '0');
-            var dirClass = m.quantity_change > 0 ? 'ok' : (m.quantity_change < 0 ? 'bad' : '');
+            var qc = movementHistoryQtyChange(m);
+            var dir = qc > 0 ? '+' : (qc < 0 ? '-' : '0');
+            var dirClass = qc > 0 ? 'ok' : (qc < 0 ? 'bad' : '');
             return '<div class="member-row">' +
                 '<div class="member-info">' +
                     '<div class="member-name">' + esc(REASONS[m.reason] || m.reason) +
@@ -177,7 +185,7 @@
                     '</div>' +
                 '</div>' +
                 '<div class="member-actions sale-totals">' +
-                    '<div class="sale-total ' + dirClass + '">' + dir + Math.abs(m.quantity_change) + '</div>' +
+                    '<div class="sale-total ' + dirClass + '">' + dir + Math.abs(qc) + '</div>' +
                     (m.unit_cost ? '<div class="sale-unit">' + money(m.unit_cost) + ' / u</div>' : '') +
                 '</div>' +
                 '</div>';
