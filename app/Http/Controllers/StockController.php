@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Validator;
  *  - GET  /stocks/import                : CSV/Excel import page (treasurer+)
  *  - GET  /stocks/api/list              : JSON catalog + aggregated stats
  *  - GET  /stocks/api/item/{slug}       : JSON detail + recent movements
+ *  - PUT  /stocks/api/item/{slug}/quantity : quantite absolue (+ mouvement adjustment)
  *  - GET  /stocks/api/attributions      : JSON list of attributions (mine or all)
  *  - POST /stocks/api/attribute         : create an attribution movement
  *  - POST /stocks/api/reconcile/{id}    : reconcile an attribution (return/loss/gift)
@@ -214,7 +215,7 @@ class StockController extends Controller
      * prix d'achat, poids, vendabilite, notes). Un mouvement d'ajustement de
      * quantity=0 est cree avec un resume des champs changes pour la tracabilite.
      * Reserve officier+ (scope `stocks_generique`). La quantite ne se modifie
-     * PAS ici : utiliser l'import CSV ou l'action Ajuster de Filament.
+     * PAS ici : utiliser PUT .../quantity, l'import CSV ou Filament.
      */
     public function apiUpdateItem(Request $request, string $slug): JsonResponse
     {
@@ -291,6 +292,60 @@ class StockController extends Controller
             'message' => 'Article mis a jour (' . count($changes) . ' champ(s))',
             'item'    => $this->mapItem($item->fresh()),
             'changes' => array_keys($changes),
+        ]);
+    }
+
+    /**
+     * Definit la quantite en stock (valeur absolue) et trace un mouvement `adjustment`.
+     */
+    public function apiSetQuantity(Request $request, string $slug): JsonResponse
+    {
+        if ($denied = $this->requireAccess($request)) {
+            return $denied;
+        }
+        $user = $this->authUser($request);
+
+        $item = StockItem::where('slug', $slug)->first();
+        if (! $item) {
+            return response()->json(['error' => 'Article introuvable'], 404);
+        }
+
+        $v = Validator::make($request->all(), [
+            'quantity' => 'required|integer|min:-999999999|max:999999999',
+        ]);
+        if ($v->fails()) {
+            return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
+        }
+
+        $new = (int) $v->validated()['quantity'];
+        $old = (int) $item->quantity;
+        $delta = $new - $old;
+
+        if ($delta === 0) {
+            return response()->json([
+                'ok'      => true,
+                'message' => 'Aucun changement',
+                'item'    => $this->mapItem($item),
+            ]);
+        }
+
+        DB::transaction(function () use ($item, $new, $old, $delta, $user) {
+            $item->update(['quantity' => $new]);
+
+            StockMovement::create([
+                'stock_item_id'   => $item->id,
+                'quantity_change' => $delta,
+                'reason'          => 'adjustment',
+                'user_id'         => $user->id,
+                'notes'           => 'Ajustement quantite (interface stocks) : ' . $old . ' -> ' . $new,
+                'created_at'      => now(),
+            ]);
+        });
+
+        return response()->json([
+            'ok'      => true,
+            'message' => 'Quantite mise a jour (' . $old . ' -> ' . $new . ')',
+            'item'    => $this->mapItem($item->fresh()),
         ]);
     }
 

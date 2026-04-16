@@ -20,6 +20,7 @@ class StockItem extends Model
         'farm_consumable' => 'Consommables agricoles',
         'tool'            => 'Outils',
         'electronic'      => 'Electronique',
+        'argent'          => 'Argent',
         'misc'            => 'Divers',
     ];
 
@@ -35,6 +36,7 @@ class StockItem extends Model
         'farm_consumable' => 'gray',
         'tool'            => 'gray',
         'electronic'      => 'gray',
+        'argent'          => 'warning',
         'misc'            => 'gray',
     ];
 

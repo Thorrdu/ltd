@@ -13,7 +13,7 @@ use Illuminate\Database\Seeder;
  *  1. Met a jour la quantity des items DEJA seedes par StockItemSeeder
  *     (munitions, pieces, armes, matieres, armes blanches, drogues).
  *  2. Cree les items manquants (crosse, corps de SMG/fusils, plans hors
- *     catalogue, consommables agricoles, outils, electronique, argent sale,
+ *     catalogue, consommables agricoles, outils, electronique, argent propre / sale,
  *     variantes de drogues, etc.).
  *
  * Ce seeder s'execute APRES StockItemSeeder via DatabaseSeeder.
@@ -266,15 +266,13 @@ class StockInventorySeeder extends Seeder
     }
 
     /**
-     * Divers : argent sale, sacs, items non classifies ailleurs.
-     * L'argent sale n'a pas vraiment de prix de vente unitaire, on stocke
-     * simplement la quantite (= montant en dollars).
+     * Divers : sacs et items non classifies ailleurs.
+     * L'argent propre et l'argent sale partagent la categorie `argent`.
      */
     private function seedMisc(): void
     {
         $items = [
-            ['slug' => 'misc_argent_sale', 'name' => 'Argent sale', 'price' => 1,    'weight' => 0,   'qty' => 561235, 'sort' => 1,  'notes' => 'Montant en $, non vendable directement'],
-            ['slug' => 'misc_sac_tete',    'name' => 'Sac a mettre sur la tete',    'price' => 2000, 'weight' => 100, 'qty' => 4,   'sort' => 10, 'notes' => null],
+            ['slug' => 'misc_sac_tete', 'name' => 'Sac a mettre sur la tete', 'price' => 2000, 'weight' => 100, 'qty' => 4, 'sort' => 10, 'notes' => null],
         ];
 
         foreach ($items as $it) {
@@ -284,11 +282,35 @@ class StockInventorySeeder extends Seeder
                 'default_sell_price' => $it['price'],
                 'unit_weight_g'      => $it['weight'] ?: null,
                 'quantity'           => $it['qty'],
-                'is_sellable'        => $it['slug'] !== 'misc_argent_sale',
+                'is_sellable'        => true,
                 'is_active'          => true,
                 'sort_order'         => $it['sort'],
                 'notes'              => $it['notes'],
             ]);
         }
+
+        StockItem::updateOrCreate(['slug' => 'misc_argent_sale'], [
+            'category'           => 'argent',
+            'name'               => 'Argent sale',
+            'default_sell_price' => 1,
+            'unit_weight_g'      => null,
+            'quantity'           => 561235,
+            'is_sellable'        => false,
+            'is_active'          => true,
+            'sort_order'         => 1,
+            'notes'              => 'Montant en $, non vendable directement',
+        ]);
+
+        StockItem::updateOrCreate(['slug' => 'cash_argent_propre'], [
+            'category'           => 'argent',
+            'name'               => 'Argent propre',
+            'default_sell_price' => 1,
+            'unit_weight_g'      => null,
+            'quantity'           => 0,
+            'is_sellable'        => false,
+            'is_active'          => true,
+            'sort_order'         => 2,
+            'notes'              => 'Montant en $, non vendable directement',
+        ]);
     }
 }

@@ -977,7 +977,7 @@
 }
 .stocks-row {
     display: grid;
-    grid-template-columns: 2.2fr 0.9fr 0.9fr 1fr 0.9fr 0.6fr;
+    grid-template-columns: 2.2fr 1.1fr 0.9fr 1fr 0.9fr 0.6fr;
     gap: 10px;
     padding: 9px 12px;
     align-items: center;
@@ -1007,6 +1007,14 @@
 }
 .stocks-row .s-qty.zero { color: #ef4444; }
 .stocks-row .s-qty.low  { color: #fb923c; }
+.stocks-row .s-qty-inline {
+    width: 100%;
+    max-width: 10em;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-weight: 700;
+    box-sizing: border-box;
+}
 .stocks-row .s-out {
     font-family: 'Consolas', 'Courier New', monospace;
     font-weight: 700;

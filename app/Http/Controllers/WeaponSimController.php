@@ -16,11 +16,6 @@ use Illuminate\Support\Facades\Validator;
 
 class WeaponSimController extends Controller
 {
-    /**
-     * Categories de stock_items affichees dans l'espace membres (armurerie).
-     */
-    private const ARMURERIE_CATEGORIES = ['weapon_finished', 'weapon_plan', 'weapon_piece', 'raw_material'];
-
     public function hub()
     {
         $members = User::orderBy('name')->get(['id', 'name', 'role']);
@@ -122,9 +117,10 @@ class WeaponSimController extends Controller
             ->get()
             ->map(fn ($c) => $this->mapContract($c));
 
-        $stock = StockItem::whereIn('category', self::ARMURERIE_CATEGORIES)
+        $stock = StockItem::active()
             ->orderBy('category')
             ->orderBy('sort_order')
+            ->orderBy('name')
             ->get()
             ->map(fn (StockItem $s) => [
                 'id'        => $s->id,
@@ -136,7 +132,6 @@ class WeaponSimController extends Controller
             ]);
 
         $movements = StockMovement::with(['stockItem', 'user', 'attributedTo', 'contract'])
-            ->whereHas('stockItem', fn ($q) => $q->whereIn('category', self::ARMURERIE_CATEGORIES))
             ->orderBy('created_at', 'desc')
             ->limit(30)
             ->get()

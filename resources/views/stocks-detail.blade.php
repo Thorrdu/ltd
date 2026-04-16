@@ -25,6 +25,20 @@
             <div class="stocks-detail-grid" id="sdGrid"></div>
 
             <div class="action-card" style="margin-top:12px;">
+                <div class="action-card-title">Quantite en stock</div>
+                <p class="action-hint">Valeur absolue dans le coffre. Un mouvement d'ajustement est cree.</p>
+                <div class="form-row" style="align-items:flex-end;">
+                    <div class="form-group sm">
+                        <label>Quantite</label>
+                        <input type="number" id="sdQtyInput" class="fm-input" min="-999999999" max="999999999" step="1">
+                    </div>
+                    <div class="form-group">
+                        <button type="button" class="action-btn" id="sdQtySave">Appliquer</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-card" style="margin-top:12px;">
                 <div class="action-card-title" style="display:flex; justify-content:space-between; align-items:center;">
                     <span>Fiche article</span>
                     <button class="action-btn secondary" id="sdEditToggle" style="padding:4px 12px; font-size:11px;">Modifier</button>
@@ -78,7 +92,7 @@
                         </div>
                     </div>
                     <div style="font-size:11px; color:#9ca3af; margin-top:4px;">
-                        La quantite en stock ne se modifie pas ici (utilisez l'import CSV ou l'action Ajuster du panel Filament). Un mouvement d'ajustement est cree automatiquement avec le resume des champs modifies.
+                        La quantite se regle dans le bloc ci-dessus, via l'import CSV ou Filament. Les champs de cette fiche generent un mouvement d'ajustement (quantite 0) avec le resume des modifications.
                     </div>
                 </div>
             </div>

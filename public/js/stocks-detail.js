@@ -40,6 +40,8 @@
             $('stocksContent').style.display = '';
             currentItem = data.item;
             renderGrid(data.item, data.sales_total, data.sales_count);
+            var qIn = $('sdQtyInput');
+            if (qIn) qIn.value = data.item.quantity;
             renderSummary(data.item);
             renderOpenAttributions(data.open_attributions || []);
             renderMovements(data.movements || []);
@@ -181,7 +183,37 @@
         }).join('');
     }
 
+    function applyQtyChange() {
+        if (!currentItem) return;
+        var q = $('sdQtyInput');
+        if (!q) return;
+        var n = parseInt(q.value, 10);
+        if (isNaN(n)) {
+            if (auth.showToast) auth.showToast('Quantite invalide', 'error');
+            return;
+        }
+        var btn = $('sdQtySave');
+        btn.disabled = true;
+        btn.textContent = '...';
+        auth.apiPut('/stocks/api/item/' + encodeURIComponent(SLUG) + '/quantity', { quantity: n }, function (err, data) {
+            btn.disabled = false;
+            btn.textContent = 'Appliquer';
+            if (err || !data || data.error) {
+                var msg = (data && data.error) || 'Erreur';
+                if (data && data.messages) {
+                    msg = Object.values(data.messages).flat().join(' | ');
+                }
+                if (auth.showToast) auth.showToast(msg, 'error');
+                return;
+            }
+            if (auth.showToast) auth.showToast(data.message || 'Quantite mise a jour', 'success');
+            tryLoad();
+        });
+    }
+
     function bindEvents() {
+        var qtyBtn = $('sdQtySave');
+        if (qtyBtn) qtyBtn.addEventListener('click', applyQtyChange);
         var toggle = $('sdEditToggle');
         if (toggle) {
             toggle.addEventListener('click', function () {

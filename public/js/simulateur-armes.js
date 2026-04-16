@@ -113,17 +113,24 @@
     function populateGroupedStockSelect(sel, stock) {
         destroyTomSelect(sel);
         sel.innerHTML = '';
-        var cats = { weapon_finished: 'Armes finies', weapon_piece: 'Pi\u00e8ces', weapon_plan: 'Plans', raw_material: 'Mati\u00e8res premi\u00e8res' };
+        var labelMap = window.MC_CATEGORIES || {};
         var grouped = {};
         stock.forEach(function (s) {
             if (!grouped[s.category]) grouped[s.category] = [];
             grouped[s.category].push(s);
         });
-        Object.keys(cats).forEach(function (cat) {
-            if (!grouped[cat] || !grouped[cat].length) return;
+        var catKeys = Object.keys(grouped);
+        catKeys.sort(function (a, b) {
+            var la = labelMap[a] || a;
+            var lb = labelMap[b] || b;
+            return la.localeCompare(lb, 'fr');
+        });
+        catKeys.forEach(function (cat) {
+            var rows = grouped[cat];
+            if (!rows || !rows.length) return;
             var og = document.createElement('optgroup');
-            og.label = cats[cat];
-            grouped[cat].forEach(function (s) {
+            og.label = labelMap[cat] || cat;
+            rows.forEach(function (s) {
                 var opt = document.createElement('option');
                 opt.value = s.id;
                 opt.textContent = s.name;

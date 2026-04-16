@@ -57,6 +57,8 @@ Route::get('/stocks/api/item/{slug}', [StockController::class, 'apiItem'])
     ->where('slug', '[a-z0-9_\-]+');
 Route::put('/stocks/api/item/{slug}', [StockController::class, 'apiUpdateItem'])
     ->where('slug', '[a-z0-9_\-]+');
+Route::put('/stocks/api/item/{slug}/quantity', [StockController::class, 'apiSetQuantity'])
+    ->where('slug', '[a-z0-9_\-]+');
 Route::post('/stocks/api/attribute', [StockController::class, 'apiAttribute']);
 Route::post('/stocks/api/reconcile/{id}', [StockController::class, 'apiReconcile'])
     ->where('id', '[0-9]+');

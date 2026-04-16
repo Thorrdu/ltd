@@ -117,6 +117,33 @@
         });
     }
 
+    function saveRowQuantity(slug, quantity, inputEl, revertVal) {
+        inputEl.disabled = true;
+        auth.apiPut('/stocks/api/item/' + encodeURIComponent(slug) + '/quantity', { quantity: quantity }, function (err, data) {
+            inputEl.disabled = false;
+            if (err || !data || data.error) {
+                var msg = (data && data.error) || 'Erreur';
+                if (data && data.messages) {
+                    msg = Object.values(data.messages).flat().join(' | ');
+                }
+                if (auth.showToast) auth.showToast(msg, 'error');
+                inputEl.value = revertVal;
+                return;
+            }
+            if (auth.showToast) auth.showToast(data.message || 'Quantite mise a jour', 'success');
+            var cat = state.catalog.filter(function (x) { return x.slug === slug; })[0];
+            if (cat) cat.quantity = quantity;
+            inputEl.dataset.orig = String(quantity);
+            renderTotals();
+            var qc = inputEl.parentNode;
+            if (qc) {
+                qc.classList.remove('zero', 'low');
+                var cls = quantity <= 0 ? 'zero' : (quantity < 5 ? 'low' : '');
+                if (cls) qc.classList.add(cls);
+            }
+        });
+    }
+
     function renderList() {
         var el = $('stocksList');
         if (!el) return;
@@ -158,7 +185,9 @@
                 var outClass = it.out_attributed > 0 ? '' : 'none';
                 html += '<div class="stocks-row">' +
                     '<div class="s-name"><a href="/stocks/' + esc(it.slug) + '">' + esc(it.name) + '</a><span class="s-slug">' + esc(it.slug) + '</span></div>' +
-                    '<div class="s-qty ' + qtyClass + '">' + num(it.quantity) + '</div>' +
+                    '<div class="s-qty ' + qtyClass + '">' +
+                    '<input type="number" class="fm-input s-qty-inline" data-slug="' + esc(it.slug) + '" value="' + it.quantity + '" min="-999999999" max="999999999" step="1" title="Entree ou clic hors champ pour enregistrer">' +
+                    '</div>' +
                     '<div class="s-out ' + outClass + '">' + (it.out_attributed ? num(it.out_attributed) : '-') + '</div>' +
                     '<div class="s-price">' + (it.default_sell_price ? money(it.default_sell_price) : '-') + '</div>' +
                     '<div class="s-weight">' + (it.unit_weight_g ? num(it.unit_weight_g) + ' g' : '-') + '</div>' +
@@ -543,6 +572,34 @@
 
         $('impBtnPreview').addEventListener('click', previewImport);
         $('impBtnCommit').addEventListener('click', commitImport);
+
+        var listHost = $('stocksList');
+        if (listHost) {
+            listHost.addEventListener('keydown', function (e) {
+                if (e.target.classList.contains('s-qty-inline') && e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.blur();
+                }
+            });
+            listHost.addEventListener('focusin', function (e) {
+                if (e.target.classList.contains('s-qty-inline')) {
+                    e.target.dataset.orig = e.target.value;
+                }
+            });
+            listHost.addEventListener('focusout', function (e) {
+                if (!e.target.classList.contains('s-qty-inline')) return;
+                var inp = e.target;
+                var slug = inp.getAttribute('data-slug');
+                var orig = inp.dataset.orig;
+                var n = parseInt(inp.value, 10);
+                if (isNaN(n)) {
+                    inp.value = orig;
+                    return;
+                }
+                if (String(n) === String(orig)) return;
+                saveRowQuantity(slug, n, inp, orig);
+            });
+        }
     }
 
     // ── INIT ───────────────────────────────────────────────
