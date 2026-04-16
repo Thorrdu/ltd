@@ -12,7 +12,7 @@ class WeaponSeeder extends Seeder
     {
         /*
          * Prix de vente référence : **dans les bandes min–max** du tableau RP armes (SNS 35–70k, WM29 45–90k,
-         * Céramique 40–80k, Pistol 60–120k, Heavy 90–180k, Cal.50 110–220k). Ancres métier : SNS 60k, Cal.50 200k.
+         * Céramique 40–80k, Pistol 60–120k, Heavy 90–180k, Cal.50 110–220k, AK-47 800k–1,2M). Ancres métier : SNS 60k, Cal.50 200k.
          * Achat réf. : SNS 30k seul. WN29 : le plafond RP (90k) peut rester sous le coût « tout acheté » du simu
          * si plan = 0 — la marge passe alors par stock / récolte / prix du plan.
          */
@@ -23,6 +23,8 @@ class WeaponSeeder extends Seeder
             ['name' => 'Pistol', 'slug' => 'pistol', 'craft_time_seconds' => 15, 'sell_price' => 120000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 10, 'sort_order' => 4],
             ['name' => 'Heavy Pistol', 'slug' => 'heavy', 'craft_time_seconds' => 25, 'sell_price' => 160000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 2, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 10, 'sort_order' => 5],
             ['name' => 'Cal .50', 'slug' => 'cal50', 'craft_time_seconds' => 30, 'sell_price' => 200000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 2, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 15, 'sort_order' => 6],
+            // Recette prod. : métal 40, polymère 50, ressort 5 ; + corp, canon, poignée, plan (1 u. ch.) comme le reste du craft.
+            ['name' => 'AK-47', 'slug' => 'ak47', 'craft_time_seconds' => 60, 'sell_price' => 1000000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 5, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 40, 'recipe_polymere' => 50, 'sort_order' => 7],
         ];
 
         foreach ($weapons as $w) {
