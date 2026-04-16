@@ -1,39 +1,51 @@
-# Product Context - Station LTD / Toolbox Jacques Noir
+# Product Context - Station LTD / Toolbox Lost MC
 
 ## Pourquoi ce projet existe
-Jacques Noir, patron de la station LTD sur Bruxelles Life, a besoin :
-- D'un menu visuel professionnel pour afficher les prix (screenshot + Discord)
-- D'un panneau d'administration pour gerer les donnees sans toucher au code
-- D'une plateforme extensible pour de futurs outils lies a son activite RP
+Le Lost MC a besoin d'outils numeriques pour :
+- Afficher professionnellement les prix de la station LTD (screenshot + Discord)
+- Gerer l'armurerie du MC (craft, stocks, ventes, contrats)
+- Calculer la rentabilite des armes et munitions via un simulateur
+- Suivre les activites economiques des membres (ventes, stocks, argent rapporte)
+- Faciliter la gestion comptable quotidienne du MC
 
 ## Problemes resolus
-- Gestion centralisee des produits, menus et tarifs entreprise
-- Interface d'administration intuitive (Filament) au lieu d'edition JSON manuelle
-- Modele de donnees unifie : un seul Product alimente les pages produits, menus et entreprises
-- Documentation du reglement BXL Life accessible en local pour reference rapide
+- Gestion centralisee du catalogue LTD (produits, menus, tarifs entreprise)
+- Suivi complet du cycle de vie des armes : craft -> stock -> attribution -> vente/retour
+- Calcul automatique de rentabilite armes/munitions base sur les matieres premieres
+- Tracabilite des mouvements de stock (qui a pris quoi, quand, pourquoi)
+- Gestion des contrats clients avec suivi des livraisons
 
 ## Experience utilisateur
 
-### Visiteur (client en jeu)
-- Arrive sur la page d'accueil, choisit une section (Produits, Menus, Entreprises)
-- Design panneau bois, compact, lisible en screenshot
+### Visiteur (client LTD en jeu)
+- Arrive sur le catalogue, choisit une section (Produits, Menus, Entreprises)
+- Design panneau bois compact, lisible en screenshot
 - Mode clean (?clean) pour captures sans navigation
 
-### Administrateur (Jacques Noir)
-- Accede au panneau Filament via /admin
-- Gere les produits (nom, prix, categorie, flags retail/enterprise)
-- Gere les menus (composition depuis les produits existants, promotions)
-- Gere les groupes entreprise (produits attaches avec prix specifiques)
-- Visualise les statistiques du catalogue sur le dashboard
+### Membre du MC
+- Accede au simulateur d'armes pour calculer les prix de vente
+- Se connecte via PIN personnel pour acceder a l'espace membre
+- Enregistre ses ventes, consulte ses stats
+
+### Officier / Tresorier / President
+- Accede aux panneaux Filament (admin LTD + armurerie)
+- Gere les stocks, valide les mouvements, cree des contrats
+- Consulte les fiches membres et classements
 
 ### Futur (extensible)
-- Systeme de lotto/tombola
-- Estimation de stock via screenshots
-- Strategies de vente et analyses
-- Autres outils selon les besoins RP
+- Gestion des drogues (achat orga, distribution, revente, pertes)
+- Armes blanches et autres items a vendre/stocker
+- Gestion des cotisations par role
+- Comptabilite MC (argent sale/propre, remboursements)
+- Fiches membres detaillees
+- Classements (aigle de la semaine)
+- Import stock via CSV/Excel
 
-## Pages publiques
-1. **Accueil** (`/`) : landing page avec logo LTD, 3 cartes de navigation, galerie
-2. **Produits** (`/produits`) : produits retail en 2 colonnes (left/right)
-3. **Menus** (`/menus`) : formules et packs (produits referencees, choix multiples)
-4. **Entreprises** (`/entreprises`) : tarifs specifiques par entreprise partenaire (protege par mot de passe cote client)
+## Pages et interfaces
+1. **Accueil LTD** (`/`) : landing page avec logo, 3 cartes, galerie
+2. **Produits** (`/produits`) : produits retail en 2 colonnes
+3. **Menus** (`/menus`) : formules et packs
+4. **Entreprises** (`/entreprises`) : tarifs specifiques par partenaire (protege par mot de passe)
+5. **Simulateur armes** (`/simulateur-armes`) : calcul de prix, espace membres, craft munitions
+6. **Admin LTD** (`/admin`) : panneau Filament catalogue
+7. **Armurerie** (`/armurerie`) : panneau Filament domaine armes

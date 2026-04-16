@@ -1,26 +1,34 @@
-# Station LTD - Conventions et patterns
+# Station LTD / Toolbox Lost MC - Conventions et patterns
 
 ## Contexte projet
 - Serveur GTA RP : Bruxelles Life
-- Personnage : Jacques Noir, patron de la station LTD (Anderlecht, Little Seoul)
-- Application : Laravel 11 + Filament 3 + MySQL 8
-- Objectif : site vitrine + panneau admin + toolbox extensible
+- Personnage : Jacques Noir, patron de la station LTD (Anderlecht, Little Seoul), membre Lost MC
+- Application : Laravel 12 + Filament 5 + MySQL 8
+- Objectif : site vitrine LTD + gestion armurerie + toolbox extensible pour le MC
 
 ## Architecture
-- Product est la source unique : tous les produits (retail, enterprise, menus) sont dans la table `products`
+- **Deux panneaux Filament** :
+  - `/admin` (AdminPanelProvider) : catalogue LTD
+  - `/armurerie` (ArmureriePanelProvider) : gestion armes, dark mode
+- Product est la source unique pour le catalogue : tous les produits (retail, enterprise, menus) dans `products`
 - Flags `is_retail` et `is_enterprise` determinent la visibilite
-- Les menus referencent des produits via pivot `menu_product` (champ `choice_group` pour les choix)
-- Les entreprises referencent des produits via pivot `enterprise_group_product` (champ `price` specifique)
-- Pages publiques en Blade, CSS custom dans public/css/ (reutilisation du design original)
+- Menus referencent des produits via pivot `menu_product` (champ `choice_group`)
+- Entreprises referencent des produits via pivot `enterprise_product` (champ `price`)
+- Domaine armurerie : weapons, weapon_stocks, weapon_stock_movements, weapon_contracts, weapon_sales
+- Simulateur armes : page Blade + JS monolithique + API JSON (WeaponSimController)
+- Pages publiques en Blade, CSS custom dans public/css/
+- Auth : champ `role` simple sur User, PIN pour simulateur (pas de Spatie Permissions)
 
 ## Conventions code
 - Prix toujours en entiers (pas de centimes, pas de float)
 - sort_order sur toutes les entites ordonnees
 - Noms de categories en majuscules
-- Scopes Eloquent pour les filtres courants (scopeRetail, scopeEnterprise, scopeMenus, scopePromos)
+- Scopes Eloquent pour les filtres courants
 - Pas de logique metier dans les controllers : queries simples, donnees passees aux vues
+- Filament v5 : actions sous `Filament\Actions`, pas `Tables\Actions`
+- Modele `Enterprise` (pas `EnterpriseGroup`)
 
-## Conventions design (pages publiques)
+## Conventions design (pages publiques catalogue)
 - Couleurs : navy (#0d1b2e, #0d2347), rouge (#8b0000, #c0392b), creme (#f5f0e6)
 - Panneau bois avec ombres et animation boardFadeIn
 - Dot leaders entre noms et prix (span.dot-leader)
@@ -29,20 +37,34 @@
 - Largeur panneau : 700px max
 - Sous-titre : "Little Seoul - Bruxelles"
 
+## Conventions design (simulateur / outils MC)
+- Panneau armurerie : dark mode
+- Simulateur : onglets, auth par PIN, header X-Sim-User
+- Pages futures MC : mobile-friendly, grands boutons
+
 ## Fichiers de reference
 - `docs/architecture.md` : schema complet de la base, modeles, relations, seeders
 - `docs/reglement-bxl-life/` : reglement du serveur BXL Life
 - `docs/tasks/` : taches futures (lotto, stock, strategies, etc.)
 - `memory-bank/` : documentation du projet (6 fichiers .md)
+- `LA_SUIITE/next.md` : feuille de route fonctionnelle
+- `LA_SUIITE/drogue_indicatif.png` : reference prix drogues
 
 ## Ne pas faire
 - Ne jamais stocker les prix en float
 - Ne pas inventer de slogans (lore-friendly uniquement)
 - Ne pas utiliser d'emojis dans le code ou les reponses
 - Ne pas modifier les fichiers dans _backup/
+- Ne pas ajouter de package Spatie Permissions sans discussion prealable
 
 ## Langue
 - Reponses en francais
 - Code et commentaires en anglais
 - Noms de modeles/tables en anglais
 - Contenu affiche (labels, textes) en francais
+
+## Patterns appris
+- Le namespace Filament v5 utilise `Filament\Actions` (pas `Tables\Actions`)
+- Les seeders lisent les donnees depuis des tableaux PHP (plus depuis JSON)
+- Le simulateur armes est un JS monolithique (~1446 lignes) avec API dans web.php
+- Le middleware AllowIframe est necessaire pour les pages catalogue embedees

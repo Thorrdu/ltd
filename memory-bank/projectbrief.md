@@ -1,29 +1,30 @@
-# Project Brief - Station LTD / Toolbox Jacques Noir
+# Project Brief - Station LTD / Toolbox Lost MC
 
 ## Contexte
-Application web pour la station-service LTD de Little Seoul (Anderlecht), sur le serveur GTA RP **Bruxelles Life**.
-Joueur : **Jacques Noir**, patron de l'entreprise LTD.
+Application web multi-usage pour le MC (Motorcycle Club) **Lost MC** sur le serveur GTA RP **Bruxelles Life**.
+Joueur : **Jacques Noir**, patron de la station LTD (Little Seoul, Anderlecht) et membre du Lost MC.
 
 ## Objectif principal
-Fournir un outil multi-usage pour Jacques Noir :
-- **Site vitrine** : affichage professionnel des produits, menus et tarifs entreprises (capture screenshot, partage Discord)
-- **Panneau d'administration** : gestion complete des donnees via Filament (produits, categories, menus, entreprises)
-- **Assistant/Toolbox** : plateforme extensible pour de futures mecaniques (lotto/tombola, estimation de stock, strategies de vente, etc.)
+Fournir un outil complet pour la gestion quotidienne du MC et de la station LTD :
+- **Site vitrine LTD** : affichage professionnel des produits, menus et tarifs entreprises
+- **Panneau d'administration LTD** : gestion des donnees catalogue via Filament
+- **Panneau Armurerie** : gestion complete des armes, stocks, mouvements, contrats et ventes
+- **Simulateur d'armes** : outil de calcul de rentabilite base sur les matieres premieres et recettes de craft
+- **Plateforme extensible** : futur systeme de gestion des drogues, stock general, cotisations, fiches membres, comptabilite MC
 
 ## Portee actuelle
-- **Site public (Blade)** : 4 pages reproduisant fidelement le design original (panneau bois, carte de restaurant)
-  - Page d'accueil (landing page avec logo, navigation, galerie)
-  - Page produits (snacks, boissons, coin festif, objets du quotidien)
-  - Page menus (formules et promotions)
-  - Page entreprises (tarifs reserves aux partenaires)
-- **Panneau Filament** : administration CRUD de toutes les donnees avec filtres, relations et actions bulk
-- **Documentation** : reglement BXL Life, structure de taches futures
+- **Site public LTD (Blade)** : 4 pages catalogue (accueil, produits, menus, entreprises)
+- **Simulateur armes (Blade + JS)** : page standalone avec onglets simulateur / espace membres
+- **Panneau Filament Admin** (`/admin`) : CRUD catalogue LTD (categories, produits, menus, entreprises)
+- **Panneau Filament Armurerie** (`/armurerie`) : CRUD armes, stocks, mouvements, contrats, ventes + page CraftWeapon
+- **Authentification** : systeme de roles simple (champ `role` sur User) + PIN pour simulateur
+- **Documentation** : reglement BXL Life, architecture, taches futures
 
 ## Exigences cles
-- Design compact, optimise pour screenshot (panneau bois, dot leaders, zebra stripes)
-- Logo reel (PNG) integre dans toutes les pages
-- Modele Product unifie (source unique pour retail, enterprise et menus)
-- Prix specifiques par entreprise partenaire via table pivot
-- Menus referencant les produits existants (avec gestion des choix via choice_group)
-- Mode clean (?clean) pour captures sans navigation
-- Stack : Laravel 11 + Filament 3 + MySQL + Vite
+- Design compact catalogue, optimise pour screenshot (panneau bois, dot leaders, zebra stripes)
+- Modele Product unifie pour retail/enterprise/menus
+- Domaine armurerie complet avec tracabilite des mouvements de stock
+- Systeme de contrats clients pour les commandes d'armes
+- Systeme de ventes avec suivi par vendeur
+- Prix configurables en DB (matieres premieres, recettes, prix de vente)
+- Stack : Laravel 12 + Filament 5 + MySQL 8 + Vite
