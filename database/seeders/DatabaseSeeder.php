@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             WeaponSeeder::class,
             SettingSeeder::class,
+            PageAccessRuleSeeder::class,
         ]);
     }
 }

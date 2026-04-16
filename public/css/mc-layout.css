@@ -27,7 +27,72 @@
 
 .mc-top-home:hover { color: #999; }
 
+.mc-top-nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: 14px;
+    padding-left: 14px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mc-top-nav-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-radius: 3px;
+    transition: color 0.15s, background 0.15s;
+    white-space: nowrap;
+}
+
+.mc-top-nav-link:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+
+.mc-top-nav-link.is-active {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 -2px 0 #fff;
+}
+
 .mc-top-spacer { flex: 1; }
+
+.mc-nav-toggle {
+    display: none;
+    position: fixed;
+    top: 6px;
+    right: 10px;
+    z-index: 150;
+    width: 32px;
+    height: 28px;
+    background: #0a0a0a;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 3px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.mc-nav-toggle span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: #fff;
+    border-radius: 1px;
+    transition: transform 0.2s, opacity 0.2s;
+}
+
+.mc-nav-toggle.is-open span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+.mc-nav-toggle.is-open span:nth-child(2) { opacity: 0; }
+.mc-nav-toggle.is-open span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
 
 .mc-top-auth {
     display: flex;
@@ -77,8 +142,9 @@
     color: #888;
 }
 
+.mc-user-role.role-treasurer { color: #60a5fa; background: rgba(96, 165, 250, 0.14); }
 .mc-user-role.role-president { color: #ffd700; background: rgba(255, 215, 0, 0.12); }
-.mc-user-role.role-treasurer { color: #60a5fa; background: rgba(96, 165, 250, 0.12); }
+.mc-user-role.role-vice_president { color: #ff9f43; background: rgba(255, 159, 67, 0.12); }
 .mc-user-role.role-officer { color: #ccc; background: rgba(255, 255, 255, 0.1); }
 .mc-user-role.role-member { color: #666; background: rgba(255, 255, 255, 0.04); }
 .mc-user-role.role-prospect { color: #555; background: rgba(255, 255, 255, 0.03); }
@@ -288,6 +354,16 @@
 
 .mc-page-back:hover { color: #fff; }
 
+.mc-page-motto {
+    display: block;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 10px;
+    font-style: italic;
+    color: #444;
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
+
 /* ============================================
    MEMBER BAR (espace-membres page)
    ============================================ */
@@ -313,9 +389,43 @@
 /* ============================================
    RESPONSIVE
    ============================================ */
+@media (max-width: 900px) {
+    .mc-top-nav {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        background: #0a0a0a;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: none;
+        padding: 6px;
+        margin: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.25s ease;
+        z-index: 140;
+    }
+    .mc-top-nav.is-open { max-height: 320px; padding: 6px; }
+
+    .mc-top-nav-link {
+        padding: 8px 12px;
+        font-size: 12px;
+        letter-spacing: 1px;
+        border-radius: 3px;
+    }
+
+    .mc-top-nav-link.is-active { box-shadow: inset 3px 0 0 #fff; }
+
+    .mc-nav-toggle { display: flex; }
+}
+
 @media (max-width: 600px) {
     .mc-top-bar {
         padding: 6px 10px;
+        padding-right: 48px;
     }
     .mc-top-home { font-size: 11px; letter-spacing: 2px; }
     .mc-hub { padding: 24px 12px 40px; }
@@ -326,4 +436,350 @@
 
 @media (max-width: 380px) {
     .mc-auth-logged-in { flex-wrap: wrap; justify-content: flex-end; }
+}
+
+.inline-link {
+    color: #60a5fa;
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(96, 165, 250, 0.4);
+    transition: color 0.15s;
+}
+
+.inline-link:hover { color: #93c5fd; border-bottom-color: #93c5fd; }
+
+/* ============================================
+   PROFILE CARD (espace-membres / Mon profil)
+   ============================================ */
+.profile-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 18px;
+    background: linear-gradient(135deg, #141414 0%, #1a1a1a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.profile-avatar {
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 1px;
+}
+
+.profile-avatar.role-treasurer { color: #60a5fa; border-color: rgba(96, 165, 250, 0.4); background: rgba(96, 165, 250, 0.1); }
+.profile-avatar.role-president { color: #ffd700; border-color: rgba(255, 215, 0, 0.4); background: rgba(255, 215, 0, 0.1); }
+.profile-avatar.role-vice_president { color: #ff9f43; border-color: rgba(255, 159, 67, 0.4); background: rgba(255, 159, 67, 0.1); }
+.profile-avatar.role-officer { color: #ddd; border-color: rgba(255, 255, 255, 0.25); }
+
+.profile-id { flex: 1; min-width: 0; }
+
+.profile-name {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+.profile-meta {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.profile-role-badge {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #aaa;
+}
+
+.profile-role-badge.role-treasurer { color: #60a5fa; background: rgba(96, 165, 250, 0.14); }
+.profile-role-badge.role-president { color: #ffd700; background: rgba(255, 215, 0, 0.12); }
+.profile-role-badge.role-vice_president { color: #ff9f43; background: rgba(255, 159, 67, 0.12); }
+.profile-role-badge.role-officer { color: #ddd; }
+
+.profile-status {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: rgba(16, 185, 129, 0.14);
+    color: #10b981;
+}
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.profile-stat {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.ps-value {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+}
+
+.ps-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+@media (max-width: 480px) {
+    .profile-stats { grid-template-columns: 1fr 1fr; }
+    .profile-avatar { width: 44px; height: 44px; font-size: 16px; }
+    .profile-name { font-size: 14px; }
+}
+
+.ml-hint {
+    margin-top: 10px;
+    padding: 8px 12px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    color: #888;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+}
+
+/* ============================================
+   MEMBRES PAGE
+   ============================================ */
+.members-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.members-toolbar .fm-input { flex: 1; min-width: 180px; }
+
+.members-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.stats-chip {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    padding: 3px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    color: #aaa;
+}
+
+.stats-chip strong { color: #fff; font-weight: 700; }
+.stats-chip.role-president strong { color: #ffd700; }
+.stats-chip.role-treasurer strong { color: #60a5fa; }
+.stats-chip.role-vice_president strong { color: #ff9f43; }
+.stats-chip.role-officer strong { color: #ccc; }
+
+.members-table {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.members-head,
+.members-row {
+    display: grid;
+    grid-template-columns: 1.8fr 1.2fr 0.9fr 0.9fr 1.4fr;
+    gap: 8px;
+    padding: 8px 10px;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+
+.members-head {
+    background: #0a0a0a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+}
+
+.members-row:nth-child(even) { background: rgba(255, 255, 255, 0.015); }
+.members-row:hover { background: rgba(255, 255, 255, 0.035); }
+
+.mh-name { display: flex; flex-direction: column; }
+.ml-name { color: #fff; font-weight: 700; }
+.ml-email { color: #555; font-size: 10px; margin-top: 2px; }
+
+.mh-created { color: #666; font-size: 11px; }
+
+.mh-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.status-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-radius: 3px;
+}
+
+.status-pill.status-active { background: rgba(16, 185, 129, 0.14); color: #10b981; }
+.status-pill.status-inactive { background: rgba(239, 68, 68, 0.14); color: #ef4444; }
+
+.member-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #aaa;
+}
+
+.member-badge.role-president { color: #ffd700; background: rgba(255, 215, 0, 0.12); }
+.member-badge.role-treasurer { color: #60a5fa; background: rgba(96, 165, 250, 0.12); }
+.member-badge.role-vice_president { color: #ff9f43; background: rgba(255, 159, 67, 0.12); }
+.member-badge.role-officer { color: #ccc; background: rgba(255, 255, 255, 0.1); }
+.member-badge.role-member { color: #888; background: rgba(255, 255, 255, 0.05); }
+.member-badge.role-prospect { color: #666; background: rgba(255, 255, 255, 0.03); }
+
+/* Matrix table */
+.matrix-table {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.matrix-head,
+.matrix-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 2fr;
+    gap: 10px;
+    padding: 8px 10px;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+
+.matrix-head {
+    background: #0a0a0a;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.matrix-row:nth-child(even) { background: rgba(255, 255, 255, 0.015); }
+.matrix-row.is-system { border-left: 2px solid #60a5fa; }
+
+.mx-page strong { color: #fff; font-weight: 700; display: block; }
+.mx-key { color: #555; font-size: 10px; font-family: 'Consolas', monospace; }
+.mx-desc { color: #888; font-size: 11px; }
+
+/* PIN modal */
+.gm-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+}
+
+.gm-modal-inner {
+    background: linear-gradient(160deg, #141414, #1a1a1a);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 24px 30px;
+    text-align: center;
+    min-width: 300px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+}
+
+.gm-modal-title {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+}
+
+.gm-modal-pin {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 32px;
+    font-weight: 800;
+    color: #ffd700;
+    letter-spacing: 4px;
+    padding: 12px 0;
+    margin: 0 0 10px;
+}
+
+.gm-modal-hint {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    color: #888;
+    margin: 0 0 16px;
+}
+
+@media (max-width: 720px) {
+    .members-head { display: none; }
+    .members-row {
+        grid-template-columns: 1fr;
+        gap: 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .matrix-head { display: none; }
+    .matrix-row { grid-template-columns: 1fr; gap: 4px; }
 }

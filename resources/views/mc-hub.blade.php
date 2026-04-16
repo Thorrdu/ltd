@@ -32,9 +32,17 @@
                 <span class="mc-hub-btn-label">Espace membres</span>
                 <span class="mc-hub-btn-desc">Stocks, ventes, contrats, historique</span>
             </a>
+            <a href="/membres" class="mc-hub-btn mc-hub-btn-vp" style="display:none;">
+                <span class="mc-hub-btn-label">Gestion membres</span>
+                <span class="mc-hub-btn-desc">Roles, acces, PIN (VP+)</span>
+            </a>
             <a href="/armurerie" target="_blank" class="mc-hub-btn mc-hub-btn-officer" style="display:none;">
-                <span class="mc-hub-btn-label">Panel Admin</span>
+                <span class="mc-hub-btn-label">Panel Armurerie</span>
                 <span class="mc-hub-btn-desc">Gestion avancee (Filament)</span>
+            </a>
+            <a href="/admin" target="_blank" class="mc-hub-btn mc-hub-btn-treasurer" style="display:none;">
+                <span class="mc-hub-btn-label">Panel Admin LTD</span>
+                <span class="mc-hub-btn-desc">Catalogue + parametres (Tresorier)</span>
             </a>
         </div>
     </div>
@@ -49,14 +57,25 @@
 @section('scripts')
 <script>
 (function() {
+    var LEVEL = { prospect: 1, member: 2, officer: 3, vice_president: 4, president: 5, treasurer: 99 };
+    function isAtLeast(role, min) { return (LEVEL[role] || 0) >= (LEVEL[min] || 0); }
     function update() {
         var auth = window.McAuth;
         var loggedIn = auth && auth.isLoggedIn;
-        var isOfficer = loggedIn && auth.isOfficer();
+        var role = loggedIn ? auth.userRole : '';
+        var isOfficer = loggedIn && isAtLeast(role, 'officer');
+        var isVp = loggedIn && isAtLeast(role, 'vice_president');
+        var isSuperadmin = loggedIn && role === 'treasurer';
         document.getElementById('hubAuthSection').style.display = loggedIn ? '' : 'none';
         document.getElementById('hubLoginPrompt').style.display = loggedIn ? 'none' : '';
         document.querySelectorAll('.mc-hub-btn-officer').forEach(function(el) {
             el.style.display = isOfficer ? '' : 'none';
+        });
+        document.querySelectorAll('.mc-hub-btn-vp').forEach(function(el) {
+            el.style.display = isVp ? '' : 'none';
+        });
+        document.querySelectorAll('.mc-hub-btn-treasurer').forEach(function(el) {
+            el.style.display = isSuperadmin ? '' : 'none';
         });
     }
     update();

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\WeaponSimController;
 use App\Http\Middleware\AllowIframe;
@@ -26,3 +27,15 @@ Route::put('/simulateur-armes/api/contract-item/{id}', [WeaponSimController::cla
 Route::post('/simulateur-armes/api/member', [WeaponSimController::class, 'createMember']);
 Route::put('/simulateur-armes/api/member/{id}', [WeaponSimController::class, 'updateMember']);
 Route::post('/simulateur-armes/api/change-pin', [WeaponSimController::class, 'changePin']);
+
+// Gestion des membres (front)
+Route::get('/membres', [MemberController::class, 'index'])->name('membres');
+Route::get('/membres/api/list', [MemberController::class, 'apiList']);
+Route::post('/membres/api/create', [MemberController::class, 'apiCreate']);
+Route::put('/membres/api/{id}', [MemberController::class, 'apiUpdate']);
+Route::post('/membres/api/{id}/reset-pin', [MemberController::class, 'apiResetPin']);
+Route::delete('/membres/api/{id}', [MemberController::class, 'apiDelete']);
+
+// Matrice d'acces
+Route::get('/membres/api/matrix', [MemberController::class, 'apiMatrix']);
+Route::put('/membres/api/matrix/{id}', [MemberController::class, 'apiUpdateMatrix']);

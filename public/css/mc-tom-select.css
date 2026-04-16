@@ -1,0 +1,174 @@
+/* ============================================
+   TOM SELECT -- dark MC theme
+   ============================================ */
+
+.ts-wrapper {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+
+.ts-wrapper .ts-control {
+    background: #0e0e0e;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 4px;
+    padding: 6px 10px;
+    min-height: 30px;
+    color: #e0e0e0;
+    box-shadow: none;
+    transition: border-color 0.15s;
+}
+
+.ts-wrapper .ts-control:hover {
+    border-color: rgba(255, 255, 255, 0.28);
+}
+
+.ts-wrapper.focus .ts-control {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+.ts-wrapper.disabled .ts-control {
+    background: #080808;
+    color: #555;
+    cursor: not-allowed;
+}
+
+.ts-wrapper .ts-control > input {
+    color: #e0e0e0;
+    font-size: 12px;
+}
+
+.ts-wrapper .ts-control > input::placeholder,
+.ts-wrapper .ts-control .placeholder {
+    color: #555;
+    opacity: 1;
+}
+
+.ts-wrapper .ts-control .item {
+    color: #e6e6e6;
+    font-weight: 600;
+}
+
+.ts-wrapper.single .ts-control::after {
+    border-top-color: #888;
+    margin-right: 2px;
+}
+
+.ts-dropdown {
+    background: #0e0e0e;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    color: #ccc;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+    margin-top: 3px;
+    font-size: 12px;
+    z-index: 300;
+}
+
+.ts-dropdown .dropdown-input-wrap {
+    padding: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ts-dropdown .dropdown-input {
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    color: #e0e0e0;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+
+.ts-dropdown .option {
+    padding: 6px 10px;
+    color: #bbb;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+}
+
+.ts-dropdown .option:hover,
+.ts-dropdown .option.active {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent);
+    color: #fff;
+    border-left-color: #fff;
+}
+
+.ts-dropdown .option.selected {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.ts-dropdown .optgroup-header {
+    background: #080808;
+    color: #888;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ts-dropdown .optgroup:not(:first-child) {
+    border-top: none;
+}
+
+.ts-dropdown .no-results {
+    color: #555;
+    font-style: italic;
+    padding: 10px;
+    text-align: center;
+}
+
+.ts-dropdown .create {
+    color: #888;
+    padding: 6px 10px;
+    font-style: italic;
+}
+
+/* highlighted search match */
+.ts-dropdown .highlight {
+    background: rgba(255, 215, 0, 0.18);
+    color: #ffd700;
+    border-radius: 2px;
+    padding: 0 1px;
+}
+
+/* compact variant for tight forms */
+.ts-wrapper.mc-ts-sm .ts-control {
+    padding: 4px 8px;
+    min-height: 26px;
+}
+
+/* role badges inside options */
+.ts-dropdown .ts-role-badge {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 1px 5px;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+
+.ts-dropdown .ts-role-badge.role-president { color: #ffd700; background: rgba(255, 215, 0, 0.12); }
+.ts-dropdown .ts-role-badge.role-treasurer { color: #60a5fa; background: rgba(96, 165, 250, 0.12); }
+.ts-dropdown .ts-role-badge.role-vice_president { color: #ff9f43; background: rgba(255, 159, 67, 0.12); }
+.ts-dropdown .ts-role-badge.role-officer { color: #ccc; background: rgba(255, 255, 255, 0.1); }
+.ts-dropdown .ts-role-badge.role-member { color: #888; background: rgba(255, 255, 255, 0.05); }
+.ts-dropdown .ts-role-badge.role-prospect { color: #666; background: rgba(255, 255, 255, 0.03); }
+
+/* stock quantity hint inside option */
+.ts-dropdown .ts-stock-qty {
+    float: right;
+    color: #60a5fa;
+    font-weight: 700;
+    font-size: 11px;
+}
+
+.ts-dropdown .ts-stock-qty.low { color: #ef4444; }
+.ts-dropdown .ts-stock-qty.zero { color: #555; }

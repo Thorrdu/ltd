@@ -84,6 +84,10 @@ class WeaponSimController extends Controller
 
         $user = User::findOrFail($request->user_id);
 
+        if (! $user->is_active) {
+            return response()->json(['error' => 'Compte désactivé. Contactez un officier.'], 403);
+        }
+
         if (! $user->sim_pin) {
             return response()->json(['error' => 'Aucun PIN configuré. Contactez un officier.'], 400);
         }
@@ -169,6 +173,7 @@ class WeaponSimController extends Controller
             ->get(['name', 'quantity', 'category']);
 
         $members = User::orderBy('name')->get(['id', 'name', 'role']);
+        $current = $this->authUser($request);
 
         return response()->json([
             'contracts' => $contracts,
@@ -181,6 +186,8 @@ class WeaponSimController extends Controller
             'reasons' => WeaponStockMovement::REASONS,
             'contract_statuses' => WeaponContract::STATUSES,
             'members' => $members,
+            'assignable_roles' => $current ? $current->assignableRoles() : [],
+            'can_manage_members' => $current ? $current->canAccessPage('membres_gestion') : false,
         ]);
     }
 
@@ -430,11 +437,15 @@ class WeaponSimController extends Controller
         }
 
         $user = $this->authUser($request);
-        if (! $user->isOfficer()) {
-            return response()->json(['error' => 'Réservé aux officiers'], 403);
+        if (! $user->canAccessPage('membres_gestion')) {
+            return response()->json(['error' => 'Accès refusé'], 403);
         }
 
-        $allowedRoles = array_keys(User::ROLES);
+        $allowedRoles = array_column($user->assignableRoles(), 'key');
+        if (empty($allowedRoles)) {
+            return response()->json(['error' => 'Aucun rôle assignable par votre niveau'], 403);
+        }
+
         $v = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
             'role' => 'required|string|in:' . implode(',', $allowedRoles),
@@ -453,6 +464,7 @@ class WeaponSimController extends Controller
             'password' => Hash::make('lost-' . $slug),
             'role' => $request->role,
             'sim_pin' => Hash::make($request->pin),
+            'is_active' => true,
         ]);
 
         return response()->json([
@@ -469,16 +481,15 @@ class WeaponSimController extends Controller
         }
 
         $user = $this->authUser($request);
-        if (! $user->isOfficer()) {
-            return response()->json(['error' => 'Réservé aux officiers'], 403);
+        if (! $user->canAccessPage('membres_gestion')) {
+            return response()->json(['error' => 'Accès refusé'], 403);
         }
 
         $member = User::findOrFail($id);
 
-        $allowedRoles = array_keys(User::ROLES);
         $v = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:100',
-            'role' => 'sometimes|string|in:' . implode(',', $allowedRoles),
+            'role' => 'sometimes|string',
             'pin' => 'sometimes|string|min:4|max:20',
         ]);
 
@@ -486,11 +497,14 @@ class WeaponSimController extends Controller
             return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
         }
 
+        if ($request->has('role')) {
+            if (! $user->canAssignRole($request->role)) {
+                return response()->json(['error' => 'Vous ne pouvez pas attribuer ce rôle'], 403);
+            }
+            $member->role = $request->role;
+        }
         if ($request->has('name')) {
             $member->name = $request->name;
-        }
-        if ($request->has('role')) {
-            $member->role = $request->role;
         }
         if ($request->has('pin')) {
             $member->sim_pin = Hash::make($request->pin);

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\PageAccessRule;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,12 +15,15 @@ class User extends Authenticatable implements FilamentUser
     use HasFactory, Notifiable;
 
     public const ROLES = [
-        'prospect'  => ['label' => 'Prospect',  'level' => 1],
-        'member'    => ['label' => 'Membre',     'level' => 2],
-        'officer'   => ['label' => 'Officier',   'level' => 3],
-        'treasurer' => ['label' => 'Trésorier',  'level' => 4],
-        'president' => ['label' => 'Président',  'level' => 5],
+        'prospect'       => ['label' => 'Prospect',        'level' => 1],
+        'member'         => ['label' => 'Membre',          'level' => 2],
+        'officer'        => ['label' => 'Officier',        'level' => 3],
+        'vice_president' => ['label' => 'Vice-Président',  'level' => 4],
+        'president'      => ['label' => 'Président',       'level' => 5],
+        'treasurer'      => ['label' => 'Trésorier',       'level' => 99],
     ];
+
+    public const SUPERADMIN_ROLE = 'treasurer';
 
     protected $fillable = [
         'name',
@@ -27,6 +31,11 @@ class User extends Authenticatable implements FilamentUser
         'password',
         'role',
         'sim_pin',
+        'is_active',
+    ];
+
+    protected $attributes = [
+        'is_active' => true,
     ];
 
     protected $hidden = [
@@ -40,6 +49,7 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -77,14 +87,24 @@ class User extends Authenticatable implements FilamentUser
         return $this->isAtLeast('officer');
     }
 
-    public function isTreasurer(): bool
+    public function isVicePresident(): bool
     {
-        return $this->isAtLeast('treasurer');
+        return $this->isAtLeast('vice_president');
     }
 
     public function isPresident(): bool
     {
-        return $this->role === 'president';
+        return $this->role === 'president' || $this->isSuperadmin();
+    }
+
+    public function isTreasurer(): bool
+    {
+        return $this->role === 'treasurer';
+    }
+
+    public function isSuperadmin(): bool
+    {
+        return $this->role === self::SUPERADMIN_ROLE;
     }
 
     public static function roleOptions(): array
@@ -92,15 +112,49 @@ class User extends Authenticatable implements FilamentUser
         return collect(self::ROLES)->mapWithKeys(fn ($v, $k) => [$k => $v['label']])->all();
     }
 
+    /**
+     * Returns true if this user is allowed to assign the given role.
+     * Rule: superadmin (treasurer) can assign any role, including another treasurer.
+     * Otherwise, a user can assign any role strictly lower than their own level.
+     */
+    public function canAssignRole(string $role): bool
+    {
+        if (! isset(self::ROLES[$role])) {
+            return false;
+        }
+        if ($this->isSuperadmin()) {
+            return true;
+        }
+        $target = self::ROLES[$role]['level'];
+
+        return $this->getRoleLevel() > $target;
+    }
+
+    /**
+     * List of roles this user may assign, as [['key' => 'member', 'label' => 'Membre'], ...].
+     */
+    public function assignableRoles(): array
+    {
+        $out = [];
+        foreach (self::ROLES as $key => $data) {
+            if ($this->canAssignRole($key)) {
+                $out[] = ['key' => $key, 'label' => $data['label']];
+            }
+        }
+
+        return $out;
+    }
+
     // ── Filament access ──────────────────────────────────────
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return match ($panel->getId()) {
-            'admin'     => $this->isAtLeast('treasurer'),
-            'armurerie' => $this->isAtLeast('officer'),
-            default     => false,
-        };
+        return PageAccessRule::userCanAccess($this, 'panel_' . $panel->getId());
+    }
+
+    public function canAccessPage(string $pageKey): bool
+    {
+        return PageAccessRule::userCanAccess($this, $pageKey);
     }
 
     // ── Sim PIN ──────────────────────────────────────────────

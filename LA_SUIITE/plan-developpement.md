@@ -139,6 +139,17 @@
 - [ ] Notification au tresorier (dans l'app, pas par email)
 - [ ] Page de validation : liste des mouvements en attente, bouton approuver/refuser
 
+### 3.4 Attribution d'items a un membre/prospect (officier+)
+- [ ] Formulaire dedie "Attribuer un item" accessible a officier+ sur `/espace-membres` (ou `/stocks`)
+- [ ] Selection : item (arme/munition/drogue/arme blanche) + quantite + beneficiaire (membre ou prospect)
+- [ ] Enregistre un `stock_movement` de type `attribution` (quantite sortie du stock interne, ajoutee au compte externe du beneficiaire)
+- [ ] Champ `attributed_to_user_id` sur le mouvement (deja present sur `weapon_stock_movements`)
+- [ ] Notes libres (motif, contexte)
+- [ ] Visible sur la fiche du beneficiaire (items actuellement en sa possession, non reconcilies)
+- [ ] Le beneficiaire peut ensuite reconcilier : vendu (genere une vente), perdu, retour stock, don
+- [ ] Historique complet des attributions consultable par officier+
+- [ ] Generalisable a tous les types de stock (arme, munition, drogue, arme blanche)
+
 ### 3.4 Import stock via CSV/Excel
 - [ ] Page d'import accessible tresorier/president
 - [ ] Upload fichier CSV/Excel (genere depuis screenshots en jeu via GPT)

@@ -83,7 +83,35 @@
         return 'ammo-ben-zero';
     }
 
+    // ===== TOM SELECT HELPERS =====
+    var HAS_TOM = typeof TomSelect !== 'undefined';
+
+    function stockQtyClass(q) {
+        if (q <= 0) return 'zero';
+        if (q <= 2) return 'low';
+        return '';
+    }
+
+    function destroyTomSelect(el) {
+        if (el && el.tomselect) {
+            el.tomselect.destroy();
+        }
+    }
+
+    function initTomSelectSingle(el, options) {
+        if (!el || !HAS_TOM) return null;
+        destroyTomSelect(el);
+        var opts = Object.assign({
+            maxOptions: 500,
+            allowEmptyOption: false,
+            create: false,
+            plugins: ['dropdown_input']
+        }, options || {});
+        return new TomSelect(el, opts);
+    }
+
     function populateGroupedStockSelect(sel, stock) {
+        destroyTomSelect(sel);
         sel.innerHTML = '';
         var cats = { finished_weapon: 'Armes finies', piece: 'Pi\u00e8ces', plan: 'Plans', raw_material: 'Mati\u00e8res premi\u00e8res' };
         var grouped = {};
@@ -98,17 +126,70 @@
             grouped[cat].forEach(function (s) {
                 var opt = document.createElement('option');
                 opt.value = s.id;
-                opt.textContent = s.name + ' (' + s.quantity + ')';
+                opt.textContent = s.name;
+                opt.dataset.qty = s.quantity;
+                opt.dataset.category = s.category;
                 og.appendChild(opt);
             });
             sel.appendChild(og);
         });
+        initTomSelectSingle(sel, {
+            placeholder: 'Rechercher un article...',
+            searchField: ['text'],
+            render: {
+                option: function (data, escape) {
+                    var qty = data.$option && data.$option.dataset ? (data.$option.dataset.qty || '0') : '0';
+                    var cls = stockQtyClass(parseInt(qty, 10) || 0);
+                    return '<div>' + escape(data.text) +
+                        '<span class="ts-stock-qty ' + cls + '">' + escape(qty) + '</span></div>';
+                },
+                item: function (data, escape) {
+                    var qty = data.$option && data.$option.dataset ? (data.$option.dataset.qty || '') : '';
+                    return '<div>' + escape(data.text) +
+                        (qty !== '' ? ' <span class="ts-stock-qty">' + escape(qty) + '</span>' : '') +
+                        '</div>';
+                }
+            }
+        });
     }
 
     function populateWeaponSelect(sel) {
+        destroyTomSelect(sel);
         sel.innerHTML = '';
         weaponList.forEach(function (w) {
             sel.insertAdjacentHTML('beforeend', '<option value="' + w.id + '">' + esc(w.name) + '</option>');
+        });
+        initTomSelectSingle(sel, {
+            placeholder: 'Choisir une arme...',
+            searchField: ['text']
+        });
+    }
+
+    function populateSaleWeaponSelect(sel) {
+        destroyTomSelect(sel);
+        sel.innerHTML = '';
+        weaponList.forEach(function (w) {
+            var st = getWeaponStock(w.id);
+            var qty = st ? st.quantity : 0;
+            var opt = document.createElement('option');
+            opt.value = w.id;
+            opt.textContent = w.name;
+            opt.dataset.qty = qty;
+            opt.dataset.price = w.sell_price || 0;
+            sel.appendChild(opt);
+        });
+        initTomSelectSingle(sel, {
+            placeholder: 'Rechercher une arme...',
+            searchField: ['text'],
+            render: {
+                option: function (data, escape) {
+                    var qty = data.$option && data.$option.dataset ? (data.$option.dataset.qty || '0') : '0';
+                    var cls = stockQtyClass(parseInt(qty, 10) || 0);
+                    return '<div>' + escape(data.text) +
+                        '<span class="ts-stock-qty ' + cls + '">' + escape(qty) + ' stock</span></div>';
+                }
+            },
+            onChange: function () { onSaleWeaponChange(); }
         });
     }
 
@@ -594,15 +675,24 @@
 
     // ===== MEMBER DASHBOARD =====
     function showDashboard() {
-        var tabMembres = $('tab-membres');
-        if (!tabMembres) return;
-        $('memberDashboard').style.display = '';
-        $('currentMemberName').textContent = auth.userName;
+        var dash = $('memberDashboard');
+        if (!dash) return;
+        dash.style.display = '';
+
+        var nameEl = $('currentMemberName');
+        if (nameEl) nameEl.textContent = auth.userName;
+
         var roleEl = $('currentMemberRole');
-        var labels = { president: 'President', treasurer: 'Tresorier', officer: 'Officier', member: 'Membre', prospect: 'Prospect' };
-        roleEl.textContent = labels[auth.userRole] || auth.userRole;
-        roleEl.className = 'member-bar-role role-' + auth.userRole;
-        $('subTabGestion').style.display = auth.isOfficer() ? '' : 'none';
+        if (roleEl) {
+            var labels = {
+                president: 'President', treasurer: 'Tresorier',
+                vice_president: 'Vice-President', officer: 'Officier',
+                member: 'Membre', prospect: 'Prospect'
+            };
+            roleEl.textContent = labels[auth.userRole] || auth.userRole;
+            roleEl.className = 'member-bar-role role-' + auth.userRole;
+        }
+
         loadDashboardData();
     }
 
@@ -611,8 +701,10 @@
             if (err || !data || data.error) return;
             cachedData = data;
             if (data.members) memberList = data.members;
+            if (data.assignable_roles) window.MC_ASSIGNABLE_ROLES = data.assignable_roles;
             populateForms();
             renderDashboard(data);
+            renderProfile();
         });
     }
 
@@ -640,26 +732,26 @@
 
     function populateForms() {
         var sw = $('saleWeapon');
-        if (!sw) return;
-        sw.innerHTML = '';
-        weaponList.forEach(function (w) {
-            var st = getWeaponStock(w.id);
-            var qty = st ? st.quantity : 0;
-            var label = w.name + ' [' + qty + ' en stock]';
-            sw.insertAdjacentHTML('beforeend', '<option value="' + w.id + '" data-price="' + (w.sell_price || 0) + '">' + esc(label) + '</option>');
-        });
-        onSaleWeaponChange();
+        if (sw) {
+            populateSaleWeaponSelect(sw);
+            onSaleWeaponChange();
+        }
 
         if (cachedData && cachedData.stock) {
-            populateGroupedStockSelect($('mvStock'), cachedData.stock);
+            var mvs = $('mvStock');
+            if (mvs) populateGroupedStockSelect(mvs, cachedData.stock);
         }
 
         var mr = $('mvReason');
-        mr.innerHTML = '';
-        if (cachedData && cachedData.reasons) {
-            Object.keys(cachedData.reasons).forEach(function (k) {
-                mr.insertAdjacentHTML('beforeend', '<option value="' + k + '">' + esc(cachedData.reasons[k]) + '</option>');
-            });
+        if (mr) {
+            destroyTomSelect(mr);
+            mr.innerHTML = '';
+            if (cachedData && cachedData.reasons) {
+                Object.keys(cachedData.reasons).forEach(function (k) {
+                    mr.insertAdjacentHTML('beforeend', '<option value="' + k + '">' + esc(cachedData.reasons[k]) + '</option>');
+                });
+            }
+            initTomSelectSingle(mr, { placeholder: 'Raison...', searchField: ['text'] });
         }
         updateMvCostVisibility();
         document.querySelectorAll('.ct-weapon').forEach(function (sel) { populateWeaponSelect(sel); });
@@ -801,35 +893,64 @@
         });
     });
 
-    // ===== MEMBER MANAGEMENT =====
-    var btnCreateMember = $('btnCreateMember');
-    if (btnCreateMember) btnCreateMember.addEventListener('click', function () {
-        var btn = $('btnCreateMember');
-        var name = $('newMemberName').value.trim();
-        var pin = $('newMemberPin').value.trim();
-        if (!name || !pin) { showToast('Nom et PIN requis', 'error'); return; }
-        btn.disabled = true; btn.textContent = '...';
-        auth.apiPost('/simulateur-armes/api/member', { name: name, pin: pin, role: $('newMemberRole').value }, function (err, data) {
-            btn.disabled = false; btn.textContent = 'Creer le membre';
-            if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
-            showToast(data.message, 'success');
-            $('newMemberName').value = ''; $('newMemberPin').value = '';
-            refreshData();
-        });
-    });
+    // ===== MON PROFIL =====
+    var ROLE_LABELS_FULL = {
+        treasurer: 'Tresorier (superadmin)', president: 'President',
+        vice_president: 'Vice-President', officer: 'Officier',
+        member: 'Membre', prospect: 'Prospect'
+    };
+
+    function renderProfile() {
+        var nameEl = $('profileName');
+        if (!nameEl) return;
+        nameEl.textContent = auth.userName || '--';
+
+        var avatar = $('profileAvatar');
+        if (avatar) {
+            var initials = (auth.userName || '?').split(/\s+/).map(function (p) { return p.charAt(0); }).slice(0, 2).join('').toUpperCase();
+            avatar.textContent = initials || '?';
+            avatar.className = 'profile-avatar role-' + (auth.userRole || '');
+        }
+
+        var roleBadge = $('profileRoleBadge');
+        if (roleBadge) {
+            roleBadge.textContent = ROLE_LABELS_FULL[auth.userRole] || auth.userRole || '--';
+            roleBadge.className = 'profile-role-badge role-' + (auth.userRole || '');
+        }
+
+        if (cachedData && cachedData.sales) {
+            var mySales = cachedData.sales.filter(function (s) { return s.user_id === auth.userId || s.sold_by_user_id === auth.userId; });
+            var myRevenue = mySales.reduce(function (sum, s) { return sum + (parseInt(s.total_price, 10) || (s.unit_price * s.quantity) || 0); }, 0);
+            var myMovements = (cachedData.movements || []).filter(function (m) { return m.user_id === auth.userId; });
+            var stats = $('profileStats');
+            if (stats) {
+                stats.innerHTML =
+                    '<div class="profile-stat"><span class="ps-value">' + mySales.length + '</span><span class="ps-label">Ventes</span></div>' +
+                    '<div class="profile-stat"><span class="ps-value">' + myRevenue.toLocaleString('fr-FR') + ' EUR</span><span class="ps-label">Revenu genere</span></div>' +
+                    '<div class="profile-stat"><span class="ps-value">' + myMovements.length + '</span><span class="ps-label">Mouvements</span></div>';
+            }
+        }
+
+        var manage = $('profileManageCard');
+        if (manage) manage.style.display = (cachedData && cachedData.can_manage_members) ? '' : 'none';
+    }
 
     var btnPin = $('btnChangePin');
     if (btnPin) btnPin.addEventListener('click', function () {
         var btn = $('btnChangePin');
-        var cur = $('pinCurrent').value;
-        var nw = $('pinNew').value;
-        if (!cur || !nw) { showToast('Remplissez les deux champs', 'error'); return; }
+        var cur = $('pinCurrent').value.trim();
+        var nw = $('pinNew').value.trim();
+        var cf = $('pinConfirm') ? $('pinConfirm').value.trim() : nw;
+        if (!cur || !nw) { showToast('Remplissez les deux PINs', 'error'); return; }
+        if (nw.length < 4) { showToast('Le nouveau PIN doit faire au moins 4 caracteres', 'error'); return; }
+        if (nw !== cf) { showToast('La confirmation ne correspond pas', 'error'); return; }
         btn.disabled = true; btn.textContent = '...';
         auth.apiPost('/simulateur-armes/api/change-pin', { current_pin: cur, new_pin: nw }, function (err, data) {
-            btn.disabled = false; btn.textContent = 'Modifier';
+            btn.disabled = false; btn.textContent = 'Modifier mon PIN';
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             showToast(data.message, 'success');
             $('pinCurrent').value = ''; $('pinNew').value = '';
+            if ($('pinConfirm')) $('pinConfirm').value = '';
         });
     });
 
@@ -1146,28 +1267,24 @@
     }
 
     // ===== MEMBERS LIST =====
+    var ROLE_SHORT = {
+        treasurer: 'Tresorier', president: 'President', vice_president: 'Vice-President',
+        officer: 'Officier', member: 'Membre', prospect: 'Prospect'
+    };
+
     function renderMembers(members) {
         if (!auth.isOfficer()) return;
+        var list = $('membersList');
+        if (!list) return;
         var html = '';
         members.forEach(function (m) {
-            var badge = m.role === 'officer' ? '<span class="member-badge officer">Officier</span>' : '<span class="member-badge">Membre</span>';
-            html += '<div class="member-list-row"><span class="ml-name">' + esc(m.name) + '</span>' + badge;
-            html += '<button class="action-btn-sm ml-toggle-role" data-mid="' + m.id + '" data-role="' + m.role + '">' + (m.role === 'officer' ? '\u2193 Membre' : '\u2191 Officier') + '</button></div>';
+            var label = ROLE_SHORT[m.role] || m.role;
+            html += '<div class="member-list-row">';
+            html += '<span class="ml-name">' + esc(m.name) + '</span>';
+            html += '<span class="member-badge role-' + esc(m.role) + '">' + esc(label) + '</span>';
+            html += '</div>';
         });
-        $('membersList').innerHTML = html || '<div class="empty-msg">Aucun membre</div>';
+        html += '<div class="ml-hint">Pour modifier les roles, reinitialiser un PIN ou desactiver un membre, rendez-vous sur <a href="/membres" class="inline-link">la page Gestion des membres</a>.</div>';
+        list.innerHTML = html || '<div class="empty-msg">Aucun membre</div>';
     }
-
-    document.addEventListener('click', function (e) {
-        var btn = e.target.closest('.ml-toggle-role');
-        if (!btn) return;
-        var mid = btn.getAttribute('data-mid');
-        var newRole = btn.getAttribute('data-role') === 'officer' ? 'member' : 'officer';
-        btn.disabled = true; btn.textContent = '...';
-        auth.apiPut('/simulateur-armes/api/member/' + mid, { role: newRole }, function (err, data) {
-            btn.disabled = false;
-            if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
-            showToast(data.message, 'success');
-            refreshData();
-        });
-    });
 })();

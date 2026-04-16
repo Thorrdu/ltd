@@ -4,10 +4,10 @@
 - Application Laravel 12 avec **deux panneaux Filament 5** :
   - `/admin` : gestion catalogue LTD (AdminPanelProvider)
   - `/armurerie` : gestion armes/stocks/contrats/ventes (ArmureriePanelProvider)
-- Pages publiques en Blade (catalogue LTD + simulateur armes)
-- CSS custom dans `public/css/` (design original + simulateur)
-- JS custom dans `public/js/` (simulateur-armes.js)
-- Assets front compiles via Vite
+- Pages publiques en Blade (catalogue LTD + hub MC + simulateurs + espace membres + gestion membres)
+- CSS custom dans `public/css/` (design original + simulateur + layout MC + theme Tom Select)
+- JS custom dans `public/js/` (mc-auth.js, simulateur-armes.js, simulateur-munitions.js, membres.js)
+- Assets front compiles via Vite, Tom Select 2.3.1 via CDN
 - Base de donnees MySQL 8.0
 
 ## Domaine 1 : Catalogue LTD
@@ -17,114 +17,147 @@ Tous les produits vivent dans une seule table `products` avec flags `is_retail` 
 Les menus et entreprises y font reference via des tables pivot.
 
 ### Schema relationnel
-- `categories` : groupes de produits (SNACKS, BOISSONS, etc.) avec colonne left/right
-- `products` : source unique, flags is_retail/is_enterprise, prix retail/purchase/usual/promo/enterprise, sort_order
-- `menus` : type menu/promo, prix, promo_price, texte promo
-- `enterprises` : entreprises partenaires (notes pour conditions de contrat)
-- `menu_product` : pivot avec `choice_group` pour produits interchangeables
-- `enterprise_product` : pivot avec `price` specifique par entreprise
+- `categories`, `products`, `menus`, `enterprises`, `menu_product`, `enterprise_product`
 
 ### Resources Filament (Admin)
-- `CategoryResource` : CRUD categories + RelationManager produits
-- `ProductResource` : CRUD produits + filtres + bulk actions
-- `MenuResource` : CRUD menus + RelationManager produits avec pivot choice_group
-- `EnterpriseResource` : CRUD entreprises + RelationManager produits avec pivot price
+- `CategoryResource`, `ProductResource`, `MenuResource`, `EnterpriseResource`, `SettingResource`
 - Widgets : StatsOverviewWidget, LatestProductsWidget
 
 ## Domaine 2 : Armurerie
 
 ### Schema relationnel
-- `weapons` : armes avec recettes de craft (recipe_*), temps de craft, prix de vente, prix reference achat, prix min/max
-- `weapon_stocks` : stocks par categorie (matieres, pieces, plans, armes finies) avec quantite
-- `weapon_stock_movements` : historique des mouvements (entree/sortie, raison, cout unitaire, utilisateur, attribution)
-- `weapon_contracts` + `weapon_contract_items` : contrats clients avec items commandes/livres
-- `weapon_sales` : ventes d'armes (quantite, prix unitaire, acheteur, vendeur)
-
-### Categories de stock
-Constantes dans WeaponStock : matieres premieres, pieces detachees, plans, armes finies.
+- `weapons`, `weapon_stocks`, `weapon_stock_movements`, `weapon_contracts`, `weapon_contract_items`, `weapon_sales`
 
 ### Resources Filament (Armurerie)
-- `WeaponResource` : CRUD armes avec recettes et prix
-- `WeaponStockResource` : consultation des stocks
-- `WeaponStockMovementResource` : creation et historique des mouvements
-- `WeaponContractResource` : CRUD contrats + RelationManager items
-- `WeaponSaleResource` : CRUD ventes
-- Page `CraftWeapon` : interface de craft
-- Widget : ArmurerieStatsWidget
+- WeaponResource, WeaponStockResource, WeaponStockMovementResource, WeaponContractResource, WeaponSaleResource
+- Page CraftWeapon, widget ArmurerieStatsWidget
 
-## Domaine 3 : Simulateur armes (Frontend)
+## Domaine 3 : Hub MC et espace membres (Frontend)
 
-### Architecture
-- Page Blade standalone (`/simulateur-armes`)
-- JS monolithique (`public/js/simulateur-armes.js`) gerant :
-  - Calcul de prix de revient et prix de vente
-  - Espace membres (login PIN, ventes, stats)
-  - Craft munitions
-- API JSON dans `WeaponSimController` (routes web, auth par `X-Sim-User` header + PIN)
+### Pages
+- `/mc` : hub d'accueil avec grille de boutons (simulateurs + espace membres)
+- `/simulateur-armes` : craft d'armes
+- `/simulateur-munitions` : craft de munitions
+- `/espace-membres` : dashboard membre (stocks, ventes, contrats, historique, gestion rapide)
+- `/membres` : gestion complete des utilisateurs + matrice d'acces (VP+ / superadmin)
+
+### Layout partage (`layouts/mc.blade.php`)
+- Barre superieure : LOST MC (home) + bouton Login / nom+role+logout
+- Motto "Le Tout-Puissant pardonne. Pas les Lost." sous le titre de chaque page
+- Dropdown login avec select PIN (Tom Select)
+- Toast de notifications
+- Assets : `mc-layout.css`, `mc-tom-select.css`, `mc-auth.js`, `tom-select.complete.min.js`
+
+### JS modulaire
+- `mc-auth.js` : session `window.McAuth` (login, logout, apiGet/Post/Put/Delete, callbacks)
+- `simulateur-armes.js` : simulateur + dashboard membre (~1500 lignes)
+- `simulateur-munitions.js` : simulateur munitions autonome
+- `membres.js` : page `/membres` (CRUD users + matrice d'acces)
 
 ## Authentification et roles
 
-### Systeme actuel
-- Champ `role` simple sur table `users` (pas de Spatie Permissions)
-- Champ `sim_pin` pour authentification dans le simulateur
-- Methode `isOfficer()` sur User
-- `canAccessPanel()` retourne `true` pour tous les utilisateurs
-- Login Filament natif sur `/admin` et `/armurerie`
-- Login simulateur par PIN (WeaponSimController@login)
+### Roles et hierarchie
+Constante `User::ROLES` avec niveaux numeriques :
+| Role            | Niveau | Notes                                    |
+|-----------------|-------:|------------------------------------------|
+| prospect        |      1 | Nouveau, en probation                    |
+| member          |      2 | Membre du MC                             |
+| officer         |      3 | Officier                                 |
+| vice_president  |      4 | Vice-President                           |
+| president       |      5 | President                                |
+| treasurer       |     99 | **Superadmin** (cf. `SUPERADMIN_ROLE`)   |
 
-### A developper
-- Filtrage par role dans `canAccessPanel()` pour chaque panneau
-- Roles granulaires (prospect, membre, officier, tresorier, president)
-- Droits d'acces par page/fonctionnalite
+### Helpers `User`
+- `isProspect()`, `isMember()`, `isOfficer()`, `isVicePresident()`, `isPresident()`, `isTreasurer()`, `isSuperadmin()`
+- `isAtLeast($role)` : compare les niveaux
+- `canAssignRole($role)` : strictement superieur sauf superadmin (qui peut tout)
+- `assignableRoles()` : liste des roles assignables par cet utilisateur
+- `canAccessPanel(Panel)` et `canAccessPage(string $key)` : delegue a `PageAccessRule`
 
-## Pattern Blade (pages publiques catalogue)
+### Auth MC (PIN)
+- Champ `sim_pin` sur users (hash)
+- API : POST `/simulateur-armes/api/login`
+- Session client : `sessionStorage` (`lmc_uid`, `lmc_name`, `lmc_role`)
+- Requetes API : header `X-Sim-User` + `X-CSRF-TOKEN`
 
-### Design CSS preserve
-- Fond navy (#0d1b2e) + image floue en pseudo-elements
-- Panneau bois (#f5f0e6) avec ombres et animation boardFadeIn
-- Dot leaders, zebra stripes, tailles compactes
-- Mode clean (?clean) : JS masque la navigation
-- Password overlay entreprises : JS cote client (ltd2026)
+## Matrice d'acces (nouveau)
 
-### Middleware
-- `AllowIframe` : CSP `frame-ancestors *`, CORS large sur GET
+### Table `page_access_rules`
+- `page_key` (unique), `label`, `min_role`, `description`, `sort_order`, `is_system`
+- Cache 10 min dans `Cache::remember(PageAccessRule::CACHE_KEY, ...)`
+- Invalidation auto sur save/delete
 
-## Routes web.php
-- Pages catalogue LTD (groupe AllowIframe) : `/`, `/produits`, `/menus`, `/entreprises`
-- Simulateur : `GET /simulateur-armes`
-- API simulateur (POST/GET/PUT) : login, data, sale, movement, contract, member, change-pin
+### Resolution d'acces
+1. Superadmin : acces total, quel que soit la regle.
+2. Regle absente pour la cle : acces refuse (secure by default).
+3. Sinon : `user->isAtLeast($rule->min_role)`.
+
+### Cles de pages seedees
+- `panel_admin`, `panel_armurerie` (controles cote Filament)
+- `mc_hub`, `simulateur_armes`, `simulateur_munitions`, `espace_membres` (controles cote layout/vue)
+- `membres_gestion`, `matrice_acces` (controles cote `/membres`)
+- `ventes_rapides`, `stocks_generique`, `comptabilite`, `classements`, `fiches_membres` (futur)
+
+## Pattern API JSON (front MC)
+
+### Convention
+- GET pour lecture, POST pour creation, PUT pour mise a jour, DELETE pour suppression
+- Requetes envoyees avec methode HTTP native (plus de `X-HTTP-Method-Override`)
+- Toutes retournent JSON : `{ok: true, message, ...}` ou `{error: 'message'}`
+- Header CSRF obligatoire sur les requetes POST/PUT/DELETE
+
+### MemberController (nouveau)
+- `index()` : rend la vue `/membres`
+- `apiList()`, `apiCreate()`, `apiUpdate($id)`, `apiResetPin($id)`, `apiDelete($id)`
+- `apiMatrix()`, `apiUpdateMatrix($id)` : gestion de la matrice d'acces
+- Toutes protegees par `requireAccess($pageKey)` + header `X-Sim-User`
+
+### WeaponSimController
+- `apiData()` expose desormais `assignable_roles` et `can_manage_members`
+- `createMember()` et `updateMember()` utilisent `canAssignRole()` et `canAccessPage('membres_gestion')`
+
+## Pattern Tom Select (dark theme MC)
+
+### Principes
+- Theme global dans `public/css/mc-tom-select.css`
+- Plugin `dropdown_input` active pour rechercher dans les listes longues
+- Rendu custom :
+  - Selects stock : badge quantite a droite (`.ts-stock-qty` avec classes `.low`, `.zero`)
+  - Selects role : badge colore (`.ts-role-badge.role-xxx`)
+- Destruction explicite avant re-population (`destroyTs(el)` puis `initTs(...)`)
 
 ## Conventions
 - Prix en entiers (pas de centimes, pas de float)
 - Euro affiche cote front uniquement
-- Noms de categories en majuscules
 - sort_order sur toutes les entites ordonnees
 - Couleurs catalogue : navy (#0d1b2e), rouge (#8b0000), creme (#f5f0e6)
-- Panneau armurerie : dark mode
+- Panneau armurerie + pages MC : dark mode
+- Couleurs de role : treasurer bleu (#60a5fa), president or (#ffd700), vice_president orange (#ff9f43), officer gris, member gris sombre, prospect plus sombre
 - Code et commentaires en anglais, contenu affiche en francais
 - Seeders dans database/seeders/
 
 ## Structure des dossiers cles
 ```
 app/Filament/
-  Resources/                  -- Resources admin LTD (Category, Product, Menu, Enterprise)
+  Resources/                  -- Resources admin LTD (Category, Product, Menu, Enterprise, Setting)
   Widgets/                    -- Dashboard widgets admin
   Armurerie/
-    Resources/                -- Resources armurerie (Weapon, Stock, Movement, Contract, Sale)
+    Resources/                -- Resources armurerie
     Pages/                    -- CraftWeapon
     Widgets/                  -- ArmurerieStatsWidget
 app/Http/Controllers/
   PageController.php          -- Pages publiques catalogue
-  WeaponSimController.php     -- Vue simulateur + API JSON
+  WeaponSimController.php     -- Simulateur + API armurerie/membres
+  MemberController.php        -- Gestion des utilisateurs + matrice d'acces
 app/Http/Middleware/
   AllowIframe.php             -- CSP/CORS pour iframe
-app/Models/                   -- 11 modeles Eloquent
-database/migrations/          -- 21 migrations
-database/seeders/             -- 5 seeders + DatabaseSeeder
+app/Models/                   -- 13 modeles Eloquent (dont Setting, PageAccessRule)
+database/migrations/          -- 15 migrations appliquees
+database/seeders/             -- 7 seeders + DatabaseSeeder
 docs/                         -- architecture.md, reglement-bxl-life/, tasks/
 memory-bank/                  -- Documentation Memory Bank
-public/css/                   -- CSS catalogue (5) + simulateur (1)
-public/js/                    -- simulateur-armes.js
-public/img/                   -- Logo, photos
-resources/views/              -- Blade templates (layouts/, 5 pages + 1 filament custom)
+LA_SUIITE/                    -- plan-developpement.md, next.md
+public/css/                   -- CSS catalogue + simulateur + mc-layout + mc-tom-select
+public/js/                    -- mc-auth.js, simulateur-armes.js, simulateur-munitions.js, membres.js
+resources/views/              -- Blade templates (layouts/, mc-hub, simulateurs, espace-membres, membres)
 ```

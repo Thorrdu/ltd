@@ -9,6 +9,7 @@
         <div class="mc-page-header">
             <img src="{{ asset('img/3651.webp') }}" alt="Lost MC">
             <div class="mc-page-title">Espace Membres</div>
+            <div class="mc-page-motto">Le Tout-Puissant pardonne. Pas les Lost.</div>
             <a href="/mc" class="mc-page-back">&larr; Retour a l'accueil</a>
         </div>
 
@@ -27,7 +28,7 @@
                 <button class="sub-tab" data-subtab="actions">Ventes</button>
                 <button class="sub-tab" data-subtab="contrats">Contrats</button>
                 <button class="sub-tab" data-subtab="historique">Historique</button>
-                <button class="sub-tab" data-subtab="gestion" id="subTabGestion" style="display:none;">Gestion</button>
+                <button class="sub-tab" data-subtab="profil">Mon profil</button>
             </div>
 
             {{-- SUB: Stocks --}}
@@ -145,37 +146,39 @@
                 <div class="movements-list" id="salesList"></div>
             </div>
 
-            {{-- SUB: Gestion (officers only) --}}
-            <div class="sub-content" id="sub-gestion">
-                <div class="action-card">
-                    <div class="action-card-title">Ajouter un membre</div>
-                    <div class="action-form">
-                        <div class="form-row">
-                            <div class="form-group"><label>Nom RP</label><input type="text" id="newMemberName" class="fm-input" placeholder="Prenom Nom"></div>
-                            <div class="form-group sm"><label>PIN</label><input type="text" id="newMemberPin" class="fm-input" placeholder="1234" maxlength="20"></div>
-                            <div class="form-group sm"><label>Role</label>
-                                <select id="newMemberRole" class="fm-input">
-                                    <option value="member">Membre</option>
-                                    <option value="officer">Officier</option>
-                                </select>
+            {{-- SUB: Mon profil --}}
+            <div class="sub-content" id="sub-profil">
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar" id="profileAvatar">?</div>
+                        <div class="profile-id">
+                            <div class="profile-name" id="profileName">--</div>
+                            <div class="profile-meta">
+                                <span class="profile-role-badge" id="profileRoleBadge">--</span>
+                                <span class="profile-status" id="profileStatus">Actif</span>
                             </div>
                         </div>
-                        <button class="action-btn sale-btn" id="btnCreateMember">Creer le membre</button>
                     </div>
+                    <div class="profile-stats" id="profileStats"></div>
                 </div>
-
-                <div class="sim-section-title">Membres</div>
-                <div id="membersList"></div>
 
                 <div class="action-card" style="margin-top:10px;">
                     <div class="action-card-title">Changer mon PIN</div>
+                    <p class="action-hint">Au moins 4 chiffres. A retenir pour vous reconnecter.</p>
                     <div class="action-form">
                         <div class="form-row">
-                            <div class="form-group"><label>PIN actuel</label><input type="password" id="pinCurrent" class="fm-input" maxlength="20"></div>
-                            <div class="form-group"><label>Nouveau PIN</label><input type="password" id="pinNew" class="fm-input" maxlength="20"></div>
+                            <div class="form-group"><label>PIN actuel</label><input type="password" id="pinCurrent" class="fm-input" maxlength="20" autocomplete="current-password"></div>
+                            <div class="form-group"><label>Nouveau PIN</label><input type="password" id="pinNew" class="fm-input" maxlength="20" autocomplete="new-password"></div>
+                            <div class="form-group"><label>Confirmer</label><input type="password" id="pinConfirm" class="fm-input" maxlength="20" autocomplete="new-password"></div>
                         </div>
-                        <button class="action-btn mv-btn" id="btnChangePin">Modifier</button>
+                        <button class="action-btn mv-btn" id="btnChangePin">Modifier mon PIN</button>
                     </div>
+                </div>
+
+                <div class="action-card" id="profileManageCard" style="display:none;">
+                    <div class="action-card-title">Gestion des membres</div>
+                    <p class="action-hint">Vous avez les droits pour gerer les utilisateurs. Ajouter des membres, changer des roles, reinitialiser des PIN et modifier la matrice d'acces.</p>
+                    <a href="/membres" class="action-btn sale-btn" style="text-decoration:none; display:inline-block;">Acceder a la gestion des membres</a>
                 </div>
             </div>
         </div>

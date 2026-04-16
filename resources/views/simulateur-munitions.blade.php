@@ -9,6 +9,7 @@
         <div class="mc-page-header">
             <img src="{{ asset('img/3651.webp') }}" alt="Lost MC">
             <div class="mc-page-title">Simulateur Munitions</div>
+            <div class="mc-page-motto">Le Tout-Puissant pardonne. Pas les Lost.</div>
             <a href="/mc" class="mc-page-back">&larr; Retour a l'accueil</a>
         </div>
 

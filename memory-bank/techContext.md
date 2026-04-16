@@ -9,15 +9,18 @@
 - **PHP 8.3.21** : runtime backend (Laragon)
 - **Composer** : gestionnaire de dependances PHP
 - **Blade** : moteur de templates pour les pages publiques
-- **CSS custom** : fichiers originaux catalogue + simulateur
-- **JS custom** : simulateur-armes.js (monolithique, ~1446 lignes)
+- **Tom Select 2.3.1** : selects recherchables cote front (CDN jsdelivr)
+- **CSS custom** : fichiers originaux catalogue + simulateur + layout MC + theme Tom Select
+- **JS custom** : mc-auth.js, simulateur-armes.js, simulateur-munitions.js, membres.js
 
 ## Environnement de developpement
 - Workspace : `c:\laragon\www\ltd`
-- Serveur : Laragon (Apache sur Windows)
-- URL locale : `http://ltd.test/`
-- URL admin : `http://ltd.test/admin`
-- URL armurerie : `http://ltd.test/armurerie`
+- Serveur : Laragon (Apache sur Windows) + `php artisan serve --port=8080`
+- URL locale : `http://ltd.test/` (ou `http://127.0.0.1:8080` via artisan serve)
+- URL admin : `/admin`
+- URL armurerie : `/armurerie`
+- URL hub MC : `/mc`
+- URL gestion membres : `/membres`
 - Base de donnees : MySQL `ltd` (root, sans mot de passe)
 
 ## Configuration
@@ -26,72 +29,95 @@
 - `_backup/` : ancien projet statique sauvegarde
 - `bootstrap/providers.php` : enregistre AdminPanelProvider + ArmureriePanelProvider
 
-## Modeles Eloquent (11 modeles)
+## Modeles Eloquent (13 modeles)
 
 ### Domaine catalogue LTD
-- `Category` : name, column (left/right), sort_order -- hasMany Product
-- `Product` : category_id, name, purchase_price, usual_price, price, promo_price, enterprise_price, is_retail, is_enterprise, sort_order -- belongsTo Category
-- `Menu` : type (menu/promo), name, price, promo_price, promo_text, sort_order -- belongsToMany Product
-- `Enterprise` : name, notes, sort_order -- belongsToMany Product (pivot price)
+- `Category`, `Product`, `Menu`, `Enterprise`
 
 ### Domaine armurerie
-- `Weapon` : name, slug, craft_time_seconds, sell_price, recipe_*, reference_purchase_price, price_min, price_max, is_active, sort_order
-- `WeaponStock` : category, weapon_id, name, slug, quantity, sort_order (constantes CATEGORIES)
-- `WeaponStockMovement` : weapon_stock_id, quantity_change, reason, unit_cost, weapon_contract_id, user_id, attributed_to_user_id, notes
-- `WeaponContract` : name, client_name, status, notes, created_by_user_id (constantes STATUSES)
-- `WeaponContractItem` : weapon_contract_id, weapon_id, qty_ordered, qty_delivered
-- `WeaponSale` : weapon_id, weapon_contract_id, quantity, unit_price, buyer_name, user_id, sold_by_user_id, notes
+- `Weapon`, `WeaponStock`, `WeaponStockMovement`, `WeaponContract`, `WeaponContractItem`, `WeaponSale`
 
-### Utilisateurs
-- `User` : name, email, password (hashed), role, sim_pin (hidden) -- FilamentUser, isOfficer(), checkSimPin()
+### Utilisateurs / acces
+- `User` : name, email, password (hashed), role, is_active, sim_pin (hidden)
+  - Constante `ROLES` : prospect(1), member(2), officer(3), vice_president(4), president(5), treasurer(99)
+  - Constante `SUPERADMIN_ROLE = 'treasurer'`
+  - Helpers : `isProspect`, `isMember`, `isOfficer`, `isVicePresident`, `isPresident`, `isTreasurer`, `isSuperadmin`, `isAtLeast`, `canAssignRole`, `assignableRoles`
+  - Integration Filament : `canAccessPanel(Panel)` delegue a `PageAccessRule`
+  - Nouveau helper : `canAccessPage(string $key)` pour pages custom
+- `PageAccessRule` : page_key, label, min_role, description, sort_order, is_system (cache 10 min)
+- `Setting` : group, key, label, type, value, description, sort_order
 
-## Base de donnees (21 migrations)
+## Base de donnees (15 migrations)
 
 ### Tables principales
 - `users`, `cache`, `jobs` (Laravel standard)
 - `categories`, `products`, `menus`, `enterprises` (catalogue)
 - `menu_product`, `enterprise_product` (pivots catalogue)
 - `weapons`, `weapon_stocks`, `weapon_stock_movements` (stocks armes)
-- `weapon_contracts`, `weapon_contract_items` (contrats)
-- `weapon_sales` (ventes)
+- `weapon_contracts`, `weapon_contract_items`, `weapon_sales` (contrats + ventes)
+- `settings` (parametres globaux)
+- `page_access_rules` (matrice d'acces)
 
 ### Migrations ajoutees apres mars 2026
 - 2026-03-11 : `enterprise_price` sur products
 - 2026-03-28 : `promo_price` sur products et menus
-- 2026-04-14 : `role` sur users, tables armes (weapons, stocks, movements, contracts, sales), `sim_pin`, `unit_cost`
-- 2026-04-16 : `reference_purchase_price`, `price_min`/`price_max` sur weapons
+- 2026-04-14 : `role` sur users, tables armes, `sim_pin`, `unit_cost`
+- 2026-04-16 (matin) : `reference_purchase_price`, `price_min`/`price_max` sur weapons, `settings`
+- 2026-04-16 (soir) : `is_active` sur users, `page_access_rules`
 
-## Seeders (6 fichiers)
+## Seeders (7 fichiers)
 - `DatabaseSeeder` : orchestre tous les seeders
 - `CategoryProductSeeder` : categories + 62 produits
 - `EnterpriseSeeder` : entreprises partenaires
 - `MenuSeeder` : menus et promos
-- `UserSeeder` : utilisateurs avec roles et PIN
+- `UserSeeder` : 10 utilisateurs avec roles et PIN
 - `WeaponSeeder` : armes, stocks matieres/pieces/plans/armes finies
+- `SettingSeeder` : 19 parametres globaux (matieres, pieces, recettes, multiplicateurs, cotisations)
+- `PageAccessRuleSeeder` : 13 regles d'acces (panneaux Filament + pages MC + pages futures)
 
 ## URLs
-- `GET /` : accueil catalogue LTD
-- `GET /produits` : produits retail
-- `GET /menus` : menus et promos
-- `GET /entreprises` : tarifs entreprises
-- `GET /simulateur-armes` : simulateur d'armes
-- `POST /simulateur-armes/login` : auth PIN simulateur
-- `GET /simulateur-armes/data` : donnees simulateur (API JSON)
-- `POST /simulateur-armes/sale` : enregistrer une vente
-- `POST /simulateur-armes/movement` : enregistrer un mouvement de stock
-- `POST /simulateur-armes/contract` : creer un contrat
-- API contrats, items, membres, change-pin (voir routes/web.php)
-- `GET /admin` : panneau Filament catalogue LTD
-- `GET /armurerie` : panneau Filament armurerie
+
+### Catalogue LTD
+- `GET /`, `/produits`, `/menus`, `/entreprises`
+
+### Hub MC + simulateurs
+- `GET /mc` : hub
+- `GET /simulateur-armes`, `GET /simulateur-munitions`
+- `GET /espace-membres` : dashboard
+
+### API simulateur (`/simulateur-armes/api/*`)
+- `POST /login`, `GET /data`, `POST /sale`, `POST /movement`
+- `POST /contract`, `PUT /contract/{id}`
+- `POST /contract/{id}/items`, `PUT /item/{id}`, `DELETE /item/{id}`
+- `POST /member`, `PUT /member/{id}` (existants, desormais piloteS par canAssignRole)
+- `POST /change-pin`
+
+### Gestion membres et matrice d'acces (`/membres`)
+- `GET /membres` : page de gestion
+- `GET /membres/api/list` : liste + roles + assignable
+- `POST /membres/api/create`, `PUT /membres/api/{id}`, `DELETE /membres/api/{id}`
+- `POST /membres/api/{id}/reset-pin`
+- `GET /membres/api/matrix`, `PUT /membres/api/matrix/{id}` (superadmin)
+
+### Panneaux Filament
+- `GET /admin`, `GET /armurerie` (acces regi par `PageAccessRule` + `User::canAccessPanel`)
 
 ## Credentials
-- Admin Filament : admin@ltd.test / admin
+- Admin Filament : admin@ltd.test / admin (role `treasurer`, superadmin)
+- Les autres membres ont un email genere `{slug}@lost.mc` et un PIN dans `UserSeeder`
 - MySQL : root / (sans mot de passe)
 - Mot de passe page entreprises (cote client) : ltd2026
 
 ## Points d'attention techniques
-- Le modele Weapon n'a pas `price_min`/`price_max` dans `$fillable` alors que la DB et le seeder les utilisent (a corriger)
-- `canAccessPanel()` retourne `true` pour tous les utilisateurs (pas de filtrage par role)
 - Pas de package Spatie Permissions, Fortify, Breeze ou Sanctum
-- Les routes API simulateur sont dans web.php (pas dans api.php)
-- Le modele s'appelle `Enterprise` (pas `EnterpriseGroup` comme dans l'ancienne doc)
+- Auth MC par PIN stocke en hash dans `users.sim_pin`, authentification cote client via header `X-Sim-User`
+- Requetes CSRF : token envoye via header `X-CSRF-TOKEN` dans toutes les requetes API front
+- Les routes API simulateur et membres sont dans `web.php` (pas dans `api.php`)
+- Tom Select est charge via CDN, le theme dark MC vient de `public/css/mc-tom-select.css`
+- Le cache de `PageAccessRule` doit etre invalide apres une migration fresh (il l'est automatiquement sur save/delete du modele)
+- Les vues compilees Blade s'accumulent dans `storage/framework/views/` -- purger avec `php artisan view:clear`
+- Vhost Laragon pointe sur la racine du projet, pas sur `public/` (a corriger)
+
+## Dependances front (CDN)
+- Tom Select 2.3.1 : `https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js`
+- CSS Tom Select : `https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css`

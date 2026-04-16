@@ -6,11 +6,17 @@
     function csrfToken() { var el = document.querySelector('meta[name="csrf-token"]'); return el ? el.getAttribute('content') : ''; }
 
     var ROLE_LABELS = {
-        president: 'President',
         treasurer: 'Tresorier',
+        president: 'President',
+        vice_president: 'Vice-President',
         officer: 'Officier',
         member: 'Membre',
         prospect: 'Prospect'
+    };
+
+    var ROLE_LEVELS = {
+        prospect: 1, member: 2, officer: 3,
+        vice_president: 4, president: 5, treasurer: 99
     };
 
     window.McAuth = {
@@ -19,10 +25,16 @@
         userRole: sessionStorage.getItem('lmc_role') || '',
         isLoggedIn: false,
 
-        isOfficer: function () {
-            var level = { prospect: 1, member: 2, officer: 3, treasurer: 4, president: 5 };
-            return (level[this.userRole] || 0) >= 3;
+        roleLevels: ROLE_LEVELS,
+
+        isAtLeast: function (minRole) {
+            return (ROLE_LEVELS[this.userRole] || 0) >= (ROLE_LEVELS[minRole] || 0);
         },
+
+        isOfficer: function () { return this.isAtLeast('officer'); },
+        isVicePresident: function () { return this.isAtLeast('vice_president'); },
+        isPresident: function () { return this.userRole === 'president' || this.userRole === 'treasurer'; },
+        isSuperadmin: function () { return this.userRole === 'treasurer'; },
 
         apiHeaders: function () {
             var h = { 'Accept': 'application/json' };
@@ -51,8 +63,16 @@
             var h = this.apiHeaders();
             h['Content-Type'] = 'application/json';
             h['X-CSRF-TOKEN'] = csrfToken();
-            h['X-HTTP-Method-Override'] = 'PUT';
-            fetch(url, { method: 'POST', headers: h, body: JSON.stringify(body) })
+            fetch(url, { method: 'PUT', headers: h, body: JSON.stringify(body) })
+                .then(function (r) { return r.json(); })
+                .then(function (d) { cb(null, d); })
+                .catch(function (e) { cb(e); });
+        },
+
+        apiDelete: function (url, cb) {
+            var h = this.apiHeaders();
+            h['X-CSRF-TOKEN'] = csrfToken();
+            fetch(url, { method: 'DELETE', headers: h })
                 .then(function (r) { return r.json(); })
                 .then(function (d) { cb(null, d); })
                 .catch(function (e) { cb(e); });
