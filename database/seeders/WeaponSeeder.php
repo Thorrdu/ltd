@@ -11,17 +11,16 @@ class WeaponSeeder extends Seeder
     public function run(): void
     {
         /*
-         * Grille RP (prix max) : SNS 70k … Cal.50 220k. Vente : ancres SNS 60k, Cal .50 200k, autres interpolés.
-         * Achat de référence : uniquement SNS (arme non craftée, acquise 30k). Les craftées n’ont qu’un prix de vente.
-         *
-         * Production : après déploiement, exécuter les migrations puis ce seeder (ou db:seed) pour
-         * sell_price / reference_purchase_price — sinon le simulateur affiche vente / marge vides.
+         * Prix de vente référence : **dans les bandes min–max** du tableau RP armes (SNS 35–70k, WM29 45–90k,
+         * Céramique 40–80k, Pistol 60–120k, Heavy 90–180k, Cal.50 110–220k). Ancres métier : SNS 60k, Cal.50 200k.
+         * Achat réf. : SNS 30k seul. WN29 : le plafond RP (90k) peut rester sous le coût « tout acheté » du simu
+         * si plan = 0 — la marge passe alors par stock / récolte / prix du plan.
          */
         $weapons = [
             ['name' => 'SNS', 'slug' => 'sns', 'craft_time_seconds' => 15, 'sell_price' => 60000, 'reference_purchase_price' => 30000, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 5, 'sort_order' => 1],
-            ['name' => 'WN 29 Pistol', 'slug' => 'wn29', 'craft_time_seconds' => 15, 'sell_price' => 80000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 5, 'sort_order' => 2],
-            ['name' => 'Ceramic Pistol', 'slug' => 'ceramic', 'craft_time_seconds' => 15, 'sell_price' => 70000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 5, 'sort_order' => 3],
-            ['name' => 'Pistol', 'slug' => 'pistol', 'craft_time_seconds' => 15, 'sell_price' => 110000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 10, 'sort_order' => 4],
+            ['name' => 'WN 29 Pistol', 'slug' => 'wn29', 'craft_time_seconds' => 15, 'sell_price' => 90000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 5, 'sort_order' => 2],
+            ['name' => 'Ceramic Pistol', 'slug' => 'ceramic', 'craft_time_seconds' => 15, 'sell_price' => 80000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 5, 'sort_order' => 3],
+            ['name' => 'Pistol', 'slug' => 'pistol', 'craft_time_seconds' => 15, 'sell_price' => 120000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 10, 'sort_order' => 4],
             ['name' => 'Heavy Pistol', 'slug' => 'heavy', 'craft_time_seconds' => 25, 'sell_price' => 160000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 2, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 10, 'sort_order' => 5],
             ['name' => 'Cal .50', 'slug' => 'cal50', 'craft_time_seconds' => 30, 'sell_price' => 200000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 2, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 15, 'sort_order' => 6],
         ];
