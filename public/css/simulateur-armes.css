@@ -1536,22 +1536,6 @@ select.fm-input option {
     font-weight: 600;
 }
 
-.ammo-craft-table .ammo-sell-ref {
-    font-size: 9px;
-    font-weight: 600;
-    color: #8ab88a;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.ammo-craft-table .ammo-sell-est {
-    font-size: 9px;
-    font-weight: 600;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
 .ammo-craft-table .ammo-ben-pos {
     color: #6ab06a;
     font-weight: 600;

@@ -47,23 +47,12 @@
         { name: '.50 BMG', craftSec: 10, poudre: 20, fragment: 35 }
     ];
     /**
-     * Prix de vente indicatifs en € par munition (hors pack).
-     * Grille cohérente avec le coût matière à poudre 100 €/u et fer 30 €/u ; autres calibres ~22–27 % de marge (fer acheté), .45 ACP à 100 €/mun (repère RP).
-     * 7.62×39 : 300 € (réf., proche de l’ancien fournisseur 290 €). Tous les prix : multiples de 5 €.
+     * Prix de vente €/mun : si coût poudre seule / mun ≤ 50 € → × 2 sur ce coût ; sinon × 1,5 sur le coût fer acheté (poudre + fer).
+     * Arrondi multiple de 10 € ; exceptions : 5.56×45 et 7.62×39 à 350 €, 12 Gauge à 450 €.
      */
-    var AMMO_SELL_PRICE_EUR = {
-        '9mm': 80,
-        '.38 LC': 200,
-        '.45 ACP': 100,
-        '.50 AE': 140,
-        '5.56x45': 290,
-        '7.62x39': 300,
-        '12 Gauge': 400,
-        '7.62x51': 310,
-        '.50 BMG': 320
-    };
-    /** Prix retenus comme repères RP (réajustés ; le reste est estimé sur la même logique). */
-    var AMMO_SELL_REFERENCE_NAMES = { '.45 ACP': true, '7.62x39': true };
+    var AMMO_SELL_POWDER_THRESHOLD_EUR = 50;
+    var AMMO_SELL_MARKUP_SMALL = 2;
+    var AMMO_SELL_MARKUP_LARGE = 1.5;
     var METAL_MINERAI_RATE = 5;
     var RESSORT_METAL_RATE = 1;
     var RESSORT_MINERAI_RATE = 3;
@@ -324,12 +313,6 @@
     });
     grid.addEventListener('input', function (e) { if (e.target.classList.contains('qty-input')) calculate(); });
 
-    function ammoSellTag(name) {
-        return AMMO_SELL_REFERENCE_NAMES[name]
-            ? ' <span class="ammo-sell-ref" title="Prix de référence indiqué">(réf.)</span>'
-            : ' <span class="ammo-sell-est" title="Estimation à partir des calibres de référence">(estim.)</span>';
-    }
-
     function ammoBenClass(v) {
         if (v > 0) return 'ammo-ben-pos';
         if (v < 0) return 'ammo-ben-neg';
@@ -341,6 +324,30 @@
             if (AMMO_RECIPES[i].name === name) return AMMO_RECIPES[i];
         }
         return null;
+    }
+
+    function ammoCostPerMun(r, prixFer) {
+        var pf = Math.max(0, prixFer);
+        var achatPoudre = r.poudre * AMMO_GUNPOWDER_PRICE;
+        var ferUnits = r.fragment / AMMO_FRAGMENTS_PER_FER_UNIT;
+        return (achatPoudre + ferUnits * pf) / AMMO_YIELD_PER_CRAFT;
+    }
+
+    /** Coût poudre seule par munition (€), sans fer. */
+    function ammoCostPoudrePerMun(r) {
+        return (r.poudre * AMMO_GUNPOWDER_PRICE) / AMMO_YIELD_PER_CRAFT;
+    }
+
+    /** Montants de vente plus lisibles pour certains calibres. */
+    var AMMO_SELL_PRETTY_EUR = { '5.56x45': 350, '7.62x39': 350, '12 Gauge': 450 };
+
+    function ammoSellPriceForRecipe(r, prixFer) {
+        if (!r) return 0;
+        if (AMMO_SELL_PRETTY_EUR[r.name] != null) return AMMO_SELL_PRETTY_EUR[r.name];
+        var sansFer = ammoCostPoudrePerMun(r);
+        var c = ammoCostPerMun(r, prixFer);
+        var sell = sansFer <= AMMO_SELL_POWDER_THRESHOLD_EUR ? sansFer * AMMO_SELL_MARKUP_SMALL : c * AMMO_SELL_MARKUP_LARGE;
+        return Math.round(sell / 10) * 10;
     }
 
     function updateAmmoTargetSim() {
@@ -368,7 +375,7 @@
         var revientFerRecolteCraft = achatPoudre;
         var costAch = revientFerAcheteCraft * crafts;
         var costRec = revientFerRecolteCraft * crafts;
-        var refSell = AMMO_SELL_PRICE_EUR[r.name] != null ? AMMO_SELL_PRICE_EUR[r.name] : 0;
+        var refSell = ammoSellPriceForRecipe(r, prixFer);
         var ovRaw = sellOv && String(sellOv.value).trim() !== '' ? parseFloat(sellOv.value) : NaN;
         var useOverride = sellOv && !isNaN(ovRaw) && ovRaw >= 0;
         var prixVenteMun = useOverride ? ovRaw : refSell;
@@ -380,7 +387,7 @@
         var margeMunAch = prixVenteMun - coutMunAch;
         var margeMunRec = prixVenteMun - coutMunRec;
         var timeTotal = crafts * (r.craftSec || 0);
-        var sellNote = useOverride ? '(scénario)' : '(tableau' + (AMMO_SELL_REFERENCE_NAMES[r.name] ? ', réf.)' : ', estim.)');
+        var sellNote = useOverride ? '(scénario)' : '(tableau)';
         var html = '';
         html += makeRow('Calibre', esc(r.name));
         html += makeRow('Munitions visées', fmt(M));
@@ -418,7 +425,7 @@
             var revientFerRecolteCraft = achatPoudre;
             var coutMunAch = revientFerAcheteCraft / AMMO_YIELD_PER_CRAFT;
             var coutMunRec = revientFerRecolteCraft / AMMO_YIELD_PER_CRAFT;
-            var prixVenteParMun = AMMO_SELL_PRICE_EUR[r.name] != null ? AMMO_SELL_PRICE_EUR[r.name] : 0;
+            var prixVenteParMun = ammoSellPriceForRecipe(r, prixFer);
             var margeMunAch = prixVenteParMun - coutMunAch;
             var margeMunRec = prixVenteParMun - coutMunRec;
             html += '<tr>';
@@ -428,7 +435,7 @@
             html += '<td>' + fmt(r.fragment) + '</td>';
             html += '<td>' + fmtEuro(coutMunAch) + '</td>';
             html += '<td>' + fmtEuro(coutMunRec) + '</td>';
-            html += '<td>' + fmtEuro(prixVenteParMun) + ammoSellTag(r.name) + '</td>';
+            html += '<td>' + fmtEuro(prixVenteParMun) + '</td>';
             html += '<td class="' + ammoBenClass(margeMunAch) + '">' + fmtEuro(margeMunAch) + '</td>';
             html += '<td class="' + ammoBenClass(margeMunRec) + '">' + fmtEuro(margeMunRec) + '</td>';
             html += '</tr>';

@@ -60,7 +60,7 @@
 
             <div class="sim-section" id="ammoCraftSection">
                 <div class="sim-section-title">Craft munitions</div>
-                <p class="ammo-sim-intro">Recette : <strong>1 craft = 10 munitions</strong>. Poudre <strong>100 €</strong>/u, fer au prix saisi, <strong>1 fer → 2 fragments</strong>. <strong>Toutes les colonnes du tableau sont par munition</strong>. Vente <strong>par munition</strong> (multiples de <strong>5 €</strong>) : repères <strong>.45 ACP 100 €</strong> et <strong>7.62×39 300 €</strong> (réf.) ; autres calibres <strong>estimés</strong> pour s’aligner sur le coût matière (fer <strong>30 €</strong>, poudre <strong>100 €</strong>) et sur cette échelle. Ambre si le prix du fer augmente fortement.</p>
+                <p class="ammo-sim-intro">Recette : <strong>1 craft = 10 munitions</strong>. Poudre <strong>100 €</strong>/u, fer au prix saisi, <strong>1 fer → 2 fragments</strong>. <strong>Toutes les colonnes du tableau sont par munition</strong>. <strong>Prix de vente</strong> : si le coût <strong>poudre seule</strong> / mun est <strong>≤ 50 €</strong> → <strong>× 2</strong> sur ce montant ; sinon <strong>× 1,5</strong> sur le <strong>coût fer acheté</strong> (poudre + fer). Arrondi au multiple de <strong>10 €</strong> ; 5.56×45 et 7.62×39 à <strong>350 €</strong>, 12 Gauge à <strong>450 €</strong>. Tout se recalcule si vous changez le fer.</p>
                 <div class="ammo-sim-params">
                     <label class="ammo-sim-label" for="ammoFerPrice">Prix du fer (€ / unité)</label>
                     <input type="number" class="ammo-sim-input" id="ammoFerPrice" min="0" step="0.01" value="30" inputmode="decimal">
@@ -83,7 +83,7 @@
                         <tbody id="ammoCraftBody"></tbody>
                         <tfoot>
                             <tr class="ammo-craft-foot">
-                                <td colspan="9">€ par munition (prix au multiple de 5 €). Pdr/Frag = par craft. (réf.) repères RP ; (estim.) même logique de marge.</td>
+                                <td colspan="9">€ par munition. Vente : poudre / mun ≤ 50 € → × 2 sur la poudre ; sinon × 1,5 sur le coût fer acheté ; arrondi 10 € ; exceptions 5.56×45, 7.62×39, 12 Gauge. Pdr/Frag = par craft.</td>
                             </tr>
                         </tfoot>
                     </table>
