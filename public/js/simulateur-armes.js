@@ -463,6 +463,11 @@
         return n * WEAPON_CRAFT_WEAPON_PIECE_EUR;
     }
 
+    /** Part du coût « pièces » correspondant aux seules pièces de métal (liées au fer acheté dans ce modèle). */
+    function weaponCraftMetalPiecesEuro(w) {
+        return (w.pieces.metal || 0) * WEAPON_CRAFT_WEAPON_PIECE_EUR;
+    }
+
     /**
      * Coût matière « tout acheté » pour 1 craft arme (€).
      * @param {object} w entrée weapons[slug]
@@ -507,6 +512,20 @@
             + u(Q * (p.canon || 0), st.canon) * WEAPON_CRAFT_WEAPON_PIECE_EUR
             + u(Q * (p.poignee || 0), st.poignee) * WEAPON_CRAFT_WEAPON_PIECE_EUR
             + u(Q * (p.metal || 0), st.metal) * WEAPON_CRAFT_WEAPON_PIECE_EUR
+            + u(Q * (p.polymere || 0), st.polymere) * POLYMERE_COST;
+    }
+
+    /** Comme achat composants, mais pièces de métal : 0 € (fer récolté, métal craft maison). */
+    function weaponCraftCostBuyOrderTotalFerRecolte(w, planPriceEu, Q, st) {
+        var p = w.pieces;
+        var pp = Math.max(0, planPriceEu);
+        var u = weaponStockPaidUnits;
+        return u(Q * (p.plans || 0), st.plans) * pp
+            + u(Q * (p.corp || 0), st.corp) * WEAPON_CRAFT_CORP_EUR
+            + u(Q * (p.ressort || 0), st.ressort) * WEAPON_CRAFT_WEAPON_PIECE_EUR
+            + u(Q * (p.canon || 0), st.canon) * WEAPON_CRAFT_WEAPON_PIECE_EUR
+            + u(Q * (p.poignee || 0), st.poignee) * WEAPON_CRAFT_WEAPON_PIECE_EUR
+            + u(Q * (p.metal || 0), st.metal) * 0
             + u(Q * (p.polymere || 0), st.polymere) * POLYMERE_COST;
     }
 
@@ -564,9 +583,12 @@
             var bought = wd.isBoughtWeapon;
             var b = weaponCraftCostBreakdownOne(wd, planEu);
             var g = weaponCraftCostGatheredOne(wd, planEu);
+            var metalOne = weaponCraftMetalPiecesEuro(wd);
+            var bFerRecOne = bought ? 0 : b.total - metalOne;
             var sell = wd.sellPrice || 0;
             var refBuy = wd.referencePurchasePrice || 0;
             var margeBuy = (!bought && sell > 0) ? sell - b.total : null;
+            var margeFerRec = (!bought && sell > 0) ? sell - bFerRecOne : null;
             var margeGathered = (!bought && sell > 0) ? sell - g : null;
             var margeRevente = (bought && sell > 0 && refBuy > 0) ? sell - refBuy : null;
             html += '<tr>';
@@ -574,7 +596,7 @@
             html += '<td>' + esc(weaponCraftTimeLabel(wd.craftTime)) + '</td>';
             if (bought) {
                 html += '<td>—</td><td>—</td><td>—</td><td>—</td>';
-                html += '<td>—</td><td>—</td>';
+                html += '<td>—</td><td>—</td><td>—</td>';
                 html += '<td>' + (refBuy > 0 ? fmtEuro(refBuy) : '—') + '</td>';
             } else {
                 html += '<td>' + fmtEuro(b.costPlans) + '</td>';
@@ -582,6 +604,7 @@
                 html += '<td>' + fmtEuro(b.costPieces) + '</td>';
                 html += '<td>' + fmtEuro(b.costPoly) + '</td>';
                 html += '<td>' + fmtEuro(b.total) + '</td>';
+                html += '<td>' + fmtEuro(bFerRecOne) + '</td>';
                 html += '<td>' + fmtEuro(g) + '</td>';
                 html += '<td>—</td>';
             }
@@ -589,13 +612,14 @@
                 html += '<td>' + fmtEuro(sell) + '</td>';
                 if (bought) {
                     html += '<td class="' + ammoBenClass(margeRevente) + '">' + (margeRevente != null ? fmtEuro(margeRevente) : '—') + '</td>';
-                    html += '<td>—</td>';
+                    html += '<td>—</td><td>—</td>';
                 } else {
                     html += '<td class="' + ammoBenClass(margeBuy) + '">' + (margeBuy != null ? fmtEuro(margeBuy) : '—') + '</td>';
+                    html += '<td class="' + ammoBenClass(margeFerRec) + '">' + (margeFerRec != null ? fmtEuro(margeFerRec) : '—') + '</td>';
                     html += '<td class="' + ammoBenClass(margeGathered) + '">' + (margeGathered != null ? fmtEuro(margeGathered) : '—') + '</td>';
                 }
             } else {
-                html += '<td>—</td><td>—</td><td>—</td>';
+                html += '<td>—</td><td>—</td><td>—</td><td>—</td>';
             }
             html += '</tr>';
         });
@@ -627,9 +651,12 @@
         var costTotBuyNoStock = bought ? 0 : b.total * Q;
         var costTotGatheredNoStock = bought ? 0 : gatheredOne * Q;
         var costTotBuy = bought ? 0 : weaponCraftCostBuyOrderTotal(wd, planEu, Q, st);
+        var costTotFerRec = bought ? 0 : weaponCraftCostBuyOrderTotalFerRecolte(wd, planEu, Q, st);
         var costTotGathered = bought ? 0 : weaponCraftCostGatheredOrderTotal(wd, planEu, Q, st);
         var costOneBuy = bought ? 0 : (Q > 0 ? costTotBuy / Q : 0);
+        var costOneFerRec = bought ? 0 : (Q > 0 ? costTotFerRec / Q : 0);
         var costOneGathered = bought ? 0 : (Q > 0 ? costTotGathered / Q : 0);
+        var ecoFerRecVsAch = (!bought && costTotBuy > costTotFerRec) ? costTotBuy - costTotFerRec : 0;
         var baseSell = wd.sellPrice || 0;
         var sellParsed = sellOv ? parseEuroOptionalInput(sellOv.value) : { ok: true, empty: true, value: 0 };
         var sellInvalid = !!(sellOv && String(sellOv.value).trim() !== '' && !sellParsed.ok);
@@ -642,9 +669,11 @@
         var coutAchatArmeTot = (bought && refBuyOne > 0) ? snsToBuy * refBuyOne : 0;
         var coutAchatUnitMoyen = (bought && Q > 0) ? coutAchatArmeTot / Q : 0;
         var margeTotBuy = (!bought && prixVente > 0) ? venteTotale - costTotBuy : null;
+        var margeTotFerRec = (!bought && prixVente > 0) ? venteTotale - costTotFerRec : null;
         var margeTotGathered = (!bought && prixVente > 0) ? venteTotale - costTotGathered : null;
         var margeTotRevente = (bought && prixVente > 0 && refBuyOne > 0) ? venteTotale - coutAchatArmeTot : null;
         var margeOneBuy = (!bought && prixVente > 0) ? prixVente - costOneBuy : null;
+        var margeOneFerRec = (!bought && prixVente > 0) ? prixVente - costOneFerRec : null;
         var margeOneGathered = (!bought && prixVente > 0) ? prixVente - costOneGathered : null;
         var margeOneRevente = (bought && prixVente > 0 && refBuyOne > 0) ? prixVente - coutAchatUnitMoyen : null;
         var timeOne = wd.craftTime;
@@ -670,28 +699,33 @@
                 html += makeRow('Coût acquisition (après stock)', fmtEuro(coutAchatUnitMoyen), 'highlight');
             }
         } else {
-            html += makeRow('Coût mat. / arme (achat comp., hors stock)', fmtEuro(b.total), '');
+            html += makeRow('Coût mat. / arme (fer acheté, hors stock)', fmtEuro(b.total), '');
             if (stockUsedCraft) {
-                html += makeRow('Coût mat. / arme (achat comp., stock déduit)', fmtEuro(costOneBuy), 'highlight');
+                html += makeRow('Coût mat. / arme (fer acheté, stock déduit)', fmtEuro(costOneBuy), 'highlight');
             } else {
-                html += makeRow('Coût mat. / arme (composants achetés)', fmtEuro(costOneBuy), 'highlight');
+                html += makeRow('Coût mat. / arme (fer acheté)', fmtEuro(costOneBuy), 'highlight');
             }
-            html += makeRow('Coût mat. / arme (récolté, € plans)', fmtEuro(costOneGathered), 'highlight');
+            html += makeRow('Coût mat. / arme (fer récolté)', fmtEuro(costOneFerRec), 'highlight');
+            html += makeRow('Coût mat. / arme (plans seuls)', fmtEuro(costOneGathered), 'highlight');
         }
         html += makeRow('Prix vente / arme ' + sellNote, prixVente > 0 ? fmtEuro(prixVente) : '—');
         if (prixVente > 0) {
             if (bought) {
                 html += makeRow('Marge / arme (revente)', margeOneRevente != null ? fmtEuro(margeOneRevente) : '—', ammoBenClass(margeOneRevente));
             } else {
-                html += makeRow('Marge / arme (achat comp.)', margeOneBuy != null ? fmtEuro(margeOneBuy) : '—', ammoBenClass(margeOneBuy));
-                html += makeRow('Marge / arme (récolté)', margeOneGathered != null ? fmtEuro(margeOneGathered) : '—', ammoBenClass(margeOneGathered));
+                html += makeRow('Marge / arme (fer acheté)', margeOneBuy != null ? fmtEuro(margeOneBuy) : '—', ammoBenClass(margeOneBuy));
+                html += makeRow('Marge / arme (fer récolté)', margeOneFerRec != null ? fmtEuro(margeOneFerRec) : '—', ammoBenClass(margeOneFerRec));
+                html += makeRow('Marge / arme (plans seuls)', margeOneGathered != null ? fmtEuro(margeOneGathered) : '—', ammoBenClass(margeOneGathered));
             }
         }
         if (stockUsedCraft || stockUsedSns) {
             html += makeSectionHeader('Effet du stock sur cette commande');
             if (stockUsedCraft) {
                 if (ecoBuy > 0) html += makeRow('Économie (achat comp. vs sans stock)', fmtEuro(ecoBuy), 'ammo-ben-pos');
-                if (ecoGathered > 0) html += makeRow('Économie (scénario récolté, plans)', fmtEuro(ecoGathered), 'ammo-ben-pos');
+                if (ecoGathered > 0) html += makeRow('Économie (plans seuls vs sans stock plans)', fmtEuro(ecoGathered), 'ammo-ben-pos');
+            }
+            if (!bought && (wd.pieces.metal || 0) > 0 && ecoFerRecVsAch > 0) {
+                html += makeRow('Écart coût fer acheté − fer récolté (cette commande)', fmtEuro(ecoFerRecVsAch), 'ammo-ben-pos');
             }
             if (stockUsedSns && refBuyOne > 0) {
                 html += makeRow('SNS couverts par le stock', fmt(Math.min(st.sns, Q)) + ' / ' + fmt(Q));
@@ -702,16 +736,18 @@
         if (bought) {
             html += makeRow('Coût total acquisition (réf.)', coutAchatArmeTot > 0 ? fmtEuro(coutAchatArmeTot) : (refBuyOne > 0 ? fmtEuro(0) : '—'), 'highlight');
         } else {
-            html += makeRow('Coût total (composants achetés)', fmtEuro(costTotBuy), 'highlight');
-            html += makeRow('Coût total (composants récoltés)', fmtEuro(costTotGathered), 'highlight');
+            html += makeRow('Coût total (fer acheté)', fmtEuro(costTotBuy), 'highlight');
+            html += makeRow('Coût total (fer récolté)', fmtEuro(costTotFerRec), 'highlight');
+            html += makeRow('Coût total (plans seuls)', fmtEuro(costTotGathered), 'highlight');
         }
         html += makeRow('Chiffre d’affaires', prixVente > 0 ? fmtEuro(venteTotale) : '—', prixVente > 0 ? 'highlight' : '');
         if (prixVente > 0) {
             if (bought) {
                 html += makeRow('Marge totale (revente)', margeTotRevente != null ? fmtEuro(margeTotRevente) : '—', ammoBenClass(margeTotRevente));
             } else {
-                html += makeRow('Marge totale (achat comp.)', margeTotBuy != null ? fmtEuro(margeTotBuy) : '—', ammoBenClass(margeTotBuy));
-                html += makeRow('Marge totale (récolté)', margeTotGathered != null ? fmtEuro(margeTotGathered) : '—', ammoBenClass(margeTotGathered));
+                html += makeRow('Marge totale (fer acheté)', margeTotBuy != null ? fmtEuro(margeTotBuy) : '—', ammoBenClass(margeTotBuy));
+                html += makeRow('Marge totale (fer récolté)', margeTotFerRec != null ? fmtEuro(margeTotFerRec) : '—', ammoBenClass(margeTotFerRec));
+                html += makeRow('Marge totale (plans seuls)', margeTotGathered != null ? fmtEuro(margeTotGathered) : '—', ammoBenClass(margeTotGathered));
             }
         } else {
             html += makeRow('Marge totale', 'Définissez un prix de vente (base ou champ optionnel)', '');

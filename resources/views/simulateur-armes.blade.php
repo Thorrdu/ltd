@@ -106,7 +106,7 @@
 
             <div class="sim-section" id="weaponCraftSection">
                 <div class="sim-section-title">Craft armes (composants)</div>
-                <p class="ammo-sim-intro">Pour les armes <strong>craftées</strong> : <strong>composants achetés</strong> = vous payez corp (15&nbsp;000 €/u), pièces (ressort, canon, poignée, métal à 5&nbsp;000 €/u), polymère (4&nbsp;500 €/u) et utilisations de plan au prix saisi. <strong>Composants récoltés</strong> = hypothèse « tout fabriqué à partir de matières récoltées » : seul le <strong>coût des utilisations de plan</strong> reste en euros (même prix / utilisation). Le <strong>SNS</strong> n’est pas crafté : seul un <strong>prix d’achat de référence</strong> (acquisition) et le prix de vente s’appliquent ; marge = vente − achat.</p>
+                <p class="ammo-sim-intro">Pour les armes <strong>craftées</strong> : <strong>fer / minerai acheté</strong> = toutes les pièces au tarif du tableau, dont les <strong>pièces de métal</strong> (5&nbsp;000 €/u, issues du fer acheté). <strong>Fer récolté</strong> = vous ne payez pas les pièces de métal de la recette (ressort, canon, poignée et le reste restent facturés) ; même logique que les munitions (fer acheté / fer récolté). <strong>Σ plans</strong> = seules les utilisations de plan sont en euros (autres composants considérés récoltés). Le <strong>SNS</strong> n’est pas crafté : achat réf. + vente.</p>
                 <div class="ammo-sim-params">
                     <label class="ammo-sim-label" for="weaponCraftPlanPrice">Prix du plan (€ / utilisation)</label>
                     <input type="number" class="ammo-sim-input" id="weaponCraftPlanPrice" min="0" step="0.01" value="" placeholder="Ex. 8000" inputmode="decimal" title="Laisser vide ou 0 si le plan est inconnu">
@@ -121,18 +121,20 @@
                                 <th>€ corp</th>
                                 <th>€ pièces</th>
                                 <th>€ polym.</th>
-                                <th>Σ achat comp.</th>
-                                <th>Σ récolté</th>
+                                <th>Σ fer ach.</th>
+                                <th>Σ fer réc.</th>
+                                <th>Σ plans</th>
                                 <th>Achat arme</th>
                                 <th>Vente</th>
-                                <th>Marge achat</th>
-                                <th>Marge récolt.</th>
+                                <th>M fer ach.</th>
+                                <th>M fer réc.</th>
+                                <th>M plans</th>
                             </tr>
                         </thead>
                         <tbody id="weaponCraftBody"></tbody>
                         <tfoot>
                             <tr class="ammo-craft-foot">
-                                <td colspan="12">Craftées : Σ achat = somme des colonnes ; Σ récolté = plans payés seulement. SNS : pas de craft — colonne <strong>Achat arme</strong> (30k réf.) ; <strong>Marge achat</strong> = revente ; tiret en <strong>Marge récolt.</strong></td>
+                                <td colspan="14">Σ fer ach. = tout acheté (dont métal). Σ fer réc. = sans pièces de métal payantes. Σ plans = utilisations de plan seules. SNS : <strong>Achat arme</strong> ; marge de revente dans la colonne « M fer ach. », tirets ailleurs.</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -140,7 +142,7 @@
 
                 <div class="ammo-target-block">
                     <div class="sim-section-title">Objectif en armes</div>
-                    <p class="ammo-sim-intro ammo-sim-intro-tight">Nombre d’<strong>armes finies</strong> (craft) ou d’<strong>unités</strong> (SNS acheté). Deux scénarios de coût pour les craftées : composants <strong>achetés</strong> ou <strong>récoltés</strong> (voir tableau). Le <strong>prix de vente</strong> reprend la base ; champ optionnel pour un scénario.</p>
+                    <p class="ammo-sim-intro ammo-sim-intro-tight">Nombre d’<strong>armes finies</strong> (craft) ou d’<strong>unités</strong> (SNS). Coûts craft : <strong>fer acheté</strong> (tout au tarif), <strong>fer récolté</strong> (sans payer les pièces de métal de la recette), <strong>plans seuls</strong>. Stock optionnel ci‑dessous. Prix de vente : base ou champ optionnel.</p>
                     <div class="ammo-sim-params ammo-target-params">
                         <label class="ammo-sim-label" for="weaponTargetSlug">Arme</label>
                         <select id="weaponTargetSlug" class="ammo-sim-select" aria-label="Arme pour la simulation"></select>
