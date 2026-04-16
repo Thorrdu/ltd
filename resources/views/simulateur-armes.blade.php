@@ -60,7 +60,7 @@
 
             <div class="sim-section" id="ammoCraftSection">
                 <div class="sim-section-title">Craft munitions</div>
-                <p class="ammo-sim-intro">Recette : <strong>1 craft = 10 munitions</strong>. Poudre <strong>100 €</strong>/u, fer au prix saisi, <strong>1 fer → 2 fragments</strong>. <strong>Toutes les colonnes du tableau sont par munition</strong> (coûts = revient matière pour une munition au prix fer actuel). Vente <strong>par munition</strong> : <strong>.45 ACP 100 €</strong>, <strong>7.62×39 290 €</strong> (réf.) ; autres <strong>estimés</strong> pour une marge positive avec fer à <strong>30 €</strong> et poudre à <strong>100 €</strong>. Marges négatives en <strong>ambre</strong> si vous changez le prix du fer.</p>
+                <p class="ammo-sim-intro">Recette : <strong>1 craft = 10 munitions</strong>. Poudre <strong>100 €</strong>/u, fer au prix saisi, <strong>1 fer → 2 fragments</strong>. <strong>Toutes les colonnes du tableau sont par munition</strong>. Vente <strong>par munition</strong> (multiples de <strong>5 €</strong>) : repères <strong>.45 ACP 100 €</strong> et <strong>7.62×39 300 €</strong> (réf.) ; autres calibres <strong>estimés</strong> pour s’aligner sur le coût matière (fer <strong>30 €</strong>, poudre <strong>100 €</strong>) et sur cette échelle. Ambre si le prix du fer augmente fortement.</p>
                 <div class="ammo-sim-params">
                     <label class="ammo-sim-label" for="ammoFerPrice">Prix du fer (€ / unité)</label>
                     <input type="number" class="ammo-sim-input" id="ammoFerPrice" min="0" step="0.01" value="30" inputmode="decimal">
@@ -83,7 +83,7 @@
                         <tbody id="ammoCraftBody"></tbody>
                         <tfoot>
                             <tr class="ammo-craft-foot">
-                                <td colspan="9">Toutes les valeurs monétaires : € par munition. Pdr/Frag = quantités pour <strong>un</strong> craft. (réf.) prix RP ; (estim.) calibrés pour marge positive à fer 30 € et poudre 100 €.</td>
+                                <td colspan="9">€ par munition (prix au multiple de 5 €). Pdr/Frag = par craft. (réf.) repères RP ; (estim.) même logique de marge.</td>
                             </tr>
                         </tfoot>
                     </table>

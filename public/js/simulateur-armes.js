@@ -48,20 +48,21 @@
     ];
     /**
      * Prix de vente indicatifs en € par munition (hors pack).
-     * Estimés calibrés pour une marge positive avec poudre 100 €/u et fer 30 €/u (références .45 ACP et 7.62×39 inchangées).
+     * Grille cohérente avec le coût matière à poudre 100 €/u et fer 30 €/u ; autres calibres ~22–27 % de marge (fer acheté), .45 ACP à 100 €/mun (repère RP).
+     * 7.62×39 : 300 € (réf., proche de l’ancien fournisseur 290 €). Tous les prix : multiples de 5 €.
      */
     var AMMO_SELL_PRICE_EUR = {
-        '9mm': 78,
-        '.38 LC': 182,
+        '9mm': 80,
+        '.38 LC': 200,
         '.45 ACP': 100,
-        '.50 AE': 132,
-        '5.56x45': 255,
-        '7.62x39': 290,
-        '12 Gauge': 352,
-        '7.62x51': 270,
-        '.50 BMG': 276
+        '.50 AE': 140,
+        '5.56x45': 290,
+        '7.62x39': 300,
+        '12 Gauge': 400,
+        '7.62x51': 310,
+        '.50 BMG': 320
     };
-    /** Munitions dont le prix de vente est une donnée RP (le reste est estimé). */
+    /** Prix retenus comme repères RP (réajustés ; le reste est estimé sur la même logique). */
     var AMMO_SELL_REFERENCE_NAMES = { '.45 ACP': true, '7.62x39': true };
     var METAL_MINERAI_RATE = 5;
     var RESSORT_METAL_RATE = 1;
