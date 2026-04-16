@@ -209,6 +209,112 @@ class StockController extends Controller
         ]);
     }
 
+    /**
+     * Met a jour les metadonnees d'un stock_item (nom, categorie, prix de vente,
+     * prix d'achat, poids, vendabilite, notes). Un mouvement d'ajustement de
+     * quantity=0 est cree avec un resume des champs changes pour la tracabilite.
+     * Reserve officier+ (scope `stocks_generique`). La quantite ne se modifie
+     * PAS ici : utiliser l'import CSV ou l'action Ajuster de Filament.
+     */
+    public function apiUpdateItem(Request $request, string $slug): JsonResponse
+    {
+        if ($denied = $this->requireAccess($request)) {
+            return $denied;
+        }
+        $user = $this->authUser($request);
+
+        $item = StockItem::where('slug', $slug)->first();
+        if (! $item) {
+            return response()->json(['error' => 'Article introuvable'], 404);
+        }
+
+        $categories = array_keys(StockItem::CATEGORIES);
+
+        $v = Validator::make($request->all(), [
+            'name'                   => 'sometimes|required|string|max:120',
+            'category'               => 'sometimes|required|string|in:' . implode(',', $categories),
+            'default_sell_price'     => 'sometimes|nullable|integer|min:0|max:999999999',
+            'default_purchase_price' => 'sometimes|nullable|integer|min:0|max:999999999',
+            'unit_weight_g'          => 'sometimes|nullable|integer|min:0|max:9999999',
+            'is_sellable'            => 'sometimes|boolean',
+            'is_active'              => 'sometimes|boolean',
+            'notes'                  => 'sometimes|nullable|string|max:1000',
+        ]);
+        if ($v->fails()) {
+            return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
+        }
+
+        $data = $v->validated();
+        $changes = [];
+
+        foreach ($data as $field => $new) {
+            $old = $item->{$field};
+            $oldNorm = is_bool($old) ? (int) $old : $old;
+            $newNorm = is_bool($new) ? (int) $new : $new;
+            if ((string) $oldNorm !== (string) $newNorm) {
+                $changes[$field] = ['from' => $old, 'to' => $new];
+            }
+        }
+
+        if (empty($changes)) {
+            return response()->json(['ok' => true, 'message' => 'Aucune modification', 'item' => $this->mapItem($item)]);
+        }
+
+        DB::transaction(function () use ($item, $data, $changes, $user) {
+            $item->update($data);
+
+            $summary = collect($changes)->map(function ($c, $field) {
+                $from = is_null($c['from']) || $c['from'] === '' ? 'null' : (string) $c['from'];
+                $to   = is_null($c['to'])   || $c['to']   === '' ? 'null' : (string) $c['to'];
+                if (mb_strlen($from) > 40) {
+                    $from = mb_substr($from, 0, 40) . '...';
+                }
+                if (mb_strlen($to) > 40) {
+                    $to = mb_substr($to, 0, 40) . '...';
+                }
+
+                return $field . ': ' . $from . ' -> ' . $to;
+            })->implode(' | ');
+
+            StockMovement::create([
+                'stock_item_id'   => $item->id,
+                'quantity_change' => 0,
+                'reason'          => 'adjustment',
+                'user_id'         => $user->id,
+                'notes'           => 'Modification fiche article : ' . $summary,
+                'created_at'      => now(),
+            ]);
+        });
+
+        return response()->json([
+            'ok'      => true,
+            'message' => 'Article mis a jour (' . count($changes) . ' champ(s))',
+            'item'    => $this->mapItem($item->fresh()),
+            'changes' => array_keys($changes),
+        ]);
+    }
+
+    /**
+     * Mapping d'un stock_item pour les reponses API.
+     */
+    private function mapItem(StockItem $i): array
+    {
+        return [
+            'id'                     => $i->id,
+            'category'               => $i->category,
+            'category_label'         => StockItem::CATEGORIES[$i->category] ?? $i->category,
+            'slug'                   => $i->slug,
+            'name'                   => $i->name,
+            'quantity'               => (int) $i->quantity,
+            'unit_weight_g'          => $i->unit_weight_g,
+            'default_sell_price'     => $i->default_sell_price,
+            'default_purchase_price' => $i->default_purchase_price,
+            'is_sellable'            => (bool) $i->is_sellable,
+            'is_active'              => (bool) $i->is_active,
+            'notes'                  => $i->notes,
+        ];
+    }
+
     // ─────────────────────────────────────────────────────────
     // Attributions (Phase 3.2 + 3.3)
     // ─────────────────────────────────────────────────────────

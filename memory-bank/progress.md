@@ -81,9 +81,28 @@ Phase 4 (drogues : flux achat orga + dashboard profit) ou Phase 6 (classements +
       `requires_approval`, `approved_by_user_id`, `approved_at`, `rejected_at`, `rejection_reason`.
 - [x] Seeders : 3 nouvelles `page_access_rules` + 2 settings dans le groupe `stocks`.
 
+### Inventaire reel seed (16 avril 2026, soir -- post Phase 3)
+- [x] `StockInventorySeeder` : MAJ des quantites des items existants (munitions, pieces,
+      armes, drogues, matieres) + creation des items manquants observes dans le stockage
+      Lost MC : crosse, corps SMG/fusils, suppresseurs, 7 plans hors catalogue craft,
+      cocaine, briques de weed/cocaine, sachets, joints, 8 consommables agricoles (engrais,
+      pesticide, graines, feuilles, sachets plastique), 5 outils, 7 items electroniques,
+      argent sale, sacs. 97 stock_items au total.
+- [x] `SaleController::apiCreate` accepte `ad_hoc_name` + `ad_hoc_category` quand
+      `stock_item_id` est vide : cree un `stock_item` (slug `adhoc_*`, quantity=0,
+      is_active=true) puis poursuit la vente normalement (stock passe en negatif,
+      warning renvoye au client, regularisation possible via `/stocks`).
+- [x] `/ventes` : toggle "Article hors catalogue" qui masque le select et expose
+      deux champs (nom libre + select catégorie des 12).
+- [x] Edition des fiches articles sur `/stocks/{slug}` : bouton "Modifier" +
+      formulaire inline (name, category, sell/purchase price, weight, sellable,
+      active, notes). Endpoint `PUT /stocks/api/item/{slug}` (officier+) avec
+      creation d'un mouvement adjustment qty=0 tracant les champs changes.
+
 ### Infrastructure
 - [x] 24 migrations appliquees (ajout de `add_attribution_fields_to_stock_movements`)
-- [x] 8 seeders : CategoryProduct, Enterprise, Menu, User, Weapon, StockItem, Setting, PageAccessRule
+- [x] 9 seeders : CategoryProduct, Enterprise, Menu, User, Weapon, StockItem,
+      StockInventory, Setting, PageAccessRule
 - [x] 15 modeles Eloquent (ajout de `Sale`, `StockItem`, `StockMovement`)
 - [x] Systeme de roles avec hierarchie numerique (prospect 1, member 2, officer 3, vice_president 4, president 5, treasurer 99)
 - [x] Auth PIN pour simulateur via header `X-Sim-User`

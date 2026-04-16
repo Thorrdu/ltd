@@ -25,6 +25,65 @@
             <div class="stocks-detail-grid" id="sdGrid"></div>
 
             <div class="action-card" style="margin-top:12px;">
+                <div class="action-card-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Fiche article</span>
+                    <button class="action-btn secondary" id="sdEditToggle" style="padding:4px 12px; font-size:11px;">Modifier</button>
+                </div>
+                <div id="sdSummary" class="sd-summary"></div>
+                <div id="sdEditForm" class="action-form" style="display:none; margin-top:10px;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nom</label>
+                            <input type="text" id="sdfName" class="fm-input" maxlength="120">
+                        </div>
+                        <div class="form-group">
+                            <label>Categorie</label>
+                            <select id="sdfCategory" class="fm-input">
+                                @foreach($categoriesMap as $key => $label)
+                                    <option value="{{ $key }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group sm">
+                            <label>Prix vente ($)</label>
+                            <input type="number" id="sdfSellPrice" class="fm-input" min="0" step="1" placeholder="(vide)">
+                        </div>
+                        <div class="form-group sm">
+                            <label>Prix achat ($)</label>
+                            <input type="number" id="sdfPurchasePrice" class="fm-input" min="0" step="1" placeholder="(vide)">
+                        </div>
+                        <div class="form-group sm">
+                            <label>Poids unit. (g)</label>
+                            <input type="number" id="sdfWeight" class="fm-input" min="0" step="1" placeholder="(vide)">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full">
+                            <label>Notes</label>
+                            <textarea id="sdfNotes" class="fm-input" rows="2" maxlength="1000" style="resize:vertical;"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-row" style="align-items:center;">
+                        <div class="form-group" style="flex:0 0 auto;">
+                            <label class="cb-inline"><input type="checkbox" id="sdfSellable"> Vendable depuis /ventes</label>
+                        </div>
+                        <div class="form-group" style="flex:0 0 auto;">
+                            <label class="cb-inline"><input type="checkbox" id="sdfActive"> Article actif</label>
+                        </div>
+                        <div class="form-group" style="flex:1; text-align:right;">
+                            <button class="action-btn" id="sdfSave">Enregistrer</button>
+                            <button class="action-btn secondary" id="sdfCancel" style="margin-left:6px;">Annuler</button>
+                        </div>
+                    </div>
+                    <div style="font-size:11px; color:#9ca3af; margin-top:4px;">
+                        La quantite en stock ne se modifie pas ici (utilisez l'import CSV ou l'action Ajuster du panel Filament). Un mouvement d'ajustement est cree automatiquement avec le resume des champs modifies.
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-card" style="margin-top:12px;">
                 <div class="action-card-title">Attributions en cours</div>
                 <div class="members-table" id="sdOpenAttr">
                     <div class="empty-msg">Chargement...</div>

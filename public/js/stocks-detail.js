@@ -13,6 +13,8 @@
     var CATEGORIES = window.MC_CATEGORIES || {};
     var REASONS = window.MC_REASONS || {};
 
+    var currentItem = null;
+
     function updateGate() {
         var notLogged = $('stocksNotLogged');
         var noAccess = $('stocksNoAccess');
@@ -36,9 +38,88 @@
             }
             $('stocksNoAccess').style.display = 'none';
             $('stocksContent').style.display = '';
+            currentItem = data.item;
             renderGrid(data.item, data.sales_total, data.sales_count);
+            renderSummary(data.item);
             renderOpenAttributions(data.open_attributions || []);
             renderMovements(data.movements || []);
+        });
+    }
+
+    function renderSummary(item) {
+        var el = $('sdSummary');
+        if (!el) return;
+        var parts = [];
+        parts.push('<div class="sd-sum-row"><span>Slug</span><code>' + esc(item.slug) + '</code></div>');
+        parts.push('<div class="sd-sum-row"><span>Categorie</span><strong>' + esc(CATEGORIES[item.category] || item.category) + '</strong></div>');
+        parts.push('<div class="sd-sum-row"><span>Prix de vente</span><strong>' + (item.default_sell_price ? money(item.default_sell_price) : '-') + '</strong></div>');
+        parts.push('<div class="sd-sum-row"><span>Prix d\'achat</span><strong>' + (item.default_purchase_price ? money(item.default_purchase_price) : '-') + '</strong></div>');
+        parts.push('<div class="sd-sum-row"><span>Poids unitaire</span><strong>' + (item.unit_weight_g ? num(item.unit_weight_g) + ' g' : '-') + '</strong></div>');
+        parts.push('<div class="sd-sum-row"><span>Vendable</span><strong>' + (item.is_sellable ? 'Oui' : 'Non') + '</strong></div>');
+        parts.push('<div class="sd-sum-row"><span>Actif</span><strong>' + (item.is_active ? 'Oui' : 'Non') + '</strong></div>');
+        if (item.notes) {
+            parts.push('<div class="sd-sum-row" style="grid-column:1/-1;"><span>Notes</span><em>' + esc(item.notes) + '</em></div>');
+        }
+        el.innerHTML = parts.join('');
+    }
+
+    function openEditForm() {
+        if (!currentItem) return;
+        $('sdfName').value = currentItem.name || '';
+        $('sdfCategory').value = currentItem.category || 'misc';
+        $('sdfSellPrice').value = currentItem.default_sell_price != null ? currentItem.default_sell_price : '';
+        $('sdfPurchasePrice').value = currentItem.default_purchase_price != null ? currentItem.default_purchase_price : '';
+        $('sdfWeight').value = currentItem.unit_weight_g != null ? currentItem.unit_weight_g : '';
+        $('sdfNotes').value = currentItem.notes || '';
+        $('sdfSellable').checked = !!currentItem.is_sellable;
+        $('sdfActive').checked = !!currentItem.is_active;
+        $('sdEditForm').style.display = '';
+        $('sdEditToggle').textContent = 'Masquer';
+    }
+
+    function closeEditForm() {
+        $('sdEditForm').style.display = 'none';
+        $('sdEditToggle').textContent = 'Modifier';
+    }
+
+    function saveEditForm() {
+        if (!currentItem) return;
+        var name = ($('sdfName').value || '').trim();
+        if (!name) { auth.showToast('Le nom est obligatoire', 'error'); return; }
+
+        var sell = $('sdfSellPrice').value;
+        var purchase = $('sdfPurchasePrice').value;
+        var weight = $('sdfWeight').value;
+
+        var payload = {
+            name: name,
+            category: $('sdfCategory').value,
+            default_sell_price: sell === '' ? null : parseInt(sell, 10),
+            default_purchase_price: purchase === '' ? null : parseInt(purchase, 10),
+            unit_weight_g: weight === '' ? null : parseInt(weight, 10),
+            is_sellable: $('sdfSellable').checked,
+            is_active: $('sdfActive').checked,
+            notes: ($('sdfNotes').value || '').trim() || null
+        };
+
+        var btn = $('sdfSave');
+        btn.disabled = true;
+        btn.textContent = 'Enregistrement...';
+
+        auth.apiPut('/stocks/api/item/' + encodeURIComponent(SLUG), payload, function (err, data) {
+            btn.disabled = false;
+            btn.textContent = 'Enregistrer';
+            if (err || !data || data.error) {
+                var msg = (data && data.error) || 'Erreur';
+                if (data && data.messages) {
+                    msg = Object.values(data.messages).flat().join(' | ');
+                }
+                auth.showToast(msg, 'error');
+                return;
+            }
+            auth.showToast(data.message || 'Article mis a jour', 'success');
+            closeEditForm();
+            tryLoad();
         });
     }
 
@@ -100,6 +181,26 @@
         }).join('');
     }
 
+    function bindEvents() {
+        var toggle = $('sdEditToggle');
+        if (toggle) {
+            toggle.addEventListener('click', function () {
+                var form = $('sdEditForm');
+                if (!form) return;
+                if (form.style.display === 'none') {
+                    openEditForm();
+                } else {
+                    closeEditForm();
+                }
+            });
+        }
+        var save = $('sdfSave');
+        if (save) save.addEventListener('click', saveEditForm);
+        var cancel = $('sdfCancel');
+        if (cancel) cancel.addEventListener('click', closeEditForm);
+    }
+
+    bindEvents();
     updateGate();
     auth.onLogin(updateGate);
     auth.onLogout(updateGate);

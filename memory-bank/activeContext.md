@@ -7,6 +7,22 @@ réconciliation, validations trésorier (seuil configurable) et import CSV. Le f
 de vente résiduel de `/espace-membres` a été supprimé : la saisie passe exclusivement
 par `/ventes` (redirige avec `stock_item_id`/`quantity`/`attribution_id` en query string).
 
+Ajout 16 avril (soir, post-Phase 3) :
+- **`StockInventorySeeder`** : peuple les quantités observées dans le stockage Lost MC
+  (captures Discord) et crée les items manquants (crosse, corps SMG/fusils, suppresseurs,
+  plans hors catalogue craft, variantes drogues, consommables agricoles, outils,
+  électronique, argent sale, sacs). 97 items au total après seed.
+- **Vente hors catalogue** dans `/ventes` : toggle "Article hors catalogue" qui remplace
+  le select par deux champs (nom + catégorie). Le backend (`SaleController::apiCreate`)
+  crée à la volée un `stock_item` (slug `adhoc_*`) avec quantity=0 qui passe en négatif
+  après la vente (à régulariser via `/stocks`).
+- **Édition des fiches articles** sur `/stocks/{slug}` : nouveau endpoint
+  `PUT /stocks/api/item/{slug}` (officier+, scope `stocks_generique`) qui accepte
+  name, category, default_sell_price, default_purchase_price, unit_weight_g,
+  is_sellable, is_active, notes. Un `StockMovement` reason=`adjustment` qty=0 est
+  créé avec un résumé des champs modifiés pour la traçabilité. Côté UI : bouton
+  "Modifier" dans le bloc "Fiche article" qui révèle un formulaire inline.
+
 ## Phase 3 - Module stocks générique (16 avril 2026, soir) -- LIVRÉE
 
 ### Fonctionnalités livrées

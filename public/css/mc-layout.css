@@ -1146,6 +1146,64 @@
 .sd-stat.ok   .sd-value { color: #4ade80; }
 .sd-stat.bad  .sd-value { color: #ef4444; }
 
+/* Detail summary (fiche article) */
+.sd-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 6px 14px;
+    margin-top: 4px;
+}
+.sd-sum-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px dotted rgba(255, 255, 255, 0.06);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+.sd-sum-row > span:first-child {
+    color: #888;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+.sd-sum-row code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    color: #cbd5e1;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+.sd-sum-row em { color: #cbd5e1; font-style: normal; }
+
+/* Secondary action button (inverse / outline) */
+.action-btn.secondary {
+    background: transparent;
+    color: #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.action-btn.secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Inline checkbox label */
+.cb-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #cbd5e1;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.cb-inline input[type="checkbox"] { margin: 0; }
+
 /* Category-specific badges for stocks (extends existing ts-role-badge palette) */
 .ts-role-badge.role-weapon_finished { background: rgba(239, 68, 68, 0.15); color: #f87171; }
 .ts-role-badge.role-weapon_plan     { background: rgba(234, 179, 8, 0.15); color: #facc15; }
