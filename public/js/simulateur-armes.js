@@ -13,10 +13,15 @@
     };
 
     weaponList.forEach(function (w) {
+        var sp = w.sell_price || 0;
+        var rpRaw = w.reference_purchase_price;
+        var rp = (rpRaw != null && rpRaw !== '' && !isNaN(Number(rpRaw))) ? (Number(rpRaw) || 0) : 0;
         weapons[w.slug] = {
             id: w.id, name: w.name, slug: w.slug,
             craftTime: w.craft_time_seconds,
-            sellPrice: w.sell_price || 0,
+            sellPrice: sp,
+            referencePurchasePrice: rp,
+            isBoughtWeapon: w.slug === 'sns',
             pieces: {
                 plans: w.recipe_plans, ressort: w.recipe_ressort,
                 canon: w.recipe_canon, poignee: w.recipe_poignee,
@@ -31,6 +36,10 @@
 
     var POLYMERE_PETROLE_RATE = 5;
     var POLYMERE_COST = 4500;
+    /** Coût d’achat simulé : corps de pistolet (recette corp). */
+    var WEAPON_CRAFT_CORP_EUR = 15000;
+    /** Ressort, canon, poignée, pièce de métal : chaque unité de recette. */
+    var WEAPON_CRAFT_WEAPON_PIECE_EUR = 5000;
     var AMMO_GUNPOWDER_PRICE = 100;
     var AMMO_YIELD_PER_CRAFT = 10;
     /** 1 unité de fer craftée en fragments : 2 fragments par unité de fer (fragments de recette = fer crafté). */
@@ -48,7 +57,7 @@
     ];
     /**
      * Prix de vente €/mun : si coût poudre seule / mun ≤ 50 € → × 2 sur ce coût ; sinon × 1,5 sur le coût fer acheté (poudre + fer).
-     * Arrondi multiple de 10 € ; exceptions : 5.56×45 et 7.62×39 à 350 €, 12 Gauge à 450 €.
+     * Arrondi multiple de 10 € ; exceptions : 5.56×45 à 350 €, 7.62×39 à 500 €, 12 Gauge à 400 €.
      */
     var AMMO_SELL_POWDER_THRESHOLD_EUR = 50;
     var AMMO_SELL_MARKUP_SMALL = 2;
@@ -339,7 +348,7 @@
     }
 
     /** Montants de vente plus lisibles pour certains calibres. */
-    var AMMO_SELL_PRETTY_EUR = { '5.56x45': 350, '7.62x39': 350, '12 Gauge': 450 };
+    var AMMO_SELL_PRETTY_EUR = { '5.56x45': 350, '7.62x39': 500, '12 Gauge': 400 };
 
     function ammoSellPriceForRecipe(r, prixFer) {
         if (!r) return 0;
@@ -448,6 +457,186 @@
         updateAmmoTargetSim();
     }
 
+    function weaponCraftPurchasedPiecesEuro(w) {
+        var p = w.pieces;
+        var n = (p.ressort || 0) + (p.canon || 0) + (p.poignee || 0) + (p.metal || 0);
+        return n * WEAPON_CRAFT_WEAPON_PIECE_EUR;
+    }
+
+    /**
+     * Coût matière « tout acheté » pour 1 craft arme (€).
+     * @param {object} w entrée weapons[slug]
+     * @param {number} planPriceEu prix / utilisation de plan (≥ 0)
+     */
+    function weaponCraftCostBreakdownOne(w, planPriceEu) {
+        var pp = Math.max(0, planPriceEu);
+        var p = w.pieces;
+        var costPlans = (p.plans || 0) * pp;
+        var costCorp = (p.corp || 0) * WEAPON_CRAFT_CORP_EUR;
+        var costPieces = weaponCraftPurchasedPiecesEuro(w);
+        var costPoly = (p.polymere || 0) * POLYMERE_COST;
+        return {
+            costPlans: costPlans,
+            costCorp: costCorp,
+            costPieces: costPieces,
+            costPoly: costPoly,
+            total: costPlans + costCorp + costPieces + costPoly
+        };
+    }
+
+    /** Coût monétaire si tout est récolté / craft maison : ici seules les utilisations de plan restent payantes. */
+    function weaponCraftCostGatheredOne(w, planPriceEu) {
+        var b = weaponCraftCostBreakdownOne(w, planPriceEu);
+        return b.costPlans;
+    }
+
+    function weaponCraftTimeLabel(craftTime) {
+        if (craftTime === null || craftTime === undefined) return '?';
+        return craftTime + ' s';
+    }
+
+    function updateWeaponCraftTable() {
+        var tbody = $('weaponCraftBody');
+        var planIn = $('weaponCraftPlanPrice');
+        if (!tbody || !planIn) return;
+        var raw = String(planIn.value).trim();
+        var planEu = raw === '' ? 0 : Math.max(0, parseFloat(raw) || 0);
+        var html = '';
+        weaponList.forEach(function (w) {
+            var wd = weapons[w.slug];
+            if (!wd) return;
+            var bought = wd.isBoughtWeapon;
+            var b = weaponCraftCostBreakdownOne(wd, planEu);
+            var g = weaponCraftCostGatheredOne(wd, planEu);
+            var sell = wd.sellPrice || 0;
+            var refBuy = wd.referencePurchasePrice || 0;
+            var margeBuy = (!bought && sell > 0) ? sell - b.total : null;
+            var margeGathered = (!bought && sell > 0) ? sell - g : null;
+            var margeRevente = (bought && sell > 0 && refBuy > 0) ? sell - refBuy : null;
+            html += '<tr>';
+            html += '<td>' + esc(w.name) + '</td>';
+            html += '<td>' + esc(weaponCraftTimeLabel(wd.craftTime)) + '</td>';
+            if (bought) {
+                html += '<td>—</td><td>—</td><td>—</td><td>—</td>';
+                html += '<td>—</td><td>—</td>';
+                html += '<td>' + (refBuy > 0 ? fmtEuro(refBuy) : '—') + '</td>';
+            } else {
+                html += '<td>' + fmtEuro(b.costPlans) + '</td>';
+                html += '<td>' + fmtEuro(b.costCorp) + '</td>';
+                html += '<td>' + fmtEuro(b.costPieces) + '</td>';
+                html += '<td>' + fmtEuro(b.costPoly) + '</td>';
+                html += '<td>' + fmtEuro(b.total) + '</td>';
+                html += '<td>' + fmtEuro(g) + '</td>';
+                html += '<td>—</td>';
+            }
+            if (sell > 0) {
+                html += '<td>' + fmtEuro(sell) + '</td>';
+                if (bought) {
+                    html += '<td class="' + ammoBenClass(margeRevente) + '">' + (margeRevente != null ? fmtEuro(margeRevente) : '—') + '</td>';
+                    html += '<td>—</td>';
+                } else {
+                    html += '<td class="' + ammoBenClass(margeBuy) + '">' + (margeBuy != null ? fmtEuro(margeBuy) : '—') + '</td>';
+                    html += '<td class="' + ammoBenClass(margeGathered) + '">' + (margeGathered != null ? fmtEuro(margeGathered) : '—') + '</td>';
+                }
+            } else {
+                html += '<td>—</td><td>—</td><td>—</td>';
+            }
+            html += '</tr>';
+        });
+        tbody.innerHTML = html;
+    }
+
+    function updateWeaponTargetSim() {
+        var sel = $('weaponTargetSlug');
+        var qtyIn = $('weaponTargetQty');
+        var sellOv = $('weaponTargetSellPrice');
+        var out = $('weaponTargetResults');
+        var planIn = $('weaponCraftPlanPrice');
+        if (!sel || !qtyIn || !out || !planIn) return;
+        var slug = sel.value;
+        var wd = weapons[slug];
+        if (!wd) {
+            out.innerHTML = '<div class="result-row"><span class="label">—</span><span class="value">Choisissez une arme</span></div>';
+            return;
+        }
+        var Qraw = parseInt(qtyIn.value, 10);
+        var Q = Math.max(1, Math.min(9999, isNaN(Qraw) ? 1 : Qraw));
+        if (qtyIn.value === '' || isNaN(Qraw) || Qraw < 1) qtyIn.value = Q;
+        var rawPlan = String(planIn.value).trim();
+        var planEu = rawPlan === '' ? 0 : Math.max(0, parseFloat(rawPlan) || 0);
+        var b = weaponCraftCostBreakdownOne(wd, planEu);
+        var gatheredOne = weaponCraftCostGatheredOne(wd, planEu);
+        var bought = wd.isBoughtWeapon;
+        var costOneBuy = bought ? 0 : b.total;
+        var costOneGathered = bought ? 0 : gatheredOne;
+        var costTotBuy = costOneBuy * Q;
+        var costTotGathered = costOneGathered * Q;
+        var baseSell = wd.sellPrice || 0;
+        var ovRaw = sellOv && String(sellOv.value).trim() !== '' ? parseFloat(sellOv.value) : NaN;
+        var useOverride = sellOv && !isNaN(ovRaw) && ovRaw >= 0;
+        var prixVente = useOverride ? ovRaw : baseSell;
+        var sellNote = useOverride ? '(scénario)' : (baseSell > 0 ? '(base)' : '(non défini)');
+        var venteTotale = prixVente > 0 ? prixVente * Q : 0;
+        var refBuyOne = wd.referencePurchasePrice || 0;
+        var coutAchatArmeTot = (bought && refBuyOne > 0) ? refBuyOne * Q : 0;
+        var margeTotBuy = (!bought && prixVente > 0) ? venteTotale - costTotBuy : null;
+        var margeTotGathered = (!bought && prixVente > 0) ? venteTotale - costTotGathered : null;
+        var margeTotRevente = (bought && prixVente > 0 && refBuyOne > 0) ? venteTotale - coutAchatArmeTot : null;
+        var margeOneBuy = (!bought && prixVente > 0) ? prixVente - costOneBuy : null;
+        var margeOneGathered = (!bought && prixVente > 0) ? prixVente - costOneGathered : null;
+        var margeOneRevente = (bought && prixVente > 0 && refBuyOne > 0) ? prixVente - refBuyOne : null;
+        var timeOne = wd.craftTime;
+        var timeTot = (timeOne != null ? timeOne * Q : null);
+        var html = '';
+        html += makeRow('Arme', esc(wd.name || slug));
+        html += makeRow('Armes à fabriquer', fmt(Q));
+        html += makeRow('Temps de craft total', bought ? '— (arme non craftée)' : (timeTot != null ? formatTime(timeTot) : 'Inconnu'));
+        html += makeSectionHeader('Par arme');
+        if (bought) {
+            html += makeRow('Coût craft (achat comp.)', '— (non applicable)', '');
+            html += makeRow('Coût craft (comp. récoltés)', '— (non applicable)', '');
+            if (refBuyOne > 0) {
+                html += makeRow('Prix achat réf. / arme (acquisition)', fmtEuro(refBuyOne), 'highlight');
+            }
+        } else {
+            html += makeRow('Coût mat. / arme (composants achetés)', fmtEuro(costOneBuy), 'highlight');
+            html += makeRow('Coût mat. / arme (composants récoltés)', fmtEuro(costOneGathered), 'highlight');
+        }
+        html += makeRow('Prix vente / arme ' + sellNote, prixVente > 0 ? fmtEuro(prixVente) : '—');
+        if (prixVente > 0) {
+            if (bought) {
+                html += makeRow('Marge / arme (revente)', margeOneRevente != null ? fmtEuro(margeOneRevente) : '—', ammoBenClass(margeOneRevente));
+            } else {
+                html += makeRow('Marge / arme (achat comp.)', margeOneBuy != null ? fmtEuro(margeOneBuy) : '—', ammoBenClass(margeOneBuy));
+                html += makeRow('Marge / arme (récolté)', margeOneGathered != null ? fmtEuro(margeOneGathered) : '—', ammoBenClass(margeOneGathered));
+            }
+        }
+        html += makeSectionHeader('Sur la commande (' + fmt(Q) + ' armes)');
+        if (bought) {
+            html += makeRow('Coût total acquisition (réf.)', coutAchatArmeTot > 0 ? fmtEuro(coutAchatArmeTot) : '—', 'highlight');
+        } else {
+            html += makeRow('Coût total (composants achetés)', fmtEuro(costTotBuy), 'highlight');
+            html += makeRow('Coût total (composants récoltés)', fmtEuro(costTotGathered), 'highlight');
+        }
+        html += makeRow('Chiffre d’affaires', prixVente > 0 ? fmtEuro(venteTotale) : '—', prixVente > 0 ? 'highlight' : '');
+        if (prixVente > 0) {
+            if (bought) {
+                html += makeRow('Marge totale (revente)', margeTotRevente != null ? fmtEuro(margeTotRevente) : '—', ammoBenClass(margeTotRevente));
+            } else {
+                html += makeRow('Marge totale (achat comp.)', margeTotBuy != null ? fmtEuro(margeTotBuy) : '—', ammoBenClass(margeTotBuy));
+                html += makeRow('Marge totale (récolté)', margeTotGathered != null ? fmtEuro(margeTotGathered) : '—', ammoBenClass(margeTotGathered));
+            }
+        } else {
+            html += makeRow('Marge totale', 'Définissez un prix de vente (base ou champ optionnel)', '');
+        }
+        out.innerHTML = html;
+    }
+
+    function refreshWeaponCraftSims() {
+        updateWeaponCraftTable();
+        updateWeaponTargetSim();
+    }
+
     var ammoTargetSlugEl = $('ammoTargetSlug');
     if (ammoTargetSlugEl && ammoTargetSlugEl.options.length === 0) {
         AMMO_RECIPES.forEach(function (rec) {
@@ -481,6 +670,32 @@
         ammoTargetSellEl.addEventListener('change', updateAmmoTargetSim);
     }
     refreshAmmoSimulators();
+
+    var weaponCraftPlanEl = $('weaponCraftPlanPrice');
+    if (weaponCraftPlanEl) {
+        weaponCraftPlanEl.addEventListener('input', refreshWeaponCraftSims);
+        weaponCraftPlanEl.addEventListener('change', refreshWeaponCraftSims);
+    }
+    var weaponTargetSlugEl = $('weaponTargetSlug');
+    if (weaponTargetSlugEl && weaponTargetSlugEl.options.length === 0) {
+        weaponList.forEach(function (w) {
+            weaponTargetSlugEl.insertAdjacentHTML('beforeend', '<option value="' + esc(w.slug) + '">' + esc(w.name) + '</option>');
+        });
+    }
+    var weaponTargetQtyEl = $('weaponTargetQty');
+    if (weaponTargetQtyEl) {
+        weaponTargetQtyEl.addEventListener('input', updateWeaponTargetSim);
+        weaponTargetQtyEl.addEventListener('change', updateWeaponTargetSim);
+    }
+    if (weaponTargetSlugEl) {
+        weaponTargetSlugEl.addEventListener('change', updateWeaponTargetSim);
+    }
+    var weaponTargetSellEl = $('weaponTargetSellPrice');
+    if (weaponTargetSellEl) {
+        weaponTargetSellEl.addEventListener('input', updateWeaponTargetSim);
+        weaponTargetSellEl.addEventListener('change', updateWeaponTargetSim);
+    }
+    refreshWeaponCraftSims();
 
     // ===== LOGIN =====
     var loginSel = $('loginMemberSelect');

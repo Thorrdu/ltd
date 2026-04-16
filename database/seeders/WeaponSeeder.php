@@ -10,12 +10,17 @@ class WeaponSeeder extends Seeder
 {
     public function run(): void
     {
+        /*
+         * Grille RP (prix max) : SNS 70k … Cal.50 220k. Vente : ancres SNS 60k, Cal .50 200k, autres interpolés.
+         * Achat de référence : uniquement SNS (arme non craftée, acquise 30k). Les craftées n’ont qu’un prix de vente.
+         */
         $weapons = [
-            ['name' => 'WN 29 Pistol', 'slug' => 'wn29', 'craft_time_seconds' => 15, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 5, 'sort_order' => 1],
-            ['name' => 'Ceramic Pistol', 'slug' => 'ceramic', 'craft_time_seconds' => 15, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 5, 'sort_order' => 2],
-            ['name' => 'Pistol', 'slug' => 'pistol', 'craft_time_seconds' => 15, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 10, 'sort_order' => 3],
-            ['name' => 'Heavy Pistol', 'slug' => 'heavy', 'craft_time_seconds' => null, 'recipe_plans' => 1, 'recipe_ressort' => 2, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 10, 'sort_order' => 4],
-            ['name' => 'Cal .50', 'slug' => 'cal50', 'craft_time_seconds' => null, 'recipe_plans' => 1, 'recipe_ressort' => 2, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 15, 'sort_order' => 5],
+            ['name' => 'SNS', 'slug' => 'sns', 'craft_time_seconds' => 15, 'sell_price' => 60000, 'reference_purchase_price' => 30000, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 5, 'sort_order' => 1],
+            ['name' => 'WN 29 Pistol', 'slug' => 'wn29', 'craft_time_seconds' => 15, 'sell_price' => 80000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 5, 'sort_order' => 2],
+            ['name' => 'Ceramic Pistol', 'slug' => 'ceramic', 'craft_time_seconds' => 15, 'sell_price' => 70000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 5, 'sort_order' => 3],
+            ['name' => 'Pistol', 'slug' => 'pistol', 'craft_time_seconds' => 15, 'sell_price' => 110000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 1, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 5, 'recipe_polymere' => 10, 'sort_order' => 4],
+            ['name' => 'Heavy Pistol', 'slug' => 'heavy', 'craft_time_seconds' => null, 'sell_price' => 160000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 2, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 10, 'sort_order' => 5],
+            ['name' => 'Cal .50', 'slug' => 'cal50', 'craft_time_seconds' => null, 'sell_price' => 200000, 'reference_purchase_price' => null, 'recipe_plans' => 1, 'recipe_ressort' => 2, 'recipe_canon' => 1, 'recipe_poignee' => 1, 'recipe_corp' => 1, 'recipe_metal' => 10, 'recipe_polymere' => 15, 'sort_order' => 6],
         ];
 
         foreach ($weapons as $w) {

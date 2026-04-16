@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Weapon extends Model
 {
     protected $fillable = [
-        'name', 'slug', 'craft_time_seconds', 'sell_price',
+        'name', 'slug', 'craft_time_seconds', 'sell_price', 'reference_purchase_price',
         'recipe_plans', 'recipe_ressort', 'recipe_canon', 'recipe_poignee',
         'recipe_corp', 'recipe_metal', 'recipe_polymere',
         'is_active', 'sort_order',

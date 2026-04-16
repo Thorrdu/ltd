@@ -60,7 +60,7 @@
 
             <div class="sim-section" id="ammoCraftSection">
                 <div class="sim-section-title">Craft munitions</div>
-                <p class="ammo-sim-intro">Recette : <strong>1 craft = 10 munitions</strong>. Poudre <strong>100 €</strong>/u, fer au prix saisi, <strong>1 fer → 2 fragments</strong>. <strong>Toutes les colonnes du tableau sont par munition</strong>. <strong>Prix de vente</strong> : si le coût <strong>poudre seule</strong> / mun est <strong>≤ 50 €</strong> → <strong>× 2</strong> sur ce montant ; sinon <strong>× 1,5</strong> sur le <strong>coût fer acheté</strong> (poudre + fer). Arrondi au multiple de <strong>10 €</strong> ; 5.56×45 et 7.62×39 à <strong>350 €</strong>, 12 Gauge à <strong>450 €</strong>. Tout se recalcule si vous changez le fer.</p>
+                <p class="ammo-sim-intro">Recette : <strong>1 craft = 10 munitions</strong>. Poudre <strong>100 €</strong>/u, fer au prix saisi, <strong>1 fer → 2 fragments</strong>. <strong>Toutes les colonnes du tableau sont par munition</strong>. <strong>Prix de vente</strong> : si le coût <strong>poudre seule</strong> / mun est <strong>≤ 50 €</strong> → <strong>× 2</strong> sur ce montant ; sinon <strong>× 1,5</strong> sur le <strong>coût fer acheté</strong> (poudre + fer). Arrondi au multiple de <strong>10 €</strong> ; 5.56×45 à <strong>350 €</strong>, 7.62×39 à <strong>500 €</strong>, 12 Gauge à <strong>400 €</strong>. Tout se recalcule si vous changez le fer.</p>
                 <div class="ammo-sim-params">
                     <label class="ammo-sim-label" for="ammoFerPrice">Prix du fer (€ / unité)</label>
                     <input type="number" class="ammo-sim-input" id="ammoFerPrice" min="0" step="0.01" value="30" inputmode="decimal">
@@ -101,6 +101,55 @@
                         <input type="number" class="ammo-sim-input" id="ammoTargetSellPriceMun" min="0" step="0.01" placeholder="Tableau" inputmode="decimal" title="Vide = prix du tableau pour ce calibre">
                     </div>
                     <div class="results-table ammo-target-results" id="ammoTargetResults"></div>
+                </div>
+            </div>
+
+            <div class="sim-section" id="weaponCraftSection">
+                <div class="sim-section-title">Craft armes (composants)</div>
+                <p class="ammo-sim-intro">Pour les armes <strong>craftées</strong> : <strong>composants achetés</strong> = vous payez corp (15&nbsp;000 €/u), pièces (ressort, canon, poignée, métal à 5&nbsp;000 €/u), polymère (4&nbsp;500 €/u) et utilisations de plan au prix saisi. <strong>Composants récoltés</strong> = hypothèse « tout fabriqué à partir de matières récoltées » : seul le <strong>coût des utilisations de plan</strong> reste en euros (même prix / utilisation). Le <strong>SNS</strong> n’est pas crafté : seul un <strong>prix d’achat de référence</strong> (acquisition) et le prix de vente s’appliquent ; marge = vente − achat.</p>
+                <div class="ammo-sim-params">
+                    <label class="ammo-sim-label" for="weaponCraftPlanPrice">Prix du plan (€ / utilisation)</label>
+                    <input type="number" class="ammo-sim-input" id="weaponCraftPlanPrice" min="0" step="0.01" value="" placeholder="Ex. 8000" inputmode="decimal" title="Laisser vide ou 0 si le plan est inconnu">
+                </div>
+                <div class="ammo-craft-wrap">
+                    <table class="ammo-craft-table weapon-craft-table" aria-label="Coût craft arme selon composants achetés ou récoltés">
+                        <thead>
+                            <tr>
+                                <th>Arme</th>
+                                <th>Tps</th>
+                                <th>€ plans</th>
+                                <th>€ corp</th>
+                                <th>€ pièces</th>
+                                <th>€ polym.</th>
+                                <th>Σ achat comp.</th>
+                                <th>Σ récolté</th>
+                                <th>Achat arme</th>
+                                <th>Vente</th>
+                                <th>Marge achat</th>
+                                <th>Marge récolt.</th>
+                            </tr>
+                        </thead>
+                        <tbody id="weaponCraftBody"></tbody>
+                        <tfoot>
+                            <tr class="ammo-craft-foot">
+                                <td colspan="12">Craftées : Σ achat = somme des colonnes ; Σ récolté = plans payés seulement. SNS : pas de craft — colonne <strong>Achat arme</strong> (30k réf.) ; <strong>Marge achat</strong> = revente ; tiret en <strong>Marge récolt.</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="ammo-target-block">
+                    <div class="sim-section-title">Objectif en armes</div>
+                    <p class="ammo-sim-intro ammo-sim-intro-tight">Nombre d’<strong>armes finies</strong> (craft) ou d’<strong>unités</strong> (SNS acheté). Deux scénarios de coût pour les craftées : composants <strong>achetés</strong> ou <strong>récoltés</strong> (voir tableau). Le <strong>prix de vente</strong> reprend la base ; champ optionnel pour un scénario.</p>
+                    <div class="ammo-sim-params ammo-target-params">
+                        <label class="ammo-sim-label" for="weaponTargetSlug">Arme</label>
+                        <select id="weaponTargetSlug" class="ammo-sim-select" aria-label="Arme pour la simulation"></select>
+                        <label class="ammo-sim-label" for="weaponTargetQty">Armes à fabriquer</label>
+                        <input type="number" class="ammo-sim-input ammo-sim-input-muns" id="weaponTargetQty" min="1" max="9999" step="1" value="10" inputmode="numeric">
+                        <label class="ammo-sim-label" for="weaponTargetSellPrice">Prix vente / arme (optionnel)</label>
+                        <input type="number" class="ammo-sim-input" id="weaponTargetSellPrice" min="0" step="0.01" placeholder="Base" inputmode="decimal" title="Vide = prix de vente en base pour cette arme">
+                    </div>
+                    <div class="results-table ammo-target-results" id="weaponTargetResults"></div>
                 </div>
             </div>
         </div>

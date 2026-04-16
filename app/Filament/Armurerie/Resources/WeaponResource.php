@@ -40,6 +40,9 @@ class WeaponResource extends Resource
                 TextInput::make('slug')->label('Slug')->required()->unique(ignoreRecord: true)->maxLength(50)
                     ->helperText('Identifiant unique (ex: wn29, ceramic)'),
                 TextInput::make('craft_time_seconds')->label('Temps de craft (sec)')->numeric()->nullable(),
+                TextInput::make('sell_price')->label('Prix vente réf. (€)')->numeric()->nullable()->suffix('€'),
+                TextInput::make('reference_purchase_price')->label('Prix achat réf. (€)')->numeric()->nullable()->suffix('€')
+                    ->helperText('Réservé au SNS (arme non craftée, acquise telle quelle). Laisser vide pour les armes craftées.'),
                 Toggle::make('is_active')->label('Actif')->default(true),
                 TextInput::make('sort_order')->label('Ordre')->numeric()->default(0),
             ])->columns(2),
@@ -63,6 +66,8 @@ class WeaponResource extends Resource
             ->columns([
                 TextColumn::make('name')->label('Nom')->searchable()->sortable(),
                 TextColumn::make('craft_time_seconds')->label('Temps')->suffix(' sec')->placeholder('N/A'),
+                TextColumn::make('sell_price')->label('Vente réf.')->formatStateUsing(fn ($state) => $state === null ? '—' : number_format((int) $state, 0, ',', ' ') . ' €'),
+                TextColumn::make('reference_purchase_price')->label('Achat réf.')->formatStateUsing(fn ($state) => $state === null ? '—' : number_format((int) $state, 0, ',', ' ') . ' €'),
                 TextColumn::make('recipe_metal')->label('Métal'),
                 TextColumn::make('recipe_polymere')->label('Poly.'),
                 TextColumn::make('recipe_ressort')->label('Ress.'),
