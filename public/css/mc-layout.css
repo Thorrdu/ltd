@@ -785,3 +785,95 @@
     .matrix-head { display: none; }
     .matrix-row { grid-template-columns: 1fr; gap: 4px; }
 }
+
+/* ============================================
+   VENTES PAGE
+   ============================================ */
+.members-stat {
+    display: inline-flex;
+    flex-direction: column;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    min-width: 90px;
+}
+
+.members-stat .stat-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #666;
+}
+
+.members-stat .stat-value {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 2px;
+}
+
+.member-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    padding: 10px 12px;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+
+.member-row:nth-child(even) { background: rgba(255, 255, 255, 0.015); }
+.member-row:hover { background: rgba(255, 255, 255, 0.035); }
+.member-row:last-child { border-bottom: none; }
+
+.member-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.member-name { color: #fff; font-weight: 700; font-size: 13px; }
+.member-name .sale-qty { color: #888; font-weight: 400; font-size: 11px; margin-left: 6px; }
+.member-meta { color: #888; font-size: 11px; line-height: 1.4; }
+.member-meta strong { color: #ddd; font-weight: 700; }
+.member-meta em { color: #aaa; font-style: italic; }
+
+.member-actions.sale-totals {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.sale-unit {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    color: #777;
+}
+
+.sale-total {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffd700;
+}
+
+.ts-role-badge.role-weapon { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+.ts-role-badge.role-ammo { background: rgba(249, 115, 22, 0.15); color: #fb923c; }
+.ts-role-badge.role-drug { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
+.ts-role-badge.role-melee { background: rgba(234, 179, 8, 0.15); color: #facc15; }
+.ts-role-badge.role-other { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; }
+
+@media (max-width: 720px) {
+    .member-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    .member-actions.sale-totals {
+        align-items: flex-start;
+        flex-direction: row;
+        gap: 10px;
+    }
+}

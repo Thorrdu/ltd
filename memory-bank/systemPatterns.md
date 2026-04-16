@@ -32,12 +32,21 @@ Les menus et entreprises y font reference via des tables pivot.
 - WeaponResource, WeaponStockResource, WeaponStockMovementResource, WeaponContractResource, WeaponSaleResource
 - Page CraftWeapon, widget ArmurerieStatsWidget
 
+### ATTENTION harmonisation (Phase H du plan)
+- `weapon_sales` coexiste avec `sales` (Phase 2). Les deux tables sont alimentees selon le chemin
+  utilise (`/espace-membres` vs `/ventes`). A fusionner dans la Phase H avant de partir sur
+  Phase 3.
+- `weapon_stocks` / `weapon_stock_movements` seront candidates a la fusion dans `stock_items` /
+  `stock_movements` en Phase 3. Toute evolution doit etre declaree dans la Phase H pour eviter
+  un troisieme doublon.
+
 ## Domaine 3 : Hub MC et espace membres (Frontend)
 
 ### Pages
 - `/mc` : hub d'accueil avec grille de boutons (simulateurs + espace membres)
 - `/simulateur-armes` : craft d'armes
 - `/simulateur-munitions` : craft de munitions
+- `/ventes` : saisie rapide des ventes generiques (Phase 2, min_role `member`)
 - `/espace-membres` : dashboard membre (stocks, ventes, contrats, historique, gestion rapide)
 - `/membres` : gestion complete des utilisateurs + matrice d'acces (VP+ / superadmin)
 
@@ -53,6 +62,7 @@ Les menus et entreprises y font reference via des tables pivot.
 - `simulateur-armes.js` : simulateur + dashboard membre (~1500 lignes)
 - `simulateur-munitions.js` : simulateur munitions autonome
 - `membres.js` : page `/membres` (CRUD users + matrice d'acces)
+- `ventes.js` : page `/ventes` (formulaire multi-type + historique filtrable)
 
 ## Authentification et roles
 
@@ -106,15 +116,23 @@ Constante `User::ROLES` avec niveaux numeriques :
 - Toutes retournent JSON : `{ok: true, message, ...}` ou `{error: 'message'}`
 - Header CSRF obligatoire sur les requetes POST/PUT/DELETE
 
-### MemberController (nouveau)
+### MemberController
 - `index()` : rend la vue `/membres`
 - `apiList()`, `apiCreate()`, `apiUpdate($id)`, `apiResetPin($id)`, `apiDelete($id)`
 - `apiMatrix()`, `apiUpdateMatrix($id)` : gestion de la matrice d'acces
 - Toutes protegees par `requireAccess($pageKey)` + header `X-Sim-User`
 
+### SaleController (Phase 2)
+- `index()` : rend la vue `/ventes` (armes actives + liste membres)
+- `apiList()` : supporte `scope=mine|all` et `period=today|week|month|all`, renvoie ventes + totaux
+- `apiCreate()` : valide, pour type `weapon` decremente le weapon_stock et cree un mouvement
+  de type `sale`
+- Toutes protegees par `X-Sim-User` + `canAccessPage('ventes_rapides')` (min_role `member` par defaut)
+
 ### WeaponSimController
 - `apiData()` expose desormais `assignable_roles` et `can_manage_members`
 - `createMember()` et `updateMember()` utilisent `canAssignRole()` et `canAccessPage('membres_gestion')`
+- Continue d'ecrire dans `weapon_sales` via `createSale()` -- a rediriger vers `sales` en Phase H
 
 ## Pattern Tom Select (dark theme MC)
 

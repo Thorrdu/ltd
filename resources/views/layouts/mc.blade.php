@@ -20,6 +20,7 @@
             ['route' => 'mc.hub',              'url' => '/mc',                   'label' => 'Accueil',    'gate' => 'any'],
             ['route' => 'simulateur-armes',    'url' => '/simulateur-armes',     'label' => 'Armes',      'gate' => 'any'],
             ['route' => 'simulateur-munitions','url' => '/simulateur-munitions', 'label' => 'Munitions',  'gate' => 'any'],
+            ['route' => 'ventes',              'url' => '/ventes',               'label' => 'Ventes',     'gate' => 'logged'],
             ['route' => 'espace-membres',      'url' => '/espace-membres',       'label' => 'Espace',     'gate' => 'logged'],
             ['route' => 'membres',             'url' => '/membres',              'label' => 'Gestion',    'gate' => 'vice_president'],
         ];

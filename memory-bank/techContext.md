@@ -11,7 +11,7 @@
 - **Blade** : moteur de templates pour les pages publiques
 - **Tom Select 2.3.1** : selects recherchables cote front (CDN jsdelivr)
 - **CSS custom** : fichiers originaux catalogue + simulateur + layout MC + theme Tom Select
-- **JS custom** : mc-auth.js, simulateur-armes.js, simulateur-munitions.js, membres.js
+- **JS custom** : mc-auth.js, simulateur-armes.js, simulateur-munitions.js, membres.js, ventes.js
 
 ## Environnement de developpement
 - Workspace : `c:\laragon\www\ltd`
@@ -29,13 +29,16 @@
 - `_backup/` : ancien projet statique sauvegarde
 - `bootstrap/providers.php` : enregistre AdminPanelProvider + ArmureriePanelProvider
 
-## Modeles Eloquent (13 modeles)
+## Modeles Eloquent (14 modeles)
 
 ### Domaine catalogue LTD
 - `Category`, `Product`, `Menu`, `Enterprise`
 
 ### Domaine armurerie
 - `Weapon`, `WeaponStock`, `WeaponStockMovement`, `WeaponContract`, `WeaponContractItem`, `WeaponSale`
+
+### Domaine ventes generiques (Phase 2)
+- `Sale` : item_type, item_id, item_name, quantity, unit_price, total_price, buyer, sold_by, validated_by
 
 ### Utilisateurs / acces
 - `User` : name, email, password (hashed), role, is_active, sim_pin (hidden)
@@ -47,7 +50,7 @@
 - `PageAccessRule` : page_key, label, min_role, description, sort_order, is_system (cache 10 min)
 - `Setting` : group, key, label, type, value, description, sort_order
 
-## Base de donnees (15 migrations)
+## Base de donnees (16 migrations)
 
 ### Tables principales
 - `users`, `cache`, `jobs` (Laravel standard)
@@ -57,6 +60,7 @@
 - `weapon_contracts`, `weapon_contract_items`, `weapon_sales` (contrats + ventes)
 - `settings` (parametres globaux)
 - `page_access_rules` (matrice d'acces)
+- `sales` (ventes generiques, Phase 2)
 
 ### Migrations ajoutees apres mars 2026
 - 2026-03-11 : `enterprise_price` sur products
@@ -64,6 +68,7 @@
 - 2026-04-14 : `role` sur users, tables armes, `sim_pin`, `unit_cost`
 - 2026-04-16 (matin) : `reference_purchase_price`, `price_min`/`price_max` sur weapons, `settings`
 - 2026-04-16 (soir) : `is_active` sur users, `page_access_rules`
+- 2026-04-16 (soir tardif) : `sales` (table generique Phase 2)
 
 ## Seeders (7 fichiers)
 - `DatabaseSeeder` : orchestre tous les seeders
@@ -84,6 +89,11 @@
 - `GET /mc` : hub
 - `GET /simulateur-armes`, `GET /simulateur-munitions`
 - `GET /espace-membres` : dashboard
+- `GET /ventes` : saisie rapide des ventes (Phase 2)
+
+### API ventes rapides (`/ventes/api/*`)
+- `GET /list?scope=mine|all&period=today|week|month|all` : liste + totaux
+- `POST /create` : enregistre une vente (decrement auto du stock arme si type=weapon)
 
 ### API simulateur (`/simulateur-armes/api/*`)
 - `POST /login`, `GET /data`, `POST /sale`, `POST /movement`

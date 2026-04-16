@@ -1,10 +1,47 @@
 # Active Context - Station LTD / Toolbox Lost MC
 
 ## Travail en cours
-Extension continue de l'espace membre MC. Phases 0 et 1 terminees (roles hierarchises, refonte UX).
-Session d'aujourd'hui : ajout de la gestion des utilisateurs en front, matrice d'acces editable en BDD, selects recherchables (Tom Select), et bugfix selects vides sur `/espace-membres`.
+Extension continue de l'espace membre MC. Phases 0, 1 et 2 terminees (roles hierarchises, refonte UX, ventes rapides).
+Session du soir tardif du 16 avril 2026 : livraison du module **ventes rapides** (Phase 2), ajout d'une **Phase H
+d'harmonisation** dans le plan (pour traiter les doublons weapon_sales vs sales et preparer la fusion stocks),
+et documentation d'un catalogue d'items observes in-game (309 kg / 1000 kg de coffre MC).
 
-## Changements recents (session du 16 avril 2026 -- soir)
+## Changements recents (session du 16 avril 2026 -- soir tardif, Phase 2)
+
+### Module ventes rapides (Phase 2) -- LIVRE
+- Nouvelle table `sales` generique : `item_type` (weapon/ammo/drug/melee/other), `item_id` nullable,
+  `item_name`, `quantity`, `unit_price`, `total_price`, `buyer_name`, `sold_by_user_id`,
+  `validated_by_user_id` nullable, `validated_at`, `notes`, index sur created_at/item_type/item_id.
+- Modele `App\Models\Sale` avec constante `TYPES`, scopes `ofType()` et `today()`, relations
+  `soldBy`, `validatedBy`, `weapon`.
+- Controleur `App\Http\Controllers\SaleController` :
+  - `index()` rend la vue `/ventes` avec armes actives + membres.
+  - `apiList()` parametrable `scope=mine|all` + `period=today|week|month|all`, renvoie ventes
+    + totaux (count, quantity, revenue).
+  - `apiCreate()` : valide, pour `item_type=weapon` decremente le stock arme et cree un
+    `weapon_stock_movement` (reason=sale), pour les autres types utilise `item_name` libre.
+  - Tous les endpoints proteges par `X-Sim-User` + `canAccessPage('ventes_rapides')`.
+- Routes : `GET /ventes` (nom `ventes`), `GET /ventes/api/list`, `POST /ventes/api/create`.
+- Vue `resources/views/ventes.blade.php` avec deux sous-onglets (Nouvelle vente / Historique).
+- JS `public/js/ventes.js` :
+  - Tom Select sur le choix d'arme, pre-remplissage du total a partir de `sell_price`.
+  - Calcul auto du prix unitaire, stats du jour (ventes, articles, chiffre).
+  - Historique filtrable avec stats dynamiques.
+- CSS : nouveaux blocs dans `mc-layout.css` (`.member-row`, `.members-stat`, `.sale-total`,
+  badges type vente colores).
+- Hub `/mc` : nouveau bouton "Ventes rapides" (wide) visible une fois connecte.
+- Nav layout : lien "Ventes" (gate=logged) ajoute entre Munitions et Espace.
+- Regle d'acces `ventes_rapides` deja seedee (min_role=`member`).
+
+### Phase H (harmonisation) ajoutee au plan
+- Deux chemins ecrivent encore pour les ventes d'armes : `/espace-membres` -> `weapon_sales`,
+  `/ventes` -> `sales`. Deduplication a traiter avant Phase 3.
+- Memo Phase H detaille dans `LA_SUIITE/plan-developpement.md` (audit, migration donnees,
+  unification UI, regle de fer pour les phases suivantes).
+- Annexe A ajoutee au plan : inventaire observe dans le coffre MC (309 kg/1000 kg),
+  repartition en 12 categories pour orienter la taxonomie de `stock_items` en Phase 3.
+
+## Changements (session du 16 avril 2026 -- soir)
 
 ### Hierarchie des roles retravaillee
 - Ajout du role `vice_president` (niveau 4) entre officer et president.
@@ -62,11 +99,16 @@ Session d'aujourd'hui : ajout de la gestion des utilisateurs en front, matrice d
 - Domaine armurerie (6 tables, 6 modeles, panel Filament dedie, seeder).
 
 ## Prochaines etapes
-1. **Phase 2 - ventes rapides** : `/ventes` avec formulaire simplifie + table `sales` generique.
-2. **Phase 3 - stocks generiques** : `stock_items` + `stock_movements` generiques incluant l'attribution officier -> membre (sous-phase 3.4 du plan).
-3. **Phase 4 - drogues** : referentiel + flux achat orga / attribution / reconciliation.
-4. **Phase 5 - armes blanches** : ajout au stock generique.
-5. **Phase 6 - classements + fiches membres** : leaderboard global/mois/semaine, fiche detaillee par membre.
+1. **Phase H - harmonisation (prioritaire)** : migrer `weapon_sales` vers `sales`, rediriger le
+   formulaire de vente d'`/espace-membres` vers `/ventes`, preparer la fusion `weapon_stocks` ->
+   `stock_items`. A faire AVANT de creer d'autres modules qui risquent de doubler.
+2. **Phase 3 - stocks generiques** : `stock_items` + `stock_movements` generiques, taxonomie
+   riche (weapon_finished, piece, raw_material, ammo, plan, melee, drug, drug_raw,
+   farm_consumable, tool, electronic, misc), attribution officier -> membre (sous-phase 3.4).
+3. **Phase 4 - drogues** : alimentation via `stock_items` (categories `drug` / `drug_raw` /
+   `farm_consumable`) + flux achat orga / attribution / reconciliation.
+4. **Phase 5 - armes blanches** : extension `stock_items` (categorie `melee`).
+5. **Phase 6 - classements + fiches membres** : leaderboard global/mois/semaine, fiche detaillee.
 6. **Phase 7 - comptabilite MC** : argent sale/propre, transactions, cotisations.
 7. **Phase 8 - polissage** : responsive, notifications, dashboards par role.
 
@@ -83,4 +125,9 @@ Session d'aujourd'hui : ajout de la gestion des utilisateurs en front, matrice d
 ## Problemes connus
 - Le vhost Laragon pointe encore sur la racine du projet (pas sur `public/`).
 - Les vues compilees Blade s'accumulent (a purger : `php artisan view:clear`).
-- Certaines phases (ventes rapides, stocks generiques) non implementees encore.
+- **Doublon vente d'arme** : `/espace-membres` continue d'ecrire dans `weapon_sales`, `/ventes`
+  ecrit dans `sales`. Cible de la Phase H.
+- **Doublon stock armurerie potentiel** : la future Phase 3 introduira `stock_items` en parallele
+  de `weapon_stocks`. A prevoir explicitement en Phase H.
+- Certaines phases (stocks generiques, drogues, armes blanches, classements, comptabilite)
+  non implementees encore.

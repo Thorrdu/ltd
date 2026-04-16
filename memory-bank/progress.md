@@ -2,8 +2,10 @@
 
 ## Statut actuel
 Projet Laravel 12 + Filament 5 fonctionnel avec deux domaines operationnels : catalogue LTD et armurerie.
-Toolbox MC en construction : Phases 0 (roles) et 1 (refonte UX) terminees. Session du 16 avril (soir) :
-ajout de la gestion des utilisateurs en front, matrice d'acces editable en BDD, Tom Select, bugfix selects.
+Toolbox MC en construction : Phases 0 (roles), 1 (refonte UX) et 2 (ventes rapides) terminees.
+Session du 16 avril (soir tardif) : module ventes rapides `/ventes` livre (table `sales` generique,
+formulaire multi-type, historique filtrable) + phase d'harmonisation ajoutee au plan + catalogue
+d'items in-game documente en annexe.
 
 ## Ce qui fonctionne
 
@@ -39,29 +41,48 @@ ajout de la gestion des utilisateurs en front, matrice d'acces editable en BDD, 
 - [x] Activation / desactivation (champ `is_active`)
 - [x] Suppression reservee au superadmin, blocage auto-suppression et demotion du dernier superadmin
 
-### Matrice d'acces editable (nouveau -- 16 avril soir)
+### Matrice d'acces editable (16 avril soir)
 - [x] Table `page_access_rules` (13 regles seedees)
-- [x] `User::canAccessPanel()` et `User::canAccessPage()` piloteS par la DB
+- [x] `User::canAccessPanel()` et `User::canAccessPage()` pilotes par la DB
 - [x] Edition inline de la matrice reservee au superadmin (onglet "Matrice d'acces" sur `/membres`)
 - [x] Cache de 10 minutes sur les regles (invalidation auto sur save/delete)
 
+### Ventes rapides (Phase 2 -- 16 avril soir tardif)
+- [x] Page `/ventes` avec formulaire multi-type (arme, munition, drogue, arme blanche, autre)
+- [x] Table `sales` generique (item_type, item_id, item_name, quantity, unit_price, total_price,
+      buyer_name, sold_by, validated_by, validated_at, notes)
+- [x] Modele `Sale` avec constante TYPES, scopes `ofType()` et `today()`, relations
+- [x] Controleur `SaleController` (index, apiList, apiCreate) protege par `ventes_rapides`
+- [x] Pour type=weapon : decrement auto du weapon_stock + weapon_stock_movement type `sale`
+- [x] Historique filtrable (scope mine/all, periode today/week/month/all) avec stats
+- [x] Tom Select sur le select d'armes, pre-remplissage du prix depuis `sell_price`
+- [x] Bouton dans `/mc` et lien "Ventes" dans la nav (gate=logged)
+
 ### Infrastructure
-- [x] 15 migrations appliquees (fresh-seed : 0 erreur)
+- [x] 16 migrations appliquees
 - [x] 7 seeders : CategoryProduct, Enterprise, Menu, User, Weapon, Setting, PageAccessRule
+- [x] 14 modeles Eloquent (ajout de `Sale`)
 - [x] Systeme de roles avec hierarchie numerique (prospect 1, member 2, officer 3, vice_president 4, president 5, treasurer 99)
 - [x] Auth PIN pour simulateur via header `X-Sim-User`
 - [x] Documentation (architecture, reglement BXL Life, Memory Bank, plan-developpement)
 
 ## Ce qui reste a faire
 
+### Priorite critique (avant d'avancer)
+- [ ] **Phase H - harmonisation** : migrer `weapon_sales` -> `sales`, rediriger le formulaire de
+      vente arme de `/espace-membres` vers `/ventes`, preparer la fusion `weapon_stocks` ->
+      `stock_items`. A traiter AVANT Phase 3 pour eviter un troisieme doublon.
+
 ### Priorite haute
-- [ ] Phase 2 : module ventes rapides (`/ventes`, table `sales` generique)
-- [ ] Phase 3 : stocks generiques (`stock_items`, `stock_movements`) avec attribution officier -> membre (3.4)
+- [ ] Phase 3 : stocks generiques (`stock_items`, `stock_movements`) avec taxonomie riche
+      (weapon_finished, piece, raw_material, ammo, plan, melee, drug, drug_raw, farm_consumable,
+      tool, electronic, misc) + attribution officier -> membre (3.4)
 - [ ] Aligner le vhost Laragon sur `public/`
 
 ### Priorite moyenne
-- [ ] Phase 4 : module drogues (referentiel + flux achat orga -> attribution -> reconciliation)
-- [ ] Phase 5 : armes blanches (ajout au stock generique)
+- [ ] Phase 4 : module drogues (sous-categories de `stock_items`, flux achat orga -> attribution
+      -> reconciliation)
+- [ ] Phase 5 : armes blanches (sous-categorie de `stock_items`)
 - [ ] Phase 6 : classements + fiches membres detaillees
 - [ ] Phase 7 : comptabilite MC (argent sale/propre, transactions, cotisations)
 
@@ -70,6 +91,9 @@ ajout de la gestion des utilisateurs en front, matrice d'acces editable en BDD, 
 - [ ] Import stock via CSV/Excel (Phase 3.5)
 
 ## Historique
+- **16 avril 2026 (soir tardif)** : Phase 2 livree -- module `/ventes` (table `sales` generique +
+  SaleController + vue + JS + integration hub/nav). Phase H d'harmonisation ajoutee au plan.
+  Annexe A avec inventaire in-game (12 categories).
 - **16 avril 2026 (soir)** : Gestion utilisateurs `/membres` + matrice d'acces BDD + Tom Select + bugfix selects vides + role `vice_president` + treasurer=superadmin.
 - **16 avril 2026 (apres-midi)** : Phase 1 refonte UX (pages dediees, login dropdown, JS scinde). Phase 0 terminee (settings, roles helpers, SettingResource, 19 parametres).
 - **14-16 avril 2026** : Domaine armurerie complet (6 tables, 6 modeles, panneau Filament, simulateur, API).
@@ -81,11 +105,13 @@ ajout de la gestion des utilisateurs en front, matrice d'acces editable en BDD, 
 
 ## Chiffres cles
 - 62 produits catalogue en base
-- 13 modeles Eloquent (ajout de `Setting`, `PageAccessRule`)
-- 15 migrations appliquees
-- 7 seeders (ajout `SettingSeeder`, `PageAccessRuleSeeder`)
+- 14 modeles Eloquent (ajout de `Sale`)
+- 16 migrations appliquees
+- 7 seeders
 - 2 panneaux Filament (admin + armurerie)
-- 1 page front dediee gestion (`/membres`)
+- 6 pages front dediees (`/mc`, `/simulateur-armes`, `/simulateur-munitions`, `/espace-membres`,
+  `/membres`, `/ventes`)
 - 6 roles dans la hierarchie (prospect -> treasurer)
 - 13 regles d'acces seedees dans `page_access_rules`
 - 19 parametres dans `settings`
+- 5 types de vente supportes (`weapon`, `ammo`, `drug`, `melee`, `other`)

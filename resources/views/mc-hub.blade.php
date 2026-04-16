@@ -28,9 +28,13 @@
     <div class="mc-hub-section mc-hub-auth-section" id="hubAuthSection" style="display:none;">
         <div class="mc-hub-section-label">Espace membres</div>
         <div class="mc-hub-grid">
+            <a href="/ventes" class="mc-hub-btn mc-hub-btn-wide">
+                <span class="mc-hub-btn-label">Ventes rapides</span>
+                <span class="mc-hub-btn-desc">Saisie rapide (armes, drogues, autres)</span>
+            </a>
             <a href="/espace-membres" class="mc-hub-btn mc-hub-btn-wide">
                 <span class="mc-hub-btn-label">Espace membres</span>
-                <span class="mc-hub-btn-desc">Stocks, ventes, contrats, historique</span>
+                <span class="mc-hub-btn-desc">Stocks, contrats, historique</span>
             </a>
             <a href="/membres" class="mc-hub-btn mc-hub-btn-vp" style="display:none;">
                 <span class="mc-hub-btn-label">Gestion membres</span>

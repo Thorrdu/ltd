@@ -82,27 +82,83 @@
 
 ---
 
-## Phase 2 - Module de ventes rapides
-**Priorite : haute -- besoin quotidien des membres**
+## Phase 2 - Module de ventes rapides [TERMINEE]
+**Terminee le 16 avril 2026 (soir tardif) -- besoin quotidien des membres**
 
 ### 2.1 Page de saisie rapide des ventes
-- [ ] Creer une page `/ventes` accessible a tous les membres connectes
-- [ ] Formulaire simplifie : selection item (arme/munition/drogue/arme blanche), quantite, prix total
-- [ ] Calcul automatique du prix unitaire
-- [ ] Champ acheteur (texte libre)
-- [ ] Bouton de validation rapide (un clic pour enregistrer)
-- [ ] Historique des ventes du jour pour le membre connecte
+- [x] Page `/ventes` accessible aux membres connectes (regle `ventes_rapides`, min_role `member`)
+- [x] Formulaire simplifie : selection type (arme/munition/drogue/arme_blanche/autre)
+- [x] Pour type=weapon : select Tom Select recherchable sur les armes actives, prix auto-rempli
+- [x] Pour les autres types : champ libre `item_name`
+- [x] Calcul automatique du prix unitaire (total / quantite)
+- [x] Champ acheteur libre + notes optionnelles
+- [x] Bouton de validation rapide, reset automatique apres succes
+- [x] Historique "Mes ventes du jour" avec stats (nombre, articles, chiffre)
+- [x] Sous-onglet "Historique" avec filtres scope (mes/toutes) et periode (jour/semaine/mois/tout)
 
 ### 2.2 Base de donnees ventes generiques
-- [ ] Creer une table `sales` generique (ou etendre `weapon_sales`) :
-  - `item_type` (arme, munition, drogue, arme_blanche, autre)
-  - `item_id` (nullable, reference vers la table correspondante)
+- [x] Table `sales` generique :
+  - `item_type` (weapon, ammo, drug, melee, other)
+  - `item_id` nullable (reference vers la table correspondante selon type)
   - `item_name` (texte pour les cas sans reference)
   - `quantity`, `unit_price`, `total_price`
-  - `buyer_name`, `sold_by_user_id`, `validated_by_user_id`
-  - `notes`, `created_at`
-- [ ] Creer le modele `Sale` avec relations polymorphiques ou type enum
-- [ ] Migrer les `weapon_sales` existantes vers ce systeme unifie (ou les garder en parallele)
+  - `buyer_name`, `sold_by_user_id`, `validated_by_user_id` nullable, `validated_at` nullable
+  - `notes`, `created_at`, `updated_at`
+  - Index sur `item_type`, `item_id`, `created_at`
+- [x] Modele `Sale` avec constante `TYPES`, scopes `ofType()` et `today()`, relations `soldBy`, `validatedBy`, `weapon`
+- [x] Pour les ventes de type `weapon` : decrement auto du `weapon_stock` correspondant + `weapon_stock_movement` de type `sale`
+- [ ] **(Phase Harmonisation)** Migrer les `weapon_sales` existantes vers `sales` et retirer l'ecriture dans `weapon_sales` depuis `/espace-membres`
+
+### Fichiers
+- `database/migrations/2026_04_16_171611_create_sales_table.php`
+- `app/Models/Sale.php`
+- `app/Http/Controllers/SaleController.php`
+- `resources/views/ventes.blade.php`
+- `public/js/ventes.js`
+- `public/css/mc-layout.css` (blocs `VENTES PAGE` -- `.member-row`, `.members-stat`, `.sale-total`, etc.)
+- Routes : `GET /ventes`, `GET /ventes/api/list`, `POST /ventes/api/create`
+- Hub MC + nav : bouton "Ventes rapides" visible une fois connecte
+
+---
+
+## Phase H - Harmonisation et deduplication [A PLANIFIER]
+**Priorite : critique -- a traiter avant que les doublons deviennent ingerables**
+
+### Contexte
+Au fil du developpement par phases, chaque nouveau module cree sa propre surface (table + UI) sans
+reprendre systematiquement l'ancien. Resultat : plusieurs chemins aboutissent au meme effet
+metier avec des enregistrements dupliques ou des lectures divergentes. Exemples actuels :
+
+- **Ventes d'armes** : le dashboard `/espace-membres` ecrit toujours dans `weapon_sales`,
+  tandis que `/ventes` ecrit dans `sales`. Les historiques sont desynchronises.
+- **Mouvements de stock armurerie** : le simulateur gere `weapon_stock_movements`, mais le futur
+  module stocks generiques (Phase 3) introduira `stock_movements`.
+- **Ajouts/retraits stock** : accessibles a la fois via le dashboard membre et via le panel
+  Filament armurerie -- chaque chemin a sa propre validation.
+
+### H.1 Audit et cartographie
+- [ ] Lister toutes les tables operationnelles et leur finalite reelle.
+- [ ] Identifier les couples (table historique / table generique) et decider de la table maitre.
+- [ ] Identifier les formulaires/pages qui ecrivent dans une table historique et planifier leur migration.
+
+### H.2 Migration des donnees
+- [ ] Script de migration `weapon_sales` -> `sales` (type=weapon, item_id=weapon_id).
+- [ ] Script de migration `weapon_stocks` + `weapon_stock_movements` -> `stock_items` + `stock_movements`
+      (si Phase 3 retient la voie "tout generique").
+- [ ] Conserver les tables historiques en lecture seule (flag `is_legacy`) ou les supprimer apres verification.
+
+### H.3 Unification des UIs
+- [ ] `/espace-membres` : remplacer le formulaire de vente d'arme par un lien/redirect vers `/ventes`
+      (ou embarquer le meme composant).
+- [ ] `/espace-membres` : harmoniser le formulaire de mouvement de stock avec `/stocks` (Phase 3).
+- [ ] Panel Filament armurerie : decider si on conserve l'interface avancee (probablement oui) ou
+      si on la masque apres migration. Le superadmin garde l'acces quoi qu'il arrive.
+
+### H.4 Regle de fer
+- [ ] Chaque phase future doit declarer explicitement :
+      a) si elle cree une nouvelle table, b) si elle remplace une table existante, c) les UIs qui
+      doivent etre migrees ou supprimees en meme temps.
+- [ ] Ajouter une check-list "deduplication" dans le modele de commit / PR.
 
 ---
 
@@ -307,11 +363,12 @@
 
 | Phase | Tables |
 |-------|--------|
-| 0 | `settings` |
-| 2 | `sales` (generique) |
-| 3 | `stock_items`, `stock_movements` (generiques) -- OU extension des tables weapon_* |
-| 4 | `drugs` (ou via stock_items) |
-| 5 | via stock_items |
+| 0 | `settings`, `page_access_rules` |
+| 2 | `sales` (generique) -- CREEE |
+| H | -- (migration + deprecation) |
+| 3 | `stock_items`, `stock_movements` (generiques) |
+| 4 | extension de `stock_items` (categorie `drug` / `drug_raw` / `farm_consumable`) |
+| 5 | extension de `stock_items` (categorie `melee`) |
 | 6 | -- (utilise les tables existantes) |
 | 7 | `mc_accounts`, `mc_transactions`, `cotisations` |
 | 8 | `notifications` |
@@ -321,32 +378,35 @@
 ## Ordre de realisation recommande
 
 ```
-Phase 0 (prerequis)          -- 1-2 jours
+Phase 0 (prerequis)           -- TERMINEE
   |
   v
-Phase 1 (reorganisation UX)  -- 2-3 jours
+Phase 1 (reorganisation UX)   -- TERMINEE
   |
   v
-Phase 2 (ventes rapides)     -- 1-2 jours
+Phase 2 (ventes rapides)      -- TERMINEE
   |
   v
-Phase 3 (stocks generiques)  -- 3-4 jours
-  |
-  +---> Phase 4 (drogues)    -- 2-3 jours
-  |
-  +---> Phase 5 (armes bl.)  -- 1 jour
+Phase H (harmonisation)       -- 1 jour (AVANT d'ajouter d'autres modules doublonnes)
   |
   v
-Phase 6 (classements/fiches) -- 2-3 jours
+Phase 3 (stocks generiques)   -- 3-4 jours
+  |
+  +---> Phase 4 (drogues)     -- 2-3 jours
+  |
+  +---> Phase 5 (armes bl.)   -- 1 jour
   |
   v
-Phase 7 (comptabilite)       -- 3-4 jours
+Phase 6 (classements/fiches)  -- 2-3 jours
   |
   v
-Phase 8 (polissage)          -- continu
+Phase 7 (comptabilite)        -- 3-4 jours
+  |
+  v
+Phase 8 (polissage)           -- continu
 ```
 
-**Estimation totale : 15-22 jours de developpement**
+**Estimation totale restante : ~13-17 jours de developpement (Phase H + 3 a 8)**
 
 ---
 
@@ -361,3 +421,95 @@ Phase 8 (polissage)          -- continu
 4. **Pas de suppression physique** : utiliser du soft delete ou un flag `is_active` pour garder l'historique complet.
 
 5. **Prix d'achat aux orga (drogues)** : manquant dans `drogue_indicatif.png`, a completer manuellement dans les parametres.
+
+6. **Harmonisation** : chaque nouveau module doit etre accompagne d'une verification anti-doublons
+   (cf. Phase H). Ne jamais laisser deux formulaires ecrire dans deux tables differentes pour
+   la meme operation metier.
+
+---
+
+## Annexe A -- Inventaire observe dans le coffre MC (in-game)
+
+Total observe au 16 avril 2026 : 309 kg / 1000 kg max.
+Ces items doivent etre couverts par les Phases 3 (stocks generique), 4 (drogues) et 5 (armes blanches).
+
+### Categories
+
+**A.1 Armes finies (categorie `weapon_finished`)**
+- PISTOL .50 (differentes masses : 2.00 / 2.225 / 2.405 kg)
+- SNS PISTOL (465g / 555g)
+
+**A.2 Corps et pieces armurerie (categorie `piece`)**
+- CORPS DE PISTOLET, CORPS DE SMG, CORPS DE FUSILS
+- CANON, POIGNEE, CROSSE, RESSORT
+- TACTICAL SUPPRESSOR, SUPPRESSOR
+
+**A.3 Matieres premieres armurerie (categorie `raw_material`)**
+- POUDRE A CANON, FRAGMENT DE METAL, PIECE DE METAL
+
+**A.4 Munitions (categorie `ammo`)**
+- .45 ACP, 9MM, .50 AE, .50 BMG
+- 12 GAUGE, 5.56x45, 7.62x51, 7.62x39
+
+**A.5 Plans d'armes (categorie `plan`)**
+- PLAN CALIBRE 50 (x5 au moins)
+- PLAN MG, PLAN MACHINE ..., PLAN PISTOLET
+- PLAN COMBAT P... (x2 au moins)
+- PLAN AK47, PLAN AK COMPACT
+- PLAN FUSIL A P..., PLAN MINI SMG
+
+**A.6 Armes blanches (categorie `melee`, Phase 5)**
+- KNIFE (300g)
+- KATANA BXLIFE (500g)
+- (a completer : Switchblade, Machete, Batte, Queue de billard, Golf Club, Pied de biche,
+  Hammer, Cle anglaise -- liste Phase 5)
+
+**A.7 Drogues finies (categorie `drug`, Phase 4)**
+- BRIQUE DE WEED (100g)
+- BRIQUE DE COCAINE (400g)
+- SACHET DE WEED (5g / 1kg selon qualite), SACHET PLASTIQUE
+- JOINT (PURPLE / ...) (3g)
+- METH (HAUTE Q...) (100g)
+- COCAINE (70g)
+
+**A.8 Matieres premieres drogues (categorie `drug_raw`, Phase 4)**
+- TETE DE WEED (basse / moyenne / haute qualite selon poids)
+- GRAINE DE WEED (3 varietes : 1g / 1g / 1g selon couleur -- Blue Dream, White Widow, Purple...)
+- POUDRE DE CAFEINE
+- FEUILLE A ROULER
+
+**A.9 Consommables agricoles (categorie `farm_consumable`, Phase 4)**
+- ENGRAIS (VITESSE)
+- ENGRAIS (BOOSTER)
+- SPRAY PESTICIDE
+
+**A.10 Outils et accessoires (categorie `tool`, Phase 3 ou extension)**
+- DECOUPEUR PLASMA
+- MEULEUSE D'ANGLE
+- FOREUSE
+- OUTIL DE CROCHETAGE
+- CLE USB PHANTOM
+- MENOTTES
+
+**A.11 Electronique (categorie `electronic`, futur)**
+- GRAND ECRAN POUR ORDINATEUR
+- PETIT ECRAN POUR ORDINATEUR
+- CARTE ELECTRONIQUE (2 tailles)
+- CARTE DE PIRATAGE
+- MACHINE DE TRANSFERT (x2)
+- FIL DE CUIVRE
+
+**A.12 Divers / sacs**
+- SAC A METTRE [...] (plusieurs variantes)
+- ARGENT SALE (561 235$ observes)
+
+### Implications pour les phases
+
+- **Phase 3** doit prevoir une taxonomie `stock_items.category` riche :
+  `weapon_finished`, `piece`, `raw_material`, `ammo`, `plan`, `melee`, `drug`, `drug_raw`,
+  `farm_consumable`, `tool`, `electronic`, `misc`.
+- **Phase 4 (drogues)** doit distinguer drogues finies / matieres premieres / consommables agricoles.
+- Un champ `unit_weight_g` sur `stock_items` permettrait de calculer l'occupation du coffre
+  (309/1000 kg) et d'eviter de charger plus que la capacite.
+- L'import CSV/Excel (Phase 3.5) doit pouvoir associer chaque ligne a un item existant ou creer
+  un nouvel item avec sa categorie.

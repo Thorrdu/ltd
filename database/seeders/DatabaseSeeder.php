@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             WeaponSeeder::class,
             SettingSeeder::class,
             PageAccessRuleSeeder::class,
+            StockItemSeeder::class,
         ]);
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\WeaponSimController;
 use App\Http\Middleware\AllowIframe;
 use Illuminate\Support\Facades\Route;
@@ -39,3 +40,9 @@ Route::delete('/membres/api/{id}', [MemberController::class, 'apiDelete']);
 // Matrice d'acces
 Route::get('/membres/api/matrix', [MemberController::class, 'apiMatrix']);
 Route::put('/membres/api/matrix/{id}', [MemberController::class, 'apiUpdateMatrix']);
+
+// Ventes rapides (Phase 2)
+Route::get('/ventes', [SaleController::class, 'index'])->name('ventes');
+Route::get('/ventes/api/list', [SaleController::class, 'apiList']);
+Route::get('/ventes/api/catalog', [SaleController::class, 'apiCatalog']);
+Route::post('/ventes/api/create', [SaleController::class, 'apiCreate']);
