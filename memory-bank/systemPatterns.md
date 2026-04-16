@@ -29,7 +29,7 @@ Les menus et entreprises y font reference via des tables pivot.
 - `weapons`, `weapon_stocks`, `weapon_stock_movements`, `weapon_contracts`, `weapon_contract_items`, `weapon_sales`
 
 ### Resources Filament (Armurerie)
-- WeaponResource, WeaponStockResource, WeaponStockMovementResource, WeaponContractResource, WeaponSaleResource
+- WeaponResource, StockItemResource, StockMovementResource, WeaponContractResource, SaleResource
 - Page CraftWeapon, widget ArmurerieStatsWidget
 
 ### ATTENTION harmonisation (Phase H du plan)

@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Sale;
 use App\Models\StockItem;
+use App\Models\StockMovement;
 use App\Models\User;
-use App\Models\WeaponStock;
-use App\Models\WeaponStockMovement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -16,17 +15,31 @@ class SaleController extends Controller
     private const PAGE_KEY = 'ventes_rapides';
 
     /**
-     * Categories exposed in the /ventes search (sellable items only).
-     * The catalog may contain plans/pieces/raw_material but those are not sellable via /ventes.
+     * Categories affichees dans le select de /ventes. On exclut les pieces/plans/matieres
+     * qui n'ont pas vocation a etre vendues au public.
      */
-    private const SELLABLE_CATEGORIES = ['weapon_finished', 'ammo', 'melee', 'drug', 'drug_raw'];
+    private const SELLABLE_CATEGORIES = [
+        'weapon_finished', 'ammo', 'melee', 'drug', 'drug_raw', 'misc',
+    ];
+
+    /**
+     * Mapping category -> label court pour les badges de type de vente.
+     */
+    private const TYPE_SHORT = [
+        'weapon_finished' => 'Arme',
+        'ammo'            => 'Munition',
+        'melee'           => 'Arme blanche',
+        'drug'            => 'Drogue',
+        'drug_raw'        => 'Drogue (matiere)',
+        'misc'            => 'Divers',
+    ];
 
     public function index()
     {
         $members = User::orderBy('name')->get(['id', 'name', 'role']);
 
         return view('ventes', [
-            'members' => $members,
+            'members'     => $members,
             'catalogJson' => $this->loadCatalog()->toJson(),
         ]);
     }
@@ -61,21 +74,15 @@ class SaleController extends Controller
             return $denied;
         }
 
-        $user = $this->authUser($request);
-        $scope = $request->query('scope', 'mine');
+        $user   = $this->authUser($request);
+        $scope  = $request->query('scope', 'mine');
         $period = $request->query('period', 'today');
 
         $base = Sale::query();
         if ($scope === 'mine') {
             $base->where('sold_by_user_id', $user->id);
         }
-        if ($period === 'today') {
-            $base->whereDate('created_at', now()->toDateString());
-        } elseif ($period === 'week') {
-            $base->where('created_at', '>=', now()->startOfWeek());
-        } elseif ($period === 'month') {
-            $base->where('created_at', '>=', now()->startOfMonth());
-        }
+        $base->inPeriod($period);
 
         $sales = (clone $base)
             ->with(['soldBy', 'validatedBy', 'stockItem'])
@@ -95,7 +102,6 @@ class SaleController extends Controller
             'totals' => $totals,
             'scope'  => $scope,
             'period' => $period,
-            'types'  => Sale::TYPES,
         ]);
     }
 
@@ -106,7 +112,7 @@ class SaleController extends Controller
         }
 
         return response()->json([
-            'catalog' => $this->loadCatalog(),
+            'catalog'    => $this->loadCatalog(),
             'categories' => StockItem::CATEGORIES,
         ]);
     }
@@ -133,10 +139,10 @@ class SaleController extends Controller
 
         $item = StockItem::find($request->input('stock_item_id'));
         if (! $item || ! $item->is_active) {
-            return response()->json(['error' => 'Item indisponible'], 404);
+            return response()->json(['error' => 'Article indisponible'], 404);
         }
-        if (! in_array($item->category, self::SELLABLE_CATEGORIES, true)) {
-            return response()->json(['error' => 'Cet item n\'est pas vendable depuis /ventes'], 422);
+        if (! $item->is_sellable || ! in_array($item->category, self::SELLABLE_CATEGORIES, true)) {
+            return response()->json(['error' => 'Cet article n\'est pas vendable depuis /ventes'], 422);
         }
 
         $qty   = (int) $request->input('quantity');
@@ -145,36 +151,30 @@ class SaleController extends Controller
 
         $warning = null;
 
-        if ($item->category === 'weapon_finished' && $item->weapon_id) {
-            $weaponStock = WeaponStock::where('slug', 'weapon_' . optional($item->weapon)->slug)->first();
-            if (! $weaponStock || $weaponStock->quantity < $qty) {
-                $have = $weaponStock->quantity ?? 0;
-                $warning = "Stock insuffisant ({$have} en stock). Le stock passe en négatif.";
+        // Les armes finies sont trackees en stock : on decremente + mouvement.
+        if ($item->category === 'weapon_finished') {
+            if ($item->quantity < $qty) {
+                $warning = 'Stock insuffisant (' . $item->quantity . ' en stock). Le stock passe en négatif.';
             }
-            if ($weaponStock) {
-                $weaponStock->decrement('quantity', $qty);
-                WeaponStockMovement::create([
-                    'weapon_stock_id' => $weaponStock->id,
-                    'quantity_change' => -$qty,
-                    'reason'          => 'sale',
-                    'user_id'         => $user->id,
-                    'notes'           => 'Vente rapide: ' . $qty . '× ' . $item->name . ' → ' . $request->buyer_name,
-                    'created_at'      => now(),
-                ]);
-            }
+            $item->decrement('quantity', $qty);
+            StockMovement::create([
+                'stock_item_id'   => $item->id,
+                'quantity_change' => -$qty,
+                'reason'          => 'sale',
+                'user_id'         => $user->id,
+                'notes'           => 'Vente rapide: ' . $qty . '× ' . $item->name . ' → ' . $request->buyer_name,
+                'created_at'      => now(),
+            ]);
         }
 
         $sale = Sale::create([
-            'item_type'        => StockItem::CATEGORY_TO_SALE_TYPE[$item->category] ?? 'other',
-            'item_id'          => $item->weapon_id,
-            'stock_item_id'    => $item->id,
-            'item_name'        => $item->name,
-            'quantity'         => $qty,
-            'unit_price'       => $unit,
-            'total_price'      => $total,
-            'buyer_name'       => $request->input('buyer_name'),
-            'sold_by_user_id'  => $user->id,
-            'notes'            => $request->input('notes'),
+            'stock_item_id'   => $item->id,
+            'quantity'        => $qty,
+            'unit_price'      => $unit,
+            'total_price'     => $total,
+            'buyer_name'      => $request->input('buyer_name'),
+            'sold_by_user_id' => $user->id,
+            'notes'           => $request->input('notes'),
         ]);
 
         return response()->json([
@@ -187,13 +187,10 @@ class SaleController extends Controller
 
     // ── Helpers ─────────────────────────────────────────────
 
-    /**
-     * Returns the active sellable catalog grouped by category.
-     * Returns a collection of plain arrays (ready for JSON).
-     */
     private function loadCatalog()
     {
         return StockItem::active()
+            ->sellable()
             ->whereIn('category', self::SELLABLE_CATEGORIES)
             ->orderBy('category')
             ->orderBy('sort_order')
@@ -201,13 +198,13 @@ class SaleController extends Controller
             ->map(fn (StockItem $i) => [
                 'id'                 => $i->id,
                 'category'           => $i->category,
-                'category_label'     => $i->category_label,
-                'sale_type'          => $i->sale_type,
+                'category_label'     => StockItem::CATEGORIES[$i->category] ?? $i->category,
+                'type_short'         => self::TYPE_SHORT[$i->category] ?? $i->category,
                 'name'               => $i->name,
                 'slug'               => $i->slug,
                 'default_sell_price' => $i->default_sell_price,
                 'unit_weight_g'      => $i->unit_weight_g,
-                'weapon_id'          => $i->weapon_id,
+                'current_stock'      => $i->quantity,
                 'notes'              => $i->notes,
             ])
             ->values();
@@ -215,13 +212,15 @@ class SaleController extends Controller
 
     private function mapSale(Sale $s): array
     {
+        $item = $s->stockItem;
+        $cat  = $item?->category ?? 'misc';
+
         return [
             'id'            => $s->id,
-            'item_type'     => $s->item_type,
-            'type_label'    => Sale::TYPES[$s->item_type] ?? $s->item_type,
-            'item_id'       => $s->item_id,
             'stock_item_id' => $s->stock_item_id,
-            'item_name'     => $s->item_name,
+            'category'      => $cat,
+            'type_short'    => self::TYPE_SHORT[$cat] ?? $cat,
+            'item_name'     => $item?->name ?? '?',
             'quantity'      => $s->quantity,
             'unit_price'    => $s->unit_price,
             'total_price'   => $s->total_price,

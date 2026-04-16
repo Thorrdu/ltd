@@ -7,24 +7,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Sale extends Model
 {
-    public const TYPES = [
-        'weapon' => 'Arme',
-        'ammo' => 'Munition',
-        'drug' => 'Drogue',
-        'melee' => 'Arme blanche',
-        'other' => 'Autre',
-    ];
-
     protected $fillable = [
-        'item_type', 'item_id', 'stock_item_id', 'item_name',
+        'stock_item_id',
         'quantity', 'unit_price', 'total_price',
-        'buyer_name', 'sold_by_user_id', 'validated_by_user_id', 'validated_at',
+        'buyer_name',
+        'sold_by_user_id', 'weapon_contract_id',
+        'validated_by_user_id', 'validated_at',
         'notes',
     ];
 
     protected $casts = [
         'validated_at' => 'datetime',
     ];
+
+    public function stockItem(): BelongsTo
+    {
+        return $this->belongsTo(StockItem::class);
+    }
 
     public function soldBy(): BelongsTo
     {
@@ -36,19 +35,9 @@ class Sale extends Model
         return $this->belongsTo(User::class, 'validated_by_user_id');
     }
 
-    public function weapon(): BelongsTo
+    public function contract(): BelongsTo
     {
-        return $this->belongsTo(Weapon::class, 'item_id');
-    }
-
-    public function stockItem(): BelongsTo
-    {
-        return $this->belongsTo(StockItem::class);
-    }
-
-    public function scopeOfType($query, string $type)
-    {
-        return $query->where('item_type', $type);
+        return $this->belongsTo(WeaponContract::class, 'weapon_contract_id');
     }
 
     public function scopeToday($query)
@@ -56,8 +45,13 @@ class Sale extends Model
         return $query->whereDate('created_at', now()->toDateString());
     }
 
-    public function getTypeLabelAttribute(): string
+    public function scopeInPeriod($query, string $period)
     {
-        return self::TYPES[$this->item_type] ?? $this->item_type;
+        return match ($period) {
+            'today' => $query->whereDate('created_at', now()->toDateString()),
+            'week'  => $query->where('created_at', '>=', now()->startOfWeek()),
+            'month' => $query->where('created_at', '>=', now()->startOfMonth()),
+            default => $query,
+        };
     }
 }

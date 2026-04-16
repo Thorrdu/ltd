@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Sale;
+use App\Models\StockItem;
+use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Weapon;
 use App\Models\WeaponContract;
 use App\Models\WeaponContractItem;
-use App\Models\WeaponSale;
-use App\Models\WeaponStock;
-use App\Models\WeaponStockMovement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,13 +16,16 @@ use Illuminate\Support\Facades\Validator;
 
 class WeaponSimController extends Controller
 {
+    /**
+     * Categories de stock_items affichees dans l'espace membres (armurerie).
+     */
+    private const ARMURERIE_CATEGORIES = ['weapon_finished', 'weapon_plan', 'weapon_piece', 'raw_material'];
+
     public function hub()
     {
         $members = User::orderBy('name')->get(['id', 'name', 'role']);
 
-        return view('mc-hub', [
-            'members' => $members,
-        ]);
+        return view('mc-hub', ['members' => $members]);
     }
 
     public function index()
@@ -32,7 +35,7 @@ class WeaponSimController extends Controller
 
         return view('simulateur-armes', [
             'weaponsJson' => $weapons->toJson(),
-            'members' => $members,
+            'members'     => $members,
         ]);
     }
 
@@ -40,9 +43,7 @@ class WeaponSimController extends Controller
     {
         $members = User::orderBy('name')->get(['id', 'name', 'role']);
 
-        return view('simulateur-munitions', [
-            'members' => $members,
-        ]);
+        return view('simulateur-munitions', ['members' => $members]);
     }
 
     public function espaceMembres()
@@ -53,7 +54,7 @@ class WeaponSimController extends Controller
         return view('espace-membres', [
             'weaponsJson' => $weapons->toJson(),
             'membersJson' => $members->toJson(),
-            'members' => $members,
+            'members'     => $members,
         ]);
     }
 
@@ -75,7 +76,7 @@ class WeaponSimController extends Controller
     {
         $v = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
-            'pin' => 'required|string',
+            'pin'     => 'required|string',
         ]);
 
         if ($v->fails()) {
@@ -97,7 +98,7 @@ class WeaponSimController extends Controller
         }
 
         return response()->json([
-            'ok' => true,
+            'ok'   => true,
             'user' => ['id' => $user->id, 'name' => $user->name, 'role' => $user->role],
         ]);
     }
@@ -121,72 +122,79 @@ class WeaponSimController extends Controller
             ->get()
             ->map(fn ($c) => $this->mapContract($c));
 
-        $stock = WeaponStock::orderBy('category')->orderBy('sort_order')
+        $stock = StockItem::whereIn('category', self::ARMURERIE_CATEGORIES)
+            ->orderBy('category')
+            ->orderBy('sort_order')
             ->get()
-            ->map(fn ($s) => [
-                'id' => $s->id,
-                'category' => $s->category,
-                'name' => $s->name,
-                'slug' => $s->slug,
-                'quantity' => $s->quantity,
+            ->map(fn (StockItem $s) => [
+                'id'        => $s->id,
+                'category'  => $s->category,
+                'name'      => $s->name,
+                'slug'      => $s->slug,
+                'quantity'  => $s->quantity,
                 'weapon_id' => $s->weapon_id,
             ]);
 
-        $movements = WeaponStockMovement::with(['stock', 'user', 'attributedTo', 'contract'])
+        $movements = StockMovement::with(['stockItem', 'user', 'attributedTo', 'contract'])
+            ->whereHas('stockItem', fn ($q) => $q->whereIn('category', self::ARMURERIE_CATEGORIES))
             ->orderBy('created_at', 'desc')
             ->limit(30)
             ->get()
-            ->map(fn ($m) => [
-                'stock_name' => $m->stock->name ?? '?',
+            ->map(fn (StockMovement $m) => [
+                'stock_name'      => $m->stockItem->name ?? '?',
                 'quantity_change' => $m->quantity_change,
-                'reason' => $m->reason,
-                'reason_label' => WeaponStockMovement::REASONS[$m->reason] ?? $m->reason,
-                'unit_cost' => $m->unit_cost,
-                'contract' => $m->contract->name ?? null,
-                'user' => $m->user->name ?? '?',
-                'attributed_to' => $m->attributedTo->name ?? null,
-                'notes' => $m->notes,
-                'date' => $m->created_at?->format('d/m H:i'),
+                'reason'          => $m->reason,
+                'reason_label'    => StockMovement::REASONS[$m->reason] ?? $m->reason,
+                'unit_cost'       => $m->unit_cost,
+                'contract'        => $m->contract->name ?? null,
+                'user'            => $m->user->name ?? '?',
+                'attributed_to'   => $m->attributedTo->name ?? null,
+                'notes'           => $m->notes,
+                'date'            => $m->created_at?->format('d/m H:i'),
             ]);
 
-        $sales = WeaponSale::with(['weapon', 'user', 'soldBy', 'contract'])
+        $sales = Sale::with(['stockItem', 'soldBy', 'contract'])
+            ->whereHas('stockItem', fn ($q) => $q->where('category', 'weapon_finished'))
             ->orderBy('created_at', 'desc')
             ->limit(30)
             ->get()
-            ->map(fn ($s) => [
-                'weapon' => $s->weapon->name ?? '?',
-                'quantity' => $s->quantity,
-                'unit_price' => $s->unit_price,
-                'total' => $s->total,
-                'buyer' => $s->buyer_name,
-                'contract' => $s->contract->name ?? null,
-                'user' => $s->user->name ?? '?',
-                'sold_by' => $s->soldBy->name ?? null,
-                'notes' => $s->notes,
-                'date' => $s->created_at?->format('d/m H:i'),
+            ->map(fn (Sale $s) => [
+                'weapon'         => $s->stockItem->name ?? '?',
+                'quantity'       => $s->quantity,
+                'unit_price'     => $s->unit_price,
+                'total'          => $s->total_price,
+                'buyer'          => $s->buyer_name,
+                'contract'       => $s->contract->name ?? null,
+                'user'           => $s->soldBy->name ?? '?',
+                'user_id'        => $s->sold_by_user_id,
+                'sold_by_user_id' => $s->sold_by_user_id,
+                'notes'          => $s->notes,
+                'date'           => $s->created_at?->format('d/m H:i'),
             ]);
 
-        $totalRevenue = WeaponSale::selectRaw('SUM(quantity * unit_price) as total')->value('total') ?? 0;
+        $totalRevenue = Sale::query()
+            ->whereHas('stockItem', fn ($q) => $q->where('category', 'weapon_finished'))
+            ->sum('total_price');
 
-        $lowStock = WeaponStock::where('quantity', '<=', 2)
-            ->whereIn('category', ['piece', 'plan', 'raw_material'])
+        $lowStock = StockItem::where('quantity', '<=', 2)
+            ->whereIn('category', ['weapon_piece', 'weapon_plan', 'raw_material'])
             ->get(['name', 'quantity', 'category']);
 
         $members = User::orderBy('name')->get(['id', 'name', 'role']);
         $current = $this->authUser($request);
 
         return response()->json([
-            'contracts' => $contracts,
-            'all_contracts' => $allContracts,
-            'stock' => $stock,
-            'movements' => $movements,
-            'sales' => $sales,
-            'finance' => ['total_revenue' => $totalRevenue],
-            'alerts' => $lowStock,
-            'reasons' => WeaponStockMovement::REASONS,
-            'contract_statuses' => WeaponContract::STATUSES,
-            'members' => $members,
-            'assignable_roles' => $current ? $current->assignableRoles() : [],
+            'contracts'          => $contracts,
+            'all_contracts'      => $allContracts,
+            'stock'              => $stock,
+            'movements'          => $movements,
+            'sales'              => $sales,
+            'finance'            => ['total_revenue' => $totalRevenue],
+            'alerts'             => $lowStock,
+            'reasons'            => StockMovement::REASONS,
+            'contract_statuses'  => WeaponContract::STATUSES,
+            'members'            => $members,
+            'assignable_roles'   => $current ? $current->assignableRoles() : [],
             'can_manage_members' => $current ? $current->canAccessPage('membres_gestion') : false,
         ]);
     }
@@ -194,27 +202,27 @@ class WeaponSimController extends Controller
     private function mapContract(WeaponContract $c): array
     {
         return [
-            'id' => $c->id,
-            'name' => $c->name,
-            'client' => $c->client_name,
-            'status' => $c->status,
+            'id'          => $c->id,
+            'name'        => $c->name,
+            'client'      => $c->client_name,
+            'status'      => $c->status,
             'status_label' => WeaponContract::STATUSES[$c->status] ?? $c->status,
-            'notes' => $c->notes,
-            'created_by' => $c->createdBy->name ?? '?',
-            'progress' => $c->progress,
-            'items' => $c->items->map(fn ($i) => [
-                'id' => $i->id,
-                'weapon' => $i->weapon->name ?? '?',
-                'weapon_id' => $i->weapon_id,
-                'weapon_slug' => $i->weapon->slug ?? '?',
-                'qty_ordered' => $i->qty_ordered,
+            'notes'       => $c->notes,
+            'created_by'  => $c->createdBy->name ?? '?',
+            'progress'    => $c->progress,
+            'items'       => $c->items->map(fn ($i) => [
+                'id'            => $i->id,
+                'weapon'        => $i->weapon->name ?? '?',
+                'weapon_id'     => $i->weapon_id,
+                'weapon_slug'   => $i->weapon->slug ?? '?',
+                'qty_ordered'   => $i->qty_ordered,
                 'qty_delivered' => $i->qty_delivered,
-                'remaining' => $i->remaining,
+                'remaining'     => $i->remaining,
             ]),
         ];
     }
 
-    // ── Sales ───────────────────────────────────────────────
+    // ── Sales (armes finies uniquement depuis /espace-membres) ──
 
     public function createSale(Request $request): JsonResponse
     {
@@ -225,11 +233,11 @@ class WeaponSimController extends Controller
         $user = $this->authUser($request);
 
         $v = Validator::make($request->all(), [
-            'weapon_id' => 'required|exists:weapons,id',
-            'quantity' => 'required|integer|min:1|max:99',
+            'weapon_id'  => 'required|exists:weapons,id',
+            'quantity'   => 'required|integer|min:1|max:99',
             'unit_price' => 'required|numeric|min:0',
             'buyer_name' => 'required|string|max:100',
-            'notes' => 'nullable|string|max:500',
+            'notes'      => 'nullable|string|max:500',
         ]);
 
         if ($v->fails()) {
@@ -237,38 +245,43 @@ class WeaponSimController extends Controller
         }
 
         $weapon = Weapon::findOrFail($request->weapon_id);
-        $qty = (int) $request->quantity;
+        $stock  = StockItem::where('slug', 'weapon_' . $weapon->slug)->first();
 
-        $weaponStock = WeaponStock::where('slug', 'weapon_' . $weapon->slug)->first();
-        $warning = null;
-        if (! $weaponStock || $weaponStock->quantity < $qty) {
-            $have = $weaponStock->quantity ?? 0;
-            $warning = "⚠ Stock insuffisant ({$have} en stock). Le stock passe en négatif.";
+        if (! $stock) {
+            return response()->json(['error' => 'Article inexistant dans le stock'], 404);
         }
 
-        if ($weaponStock) {
-            $weaponStock->decrement('quantity', $qty);
-            WeaponStockMovement::create([
-                'weapon_stock_id' => $weaponStock->id,
-                'quantity_change' => -$qty,
-                'reason' => 'sale',
-                'user_id' => $user->id,
-                'notes' => 'Vente: ' . $qty . '× ' . $weapon->name . ' → ' . $request->buyer_name,
-                'created_at' => now(),
-            ]);
+        $qty       = (int) $request->quantity;
+        $unitPrice = (int) round((float) $request->unit_price);
+        $warning   = null;
+
+        if ($stock->quantity < $qty) {
+            $warning = '⚠ Stock insuffisant (' . $stock->quantity . ' en stock). Le stock passe en négatif.';
         }
 
-        WeaponSale::create([
-            'weapon_id' => $request->weapon_id,
-            'quantity' => $qty,
-            'unit_price' => $request->unit_price,
-            'buyer_name' => $request->buyer_name,
-            'user_id' => $user->id,
-            'notes' => $request->notes,
+        $stock->decrement('quantity', $qty);
+
+        StockMovement::create([
+            'stock_item_id'   => $stock->id,
+            'quantity_change' => -$qty,
+            'reason'          => 'sale',
+            'user_id'         => $user->id,
+            'notes'           => 'Vente: ' . $qty . '× ' . $weapon->name . ' → ' . $request->buyer_name,
+            'created_at'      => now(),
+        ]);
+
+        Sale::create([
+            'stock_item_id'   => $stock->id,
+            'quantity'        => $qty,
+            'unit_price'      => $unitPrice,
+            'total_price'     => $unitPrice * $qty,
+            'buyer_name'      => $request->buyer_name,
+            'sold_by_user_id' => $user->id,
+            'notes'           => $request->notes,
         ]);
 
         return response()->json([
-            'ok' => true,
+            'ok'      => true,
             'message' => $qty . '× ' . $weapon->name . ' vendu(s) à ' . $request->buyer_name,
             'warning' => $warning,
         ]);
@@ -285,18 +298,18 @@ class WeaponSimController extends Controller
         $user = $this->authUser($request);
 
         $v = Validator::make($request->all(), [
-            'weapon_stock_id' => 'required|exists:weapon_stocks,id',
+            'stock_item_id'   => 'required|exists:stock_items,id',
             'quantity_change' => 'required|integer|not_in:0',
-            'reason' => 'required|string|in:' . implode(',', array_keys(WeaponStockMovement::REASONS)),
-            'unit_cost' => 'nullable|numeric|min:0',
-            'notes' => 'nullable|string|max:500',
+            'reason'          => 'required|string|in:' . implode(',', array_keys(StockMovement::REASONS)),
+            'unit_cost'       => 'nullable|numeric|min:0',
+            'notes'           => 'nullable|string|max:500',
         ]);
 
         if ($v->fails()) {
             return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
         }
 
-        $stock = WeaponStock::findOrFail($request->weapon_stock_id);
+        $stock  = StockItem::findOrFail($request->stock_item_id);
         $change = (int) $request->quantity_change;
 
         if ($change < 0 && $stock->quantity < abs($change)) {
@@ -305,14 +318,14 @@ class WeaponSimController extends Controller
 
         $stock->increment('quantity', $change);
 
-        WeaponStockMovement::create([
-            'weapon_stock_id' => $stock->id,
+        StockMovement::create([
+            'stock_item_id'   => $stock->id,
             'quantity_change' => $change,
-            'reason' => $request->reason,
-            'unit_cost' => $request->reason === 'purchase' ? $request->unit_cost : null,
-            'user_id' => $user->id,
-            'notes' => $request->notes,
-            'created_at' => now(),
+            'reason'          => $request->reason,
+            'unit_cost'       => $request->reason === 'purchase' ? $request->unit_cost : null,
+            'user_id'         => $user->id,
+            'notes'           => $request->notes,
+            'created_at'      => now(),
         ]);
 
         $action = $change > 0 ? 'ajouté' : 'retiré';
@@ -331,10 +344,10 @@ class WeaponSimController extends Controller
         $user = $this->authUser($request);
 
         $v = Validator::make($request->all(), [
-            'name' => 'required|string|max:100',
-            'client_name' => 'required|string|max:100',
-            'notes' => 'nullable|string|max:500',
-            'items' => 'required|array|min:1',
+            'name'              => 'required|string|max:100',
+            'client_name'       => 'required|string|max:100',
+            'notes'             => 'nullable|string|max:500',
+            'items'             => 'required|array|min:1',
             'items.*.weapon_id' => 'required|exists:weapons,id',
             'items.*.qty_ordered' => 'required|integer|min:1|max:999',
         ]);
@@ -344,19 +357,19 @@ class WeaponSimController extends Controller
         }
 
         $contract = WeaponContract::create([
-            'name' => $request->name,
-            'client_name' => $request->client_name,
-            'status' => 'pending',
-            'notes' => $request->notes,
+            'name'               => $request->name,
+            'client_name'        => $request->client_name,
+            'status'             => 'pending',
+            'notes'              => $request->notes,
             'created_by_user_id' => $user->id,
         ]);
 
         foreach ($request->items as $item) {
             WeaponContractItem::create([
                 'weapon_contract_id' => $contract->id,
-                'weapon_id' => $item['weapon_id'],
-                'qty_ordered' => $item['qty_ordered'],
-                'qty_delivered' => 0,
+                'weapon_id'          => $item['weapon_id'],
+                'qty_ordered'        => $item['qty_ordered'],
+                'qty_delivered'      => 0,
             ]);
         }
 
@@ -378,7 +391,7 @@ class WeaponSimController extends Controller
 
         $v = Validator::make($request->all(), [
             'status' => 'sometimes|string|in:' . implode(',', array_keys(WeaponContract::STATUSES)),
-            'notes' => 'sometimes|nullable|string|max:500',
+            'notes'  => 'sometimes|nullable|string|max:500',
         ]);
 
         if ($v->fails()) {
@@ -406,7 +419,7 @@ class WeaponSimController extends Controller
 
         $v = Validator::make($request->all(), [
             'qty_delivered' => 'sometimes|integer|min:0|max:999',
-            'qty_ordered' => 'sometimes|integer|min:1|max:999',
+            'qty_ordered'   => 'sometimes|integer|min:1|max:999',
         ]);
 
         if ($v->fails()) {
@@ -449,7 +462,7 @@ class WeaponSimController extends Controller
         $v = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
             'role' => 'required|string|in:' . implode(',', $allowedRoles),
-            'pin' => 'required|string|min:4|max:20',
+            'pin'  => 'required|string|min:4|max:20',
         ]);
 
         if ($v->fails()) {
@@ -459,18 +472,18 @@ class WeaponSimController extends Controller
         $slug = strtolower(str_replace(' ', '.', $request->name));
 
         $member = User::create([
-            'name' => $request->name,
-            'email' => $slug . '@lost.mc',
-            'password' => Hash::make('lost-' . $slug),
-            'role' => $request->role,
-            'sim_pin' => Hash::make($request->pin),
+            'name'      => $request->name,
+            'email'     => $slug . '@lost.mc',
+            'password'  => Hash::make('lost-' . $slug),
+            'role'      => $request->role,
+            'sim_pin'   => Hash::make($request->pin),
             'is_active' => true,
         ]);
 
         return response()->json([
-            'ok' => true,
+            'ok'      => true,
             'message' => 'Membre "' . $member->name . '" créé',
-            'member' => ['id' => $member->id, 'name' => $member->name, 'role' => $member->role],
+            'member'  => ['id' => $member->id, 'name' => $member->name, 'role' => $member->role],
         ]);
     }
 
@@ -490,7 +503,7 @@ class WeaponSimController extends Controller
         $v = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:100',
             'role' => 'sometimes|string',
-            'pin' => 'sometimes|string|min:4|max:20',
+            'pin'  => 'sometimes|string|min:4|max:20',
         ]);
 
         if ($v->fails()) {
@@ -524,7 +537,7 @@ class WeaponSimController extends Controller
 
         $v = Validator::make($request->all(), [
             'current_pin' => 'required|string',
-            'new_pin' => 'required|string|min:4|max:20',
+            'new_pin'     => 'required|string|min:4|max:20',
         ]);
 
         if ($v->fails()) {

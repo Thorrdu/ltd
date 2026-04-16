@@ -2,10 +2,13 @@
 
 ## Statut actuel
 Projet Laravel 12 + Filament 5 fonctionnel avec deux domaines operationnels : catalogue LTD et armurerie.
-Toolbox MC en construction : Phases 0 (roles), 1 (refonte UX) et 2 (ventes rapides) terminees.
-Session du 16 avril (soir tardif) : module ventes rapides `/ventes` livre (table `sales` generique,
-formulaire multi-type, historique filtrable) + phase d'harmonisation ajoutee au plan + catalogue
-d'items in-game documente en annexe.
+Toolbox MC en construction : Phases 0 (roles + settings + matrice d'acces + gestion membres),
+1 (refonte UX), 2 (ventes rapides) et H (harmonisation du schema) TERMINEES.
+Session du 16 avril (soir tardif) : la Phase H a unifie les tables (`stock_items`,
+`stock_movements`, `sales`) et supprime les anciennes `weapon_stocks`, `weapon_stock_movements`,
+`weapon_sales`. Taxonomie `stock_items.category` a 12 valeurs, 54 items seedes (armes, plans,
+pieces, matieres, munitions, armes blanches, drogues). Prochaine etape : frontend `/stocks`
+avec attribution officier -> membre (Phase 3).
 
 ## Ce qui fonctionne
 
@@ -68,27 +71,28 @@ d'items in-game documente en annexe.
 
 ## Ce qui reste a faire
 
-### Priorite critique (avant d'avancer)
-- [ ] **Phase H - harmonisation** : migrer `weapon_sales` -> `sales`, rediriger le formulaire de
-      vente arme de `/espace-membres` vers `/ventes`, preparer la fusion `weapon_stocks` ->
-      `stock_items`. A traiter AVANT Phase 3 pour eviter un troisieme doublon.
-
-### Priorite haute
-- [ ] Phase 3 : stocks generiques (`stock_items`, `stock_movements`) avec taxonomie riche
-      (weapon_finished, piece, raw_material, ammo, plan, melee, drug, drug_raw, farm_consumable,
-      tool, electronic, misc) + attribution officier -> membre (3.4)
-- [ ] Aligner le vhost Laragon sur `public/`
+### Priorite haute (prochaine session)
+- [ ] **Phase 3.1** : page publique `/stocks` (officier+) avec tableau par categorie, qty in/out,
+      filtres, vue detail par item (schema deja en place, plus qu'a faire le frontend).
+- [ ] **Phase 3.2** : formulaire d'attribution officier -> membre (cree un `StockMovement`
+      reason=`attribution`, `attributed_to_user_id` deja en colonne).
+- [ ] **Phase 3.3** : section "Mes attributions en cours" sur `/espace-membres` avec boutons
+      Vendu / Retour / Perte / Don pour reconciliation.
+- [ ] Aligner le vhost Laragon sur `public/` (residuel)
+- [ ] Supprimer le formulaire de vente d'arme du dashboard `/espace-membres` et rediriger
+      vers `/ventes` (meme table `sales` cible, mais un seul point de saisie serait plus propre).
 
 ### Priorite moyenne
-- [ ] Phase 4 : module drogues (sous-categories de `stock_items`, flux achat orga -> attribution
-      -> reconciliation)
-- [ ] Phase 5 : armes blanches (sous-categorie de `stock_items`)
-- [ ] Phase 6 : classements + fiches membres detaillees
-- [ ] Phase 7 : comptabilite MC (argent sale/propre, transactions, cotisations)
+- [ ] Phase 3.4 : validation tresorier (colonnes additives sur `stock_movements`).
+- [ ] Phase 3.5 : import CSV/Excel des screenshots de coffre.
+- [ ] Phase 4 : module drogues (items `drug` seedes, reste le flux achat orga -> attribution
+      -> reconciliation + extension `drug_raw` et `farm_consumable`).
+- [ ] Phase 5 : armes blanches (items seedes, multiplicateur x1.5 a rendre configurable via `settings`).
+- [ ] Phase 6 : classements + fiches membres detaillees.
+- [ ] Phase 7 : comptabilite MC (argent sale/propre, transactions, cotisations).
 
 ### Priorite basse / Future
-- [ ] Phase 8 : polissage (responsive fin, notifications in-app, dashboards par role)
-- [ ] Import stock via CSV/Excel (Phase 3.5)
+- [ ] Phase 8 : polissage (responsive fin, notifications in-app, dashboards par role).
 
 ## Historique
 - **16 avril 2026 (soir tardif)** : Phase 2 livree -- module `/ventes` (table `sales` generique +

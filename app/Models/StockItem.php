@@ -8,53 +8,59 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StockItem extends Model
 {
-    /**
-     * Master list of categories (used by /ventes select, stocks, filters...).
-     * Keep in sync with the Phase 3 taxonomy (cf. plan-developpement.md annexe A).
-     */
     public const CATEGORIES = [
-        'weapon_finished'  => 'Armes',
-        'ammo'             => 'Munitions',
-        'melee'            => 'Armes blanches',
-        'drug'             => 'Drogues (produits finis)',
-        'drug_raw'         => 'Drogues (matieres premieres)',
-        'farm_consumable'  => 'Consommables agricoles',
-        'piece'            => 'Pieces armurerie',
-        'raw_material'     => 'Matieres premieres',
-        'plan'             => 'Plans',
-        'tool'             => 'Outils',
-        'electronic'       => 'Electronique',
-        'misc'             => 'Divers',
+        'weapon_finished' => 'Armes',
+        'weapon_plan'     => 'Plans',
+        'weapon_piece'    => 'Pieces armurerie',
+        'raw_material'    => 'Matieres premieres',
+        'ammo'            => 'Munitions',
+        'melee'           => 'Armes blanches',
+        'drug'            => 'Drogues',
+        'drug_raw'        => 'Drogues (matieres premieres)',
+        'farm_consumable' => 'Consommables agricoles',
+        'tool'            => 'Outils',
+        'electronic'      => 'Electronique',
+        'misc'            => 'Divers',
     ];
 
-    /**
-     * Mapping StockItem.category -> Sale.item_type (simplified typology for sales reports).
-     */
-    public const CATEGORY_TO_SALE_TYPE = [
-        'weapon_finished' => 'weapon',
-        'ammo'            => 'ammo',
-        'melee'           => 'melee',
-        'drug'            => 'drug',
-        'drug_raw'        => 'drug',
+    public const CATEGORY_COLORS = [
+        'weapon_finished' => 'success',
+        'weapon_plan'     => 'warning',
+        'weapon_piece'    => 'info',
+        'raw_material'    => 'gray',
+        'ammo'            => 'info',
+        'melee'           => 'warning',
+        'drug'            => 'danger',
+        'drug_raw'        => 'gray',
+        'farm_consumable' => 'gray',
+        'tool'            => 'gray',
+        'electronic'      => 'gray',
+        'misc'            => 'gray',
     ];
 
     protected $fillable = [
-        'category', 'name', 'slug',
+        'category', 'slug', 'name',
+        'weapon_id',
+        'quantity',
         'unit_weight_g',
         'default_sell_price', 'default_purchase_price',
-        'weapon_id',
-        'quantity_in_stock', 'quantity_external',
-        'is_active', 'sort_order',
-        'notes',
+        'is_sellable', 'is_active',
+        'sort_order', 'notes',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_sellable' => 'boolean',
+        'is_active'   => 'boolean',
     ];
 
     public function weapon(): BelongsTo
     {
         return $this->belongsTo(Weapon::class);
+    }
+
+    public function movements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
     }
 
     public function sales(): HasMany
@@ -67,18 +73,28 @@ class StockItem extends Model
         return $query->where('is_active', true);
     }
 
+    public function scopeSellable($query)
+    {
+        return $query->where('is_sellable', true);
+    }
+
     public function scopeOfCategory($query, string $cat)
     {
         return $query->where('category', $cat);
     }
 
+    public function addQuantity(int $qty): void
+    {
+        $this->increment('quantity', $qty);
+    }
+
+    public function removeQuantity(int $qty): void
+    {
+        $this->decrement('quantity', $qty);
+    }
+
     public function getCategoryLabelAttribute(): string
     {
         return self::CATEGORIES[$this->category] ?? $this->category;
-    }
-
-    public function getSaleTypeAttribute(): string
-    {
-        return self::CATEGORY_TO_SALE_TYPE[$this->category] ?? 'other';
     }
 }

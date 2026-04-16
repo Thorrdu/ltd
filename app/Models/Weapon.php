@@ -24,9 +24,9 @@ class Weapon extends Model
         return $query->where('is_active', true);
     }
 
-    public function stocks(): HasMany
+    public function stockItems(): HasMany
     {
-        return $this->hasMany(WeaponStock::class);
+        return $this->hasMany(StockItem::class);
     }
 
     public function contractItems(): HasMany
@@ -34,31 +34,26 @@ class Weapon extends Model
         return $this->hasMany(WeaponContractItem::class);
     }
 
-    public function sales(): HasMany
-    {
-        return $this->hasMany(WeaponSale::class);
-    }
-
     public function getRecipeAttribute(): array
     {
         return [
-            'plans' => $this->recipe_plans,
-            'ressort' => $this->recipe_ressort,
-            'canon' => $this->recipe_canon,
-            'poignee' => $this->recipe_poignee,
-            'corp' => $this->recipe_corp,
-            'metal' => $this->recipe_metal,
+            'plans'    => $this->recipe_plans,
+            'ressort'  => $this->recipe_ressort,
+            'canon'    => $this->recipe_canon,
+            'poignee'  => $this->recipe_poignee,
+            'corp'     => $this->recipe_corp,
+            'metal'    => $this->recipe_metal,
             'polymere' => $this->recipe_polymere,
         ];
     }
 
-    public function planStock(): ?WeaponStock
+    public function planStockItem(): ?StockItem
     {
-        return WeaponStock::where('slug', 'plan_' . $this->slug)->first();
+        return StockItem::where('slug', 'plan_' . $this->slug)->first();
     }
 
-    public function finishedStock(): ?WeaponStock
+    public function finishedStockItem(): ?StockItem
     {
-        return WeaponStock::where('slug', 'weapon_' . $this->slug)->first();
+        return StockItem::where('slug', 'weapon_' . $this->slug)->first();
     }
 }

@@ -5,12 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class WeaponStockMovement extends Model
+class StockMovement extends Model
 {
     public $timestamps = false;
 
+    public const REASONS = [
+        'purchase'      => 'Achat',
+        'gather'        => 'Recolte',
+        'craft_consume' => 'Craft (consomme)',
+        'craft_produce' => 'Craft (produit)',
+        'sale'          => 'Vente',
+        'delivery'      => 'Livraison contrat',
+        'attribution'   => 'Attribution membre',
+        'adjustment'    => 'Ajustement',
+    ];
+
     protected $fillable = [
-        'weapon_stock_id', 'quantity_change', 'reason', 'unit_cost',
+        'stock_item_id', 'quantity_change', 'reason', 'unit_cost',
         'weapon_contract_id', 'user_id', 'attributed_to_user_id',
         'notes', 'created_at',
     ];
@@ -19,19 +30,9 @@ class WeaponStockMovement extends Model
         'created_at' => 'datetime',
     ];
 
-    public const REASONS = [
-        'purchase' => 'Achat',
-        'gather' => 'Récolte',
-        'craft_consume' => 'Craft (consommé)',
-        'craft_produce' => 'Craft (produit)',
-        'sale' => 'Vente',
-        'delivery' => 'Livraison contrat',
-        'adjustment' => 'Ajustement',
-    ];
-
-    public function stock(): BelongsTo
+    public function stockItem(): BelongsTo
     {
-        return $this->belongsTo(WeaponStock::class, 'weapon_stock_id');
+        return $this->belongsTo(StockItem::class);
     }
 
     public function contract(): BelongsTo
@@ -47,5 +48,10 @@ class WeaponStockMovement extends Model
     public function attributedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'attributed_to_user_id');
+    }
+
+    public function getReasonLabelAttribute(): string
+    {
+        return self::REASONS[$this->reason] ?? $this->reason;
     }
 }

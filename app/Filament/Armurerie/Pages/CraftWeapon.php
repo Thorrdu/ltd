@@ -2,9 +2,9 @@
 
 namespace App\Filament\Armurerie\Pages;
 
+use App\Models\StockItem;
+use App\Models\StockMovement;
 use App\Models\Weapon;
-use App\Models\WeaponStock;
-use App\Models\WeaponStockMovement;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -33,7 +33,6 @@ class CraftWeapon extends Page implements HasForms
     public ?int $weapon_id = null;
     public int $quantity = 1;
 
-    // Constants for raw material calculations
     private const POLYMERE_PETROLE_RATE = 5;
     private const POLYMERE_COST = 4500;
     private const METAL_MINERAI_RATE = 5;
@@ -77,23 +76,21 @@ class CraftWeapon extends Page implements HasForms
         $needs = [];
         $canCraft = true;
 
-        // Plan uses
-        $planStock = WeaponStock::where('slug', 'plan_' . $weapon->slug)->first();
+        $planStock = StockItem::where('slug', 'plan_' . $weapon->slug)->first();
         $planNeed = $recipe['plans'] * $qty;
         $planHave = $planStock ? $planStock->quantity : 0;
         $planPhysical = (int) floor($planHave / self::PLANS_PER_ITEM);
         $needs[] = [
-            'name' => 'Plans ' . $weapon->name,
-            'slug' => 'plan_' . $weapon->slug,
-            'need' => $planNeed,
-            'have' => $planHave,
-            'ok' => $planHave >= $planNeed,
-            'type' => 'plan',
+            'name'     => 'Plans ' . $weapon->name,
+            'slug'     => 'plan_' . $weapon->slug,
+            'need'     => $planNeed,
+            'have'     => $planHave,
+            'ok'       => $planHave >= $planNeed,
+            'type'     => 'plan',
             'physical' => $planPhysical,
         ];
         if ($planHave < $planNeed) $canCraft = false;
 
-        // Material pieces
         $pieceLabels = [
             'ressort' => 'Ressort', 'canon' => 'Canon', 'poignee' => 'Poignée',
             'corp' => 'Corp de pistolet', 'metal' => 'Pièce de métal', 'polymere' => 'Polymère',
@@ -102,20 +99,19 @@ class CraftWeapon extends Page implements HasForms
         foreach ($pieceLabels as $slug => $label) {
             $need = ($recipe[$slug] ?? 0) * $qty;
             if ($need <= 0) continue;
-            $stock = WeaponStock::where('slug', $slug)->first();
+            $stock = StockItem::where('slug', $slug)->first();
             $have = $stock ? $stock->quantity : 0;
             $needs[] = [
                 'name' => $label,
                 'slug' => $slug,
                 'need' => $need,
                 'have' => $have,
-                'ok' => $have >= $need,
+                'ok'   => $have >= $need,
                 'type' => 'piece',
             ];
             if ($have < $need) $canCraft = false;
         }
 
-        // Raw material breakdown
         $totalRessort = ($recipe['ressort'] ?? 0) * $qty;
         $totalMetal = ($recipe['metal'] ?? 0) * $qty;
         $totalPolymere = ($recipe['polymere'] ?? 0) * $qty;
@@ -127,34 +123,33 @@ class CraftWeapon extends Page implements HasForms
         $totalPetrole = $totalPolymere * self::POLYMERE_PETROLE_RATE;
         $polymereCost = $totalPolymere * self::POLYMERE_COST;
 
-        $mineraiStock = WeaponStock::where('slug', 'minerai')->first();
-        $petroleStock = WeaponStock::where('slug', 'petrole')->first();
+        $mineraiStock = StockItem::where('slug', 'minerai')->first();
+        $petroleStock = StockItem::where('slug', 'petrole')->first();
 
         $rawMaterials = [
             ['name' => 'Minerais de fer', 'need' => $totalMinerai, 'have' => $mineraiStock?->quantity ?? 0],
-            ['name' => 'Pétroles', 'need' => $totalPetrole, 'have' => $petroleStock?->quantity ?? 0],
+            ['name' => 'Pétroles',        'need' => $totalPetrole, 'have' => $petroleStock?->quantity ?? 0],
         ];
 
-        // Craft time
         $craftTime = $weapon->craft_time_seconds ? $weapon->craft_time_seconds * $qty : null;
 
         return [
-            'weapon' => $weapon,
-            'qty' => $qty,
-            'recipe' => $recipe,
-            'needs' => $needs,
+            'weapon'   => $weapon,
+            'qty'      => $qty,
+            'recipe'   => $recipe,
+            'needs'    => $needs,
             'canCraft' => $canCraft,
             'rawMaterials' => $rawMaterials,
             'craftBreakdown' => [
-                'ressorts' => $totalRessort,
-                'metal_for_ressorts' => $metalForRessorts,
+                'ressorts'             => $totalRessort,
+                'metal_for_ressorts'   => $metalForRessorts,
                 'minerai_for_ressorts' => $mineraiForRessorts,
-                'total_metal_pieces' => $totalMetalPieces,
-                'total_minerai' => $totalMinerai,
-                'total_petrole' => $totalPetrole,
-                'polymere_cost' => $polymereCost,
+                'total_metal_pieces'   => $totalMetalPieces,
+                'total_minerai'        => $totalMinerai,
+                'total_petrole'        => $totalPetrole,
+                'polymere_cost'        => $polymereCost,
             ],
-            'craftTime' => $craftTime,
+            'craftTime'    => $craftTime,
             'planPhysical' => $planPhysical,
         ];
     }
@@ -165,15 +160,15 @@ class CraftWeapon extends Page implements HasForms
         $overview = [];
 
         foreach ($weapons as $w) {
-            $finishedStock = WeaponStock::where('slug', 'weapon_' . $w->slug)->first();
-            $planStock = WeaponStock::where('slug', 'plan_' . $w->slug)->first();
+            $finishedStock = StockItem::where('slug', 'weapon_' . $w->slug)->first();
+            $planStock = StockItem::where('slug', 'plan_' . $w->slug)->first();
             $overview[] = [
-                'id' => $w->id,
-                'name' => $w->name,
-                'finished' => $finishedStock?->quantity ?? 0,
-                'plan_uses' => $planStock?->quantity ?? 0,
+                'id'            => $w->id,
+                'name'          => $w->name,
+                'finished'      => $finishedStock?->quantity ?? 0,
+                'plan_uses'     => $planStock?->quantity ?? 0,
                 'plan_physical' => $planStock ? (int) floor($planStock->quantity / self::PLANS_PER_ITEM) : 0,
-                'craft_time' => $w->craft_time_seconds,
+                'craft_time'    => $w->craft_time_seconds,
             ];
         }
 
@@ -182,12 +177,12 @@ class CraftWeapon extends Page implements HasForms
 
     public function getPiecesStockProperty(): array
     {
-        $pieces = WeaponStock::where('category', 'piece')->orderBy('sort_order')->get();
-        $raw = WeaponStock::where('category', 'raw_material')->orderBy('sort_order')->get();
+        $pieces = StockItem::where('category', 'weapon_piece')->orderBy('sort_order')->get();
+        $raw    = StockItem::where('category', 'raw_material')->orderBy('sort_order')->get();
 
         return [
             'pieces' => $pieces->map(fn ($s) => ['name' => $s->name, 'qty' => $s->quantity, 'slug' => $s->slug])->toArray(),
-            'raw' => $raw->map(fn ($s) => ['name' => $s->name, 'qty' => $s->quantity, 'slug' => $s->slug])->toArray(),
+            'raw'    => $raw->map(fn ($s) => ['name' => $s->name, 'qty' => $s->quantity, 'slug' => $s->slug])->toArray(),
         ];
     }
 
@@ -196,59 +191,56 @@ class CraftWeapon extends Page implements HasForms
         $this->validate();
 
         $weapon = Weapon::findOrFail($this->weapon_id);
-        $qty = max(1, (int) $this->quantity);
+        $qty    = max(1, (int) $this->quantity);
         $userId = auth()->id();
 
         try {
             DB::transaction(function () use ($weapon, $qty, $userId) {
                 $recipe = $weapon->recipe;
 
-                // Consume plan uses
-                $planStock = WeaponStock::where('slug', 'plan_' . $weapon->slug)->lockForUpdate()->firstOrFail();
+                $planStock = StockItem::where('slug', 'plan_' . $weapon->slug)->lockForUpdate()->firstOrFail();
                 $planNeed = $recipe['plans'] * $qty;
                 if ($planStock->quantity < $planNeed) {
                     throw new \RuntimeException("Pas assez de plans pour {$weapon->name}");
                 }
                 $planStock->removeQuantity($planNeed);
-                WeaponStockMovement::create([
-                    'weapon_stock_id' => $planStock->id,
+                StockMovement::create([
+                    'stock_item_id'   => $planStock->id,
                     'quantity_change' => -$planNeed,
-                    'reason' => 'craft_consume',
-                    'user_id' => $userId,
-                    'notes' => "Craft {$qty}× {$weapon->name}",
-                    'created_at' => now(),
+                    'reason'          => 'craft_consume',
+                    'user_id'         => $userId,
+                    'notes'           => "Craft {$qty}× {$weapon->name}",
+                    'created_at'      => now(),
                 ]);
 
-                // Consume materials
                 $materialSlugs = ['ressort', 'canon', 'poignee', 'corp', 'metal', 'polymere'];
                 foreach ($materialSlugs as $slug) {
                     $need = ($recipe[$slug] ?? 0) * $qty;
                     if ($need <= 0) continue;
-                    $stock = WeaponStock::where('slug', $slug)->lockForUpdate()->firstOrFail();
+                    $stock = StockItem::where('slug', $slug)->lockForUpdate()->firstOrFail();
                     if ($stock->quantity < $need) {
                         throw new \RuntimeException("Pas assez de {$stock->name}");
                     }
                     $stock->removeQuantity($need);
-                    WeaponStockMovement::create([
-                        'weapon_stock_id' => $stock->id,
+                    StockMovement::create([
+                        'stock_item_id'   => $stock->id,
                         'quantity_change' => -$need,
-                        'reason' => 'craft_consume',
-                        'user_id' => $userId,
-                        'notes' => "Craft {$qty}× {$weapon->name}",
-                        'created_at' => now(),
+                        'reason'          => 'craft_consume',
+                        'user_id'         => $userId,
+                        'notes'           => "Craft {$qty}× {$weapon->name}",
+                        'created_at'      => now(),
                     ]);
                 }
 
-                // Produce finished weapon
-                $weaponStock = WeaponStock::where('slug', 'weapon_' . $weapon->slug)->lockForUpdate()->firstOrFail();
+                $weaponStock = StockItem::where('slug', 'weapon_' . $weapon->slug)->lockForUpdate()->firstOrFail();
                 $weaponStock->addQuantity($qty);
-                WeaponStockMovement::create([
-                    'weapon_stock_id' => $weaponStock->id,
+                StockMovement::create([
+                    'stock_item_id'   => $weaponStock->id,
                     'quantity_change' => $qty,
-                    'reason' => 'craft_produce',
-                    'user_id' => $userId,
-                    'notes' => "Craft {$qty}× {$weapon->name}",
-                    'created_at' => now(),
+                    'reason'          => 'craft_produce',
+                    'user_id'         => $userId,
+                    'notes'           => "Craft {$qty}× {$weapon->name}",
+                    'created_at'      => now(),
                 ]);
             });
 

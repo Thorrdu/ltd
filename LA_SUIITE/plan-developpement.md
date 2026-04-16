@@ -15,12 +15,15 @@
 - [x] Tester le seeder complet (`php artisan migrate:fresh --seed`) -- 22 migrations, 6 seeders, 0 erreur
 
 ### 0.2 Systeme de roles et permissions
-- [x] Definir les roles : `prospect` (1), `member` (2), `officer` (3), `treasurer` (4), `president` (5)
-- [x] Constante `ROLES` dans User avec hierarchie par niveau
-- [x] `canAccessPanel()` : admin = treasurer+, armurerie = officer+
-- [x] Methodes : `isProspect()`, `isMember()`, `isOfficer()`, `isTreasurer()`, `isPresident()`, `isAtLeast($role)`
-- [x] WeaponSimController migre vers `isOfficer()` (hierarchique, inclut treasurer/president)
-- [x] Validation roles dynamique dans creation/edition membre (tous les roles de `ROLES`)
+- [x] Hierarchie finale : `prospect` (1), `member` (2), `officer` (3), `vice_president` (4),
+      `president` (5), `treasurer` (99 = superadmin)
+- [x] Constante `ROLES` dans User avec niveaux numeriques, `SUPERADMIN_ROLE = treasurer`
+- [x] Methodes : `isProspect()`, `isMember()`, `isOfficer()`, `isVicePresident()`,
+      `isPresident()`, `isTreasurer()`, `isSuperadmin()`, `isAtLeast($role)`,
+      `canAssignRole($role)`, `assignableRoles()`
+- [x] Acces aux panneaux et pages piloté par la table `page_access_rules` (edition inline
+      reservee au superadmin)
+- [x] WeaponSimController et MemberController utilisent `canAccessPage($key)`
 - [x] UserSeeder : 1 president, 1 treasurer, 2 officers, 4 members, 2 prospects
 
 ### 0.3 Page de configuration / parametres (DB-driven)
@@ -28,6 +31,23 @@
 - [x] Modele `Setting` avec cache, helpers statiques `get()`, `set()`, `getGroup()`, `clearCache()`
 - [x] SettingResource Filament avec edition inline, groupement, filtres -- acces treasurer+
 - [x] SettingSeeder : 19 parametres (matieres premieres, pieces, recettes munitions, multiplicateurs, cotisations)
+
+### 0.4 Matrice d'acces (ajoutee le 16 avril 2026)
+- [x] Table `page_access_rules` (13 regles seedees : `panel_admin`, `panel_armurerie`, `mc_hub`,
+      `simulateur_armes`, `simulateur_munitions`, `espace_membres`, `membres_gestion`,
+      `matrice_acces`, `ventes_rapides`, `stocks_generique`, `comptabilite`, `classements`,
+      `fiches_membres`)
+- [x] `User::canAccessPanel()` et `User::canAccessPage()` pilotes par la DB
+- [x] Edition inline de la matrice reservee au superadmin (onglet "Matrice d'acces" sur `/membres`)
+- [x] Cache 10 minutes avec invalidation auto
+
+### 0.5 Gestion des utilisateurs (ajoutee le 16 avril 2026)
+- [x] Page `/membres` : table filtrable, stats par role, actions (role / PIN / actif / supprimer)
+- [x] Controleur `MemberController` + 7 endpoints API protegees
+- [x] Hierarchie stricte : un utilisateur ne peut assigner que des roles strictement inferieurs
+- [x] Superadmin = treasurer : peut assigner tout role, y compris tresorier
+- [x] Reset PIN avec affichage modal du nouveau PIN (random 4-6 chiffres)
+- [x] Activation / desactivation (champ `is_active`)
 
 ---
 
@@ -87,9 +107,8 @@
 
 ### 2.1 Page de saisie rapide des ventes
 - [x] Page `/ventes` accessible aux membres connectes (regle `ventes_rapides`, min_role `member`)
-- [x] Formulaire simplifie : selection type (arme/munition/drogue/arme_blanche/autre)
-- [x] Pour type=weapon : select Tom Select recherchable sur les armes actives, prix auto-rempli
-- [x] Pour les autres types : champ libre `item_name`
+- [x] Formulaire simplifie : selection d'un `stock_item` sellable via Tom Select groupe par categorie
+- [x] Prix par defaut pre-rempli depuis `stock_items.default_sell_price`
 - [x] Calcul automatique du prix unitaire (total / quantite)
 - [x] Champ acheteur libre + notes optionnelles
 - [x] Bouton de validation rapide, reset automatique apres succes
@@ -97,17 +116,13 @@
 - [x] Sous-onglet "Historique" avec filtres scope (mes/toutes) et periode (jour/semaine/mois/tout)
 
 ### 2.2 Base de donnees ventes generiques
-- [x] Table `sales` generique :
-  - `item_type` (weapon, ammo, drug, melee, other)
-  - `item_id` nullable (reference vers la table correspondante selon type)
-  - `item_name` (texte pour les cas sans reference)
+- [x] Table `sales` unifiee (post-Phase H) :
+  - `stock_item_id` FK obligatoire (plus de `item_type`/`item_id`/`item_name` libres)
   - `quantity`, `unit_price`, `total_price`
   - `buyer_name`, `sold_by_user_id`, `validated_by_user_id` nullable, `validated_at` nullable
-  - `notes`, `created_at`, `updated_at`
-  - Index sur `item_type`, `item_id`, `created_at`
-- [x] Modele `Sale` avec constante `TYPES`, scopes `ofType()` et `today()`, relations `soldBy`, `validatedBy`, `weapon`
-- [x] Pour les ventes de type `weapon` : decrement auto du `weapon_stock` correspondant + `weapon_stock_movement` de type `sale`
-- [ ] **(Phase Harmonisation)** Migrer les `weapon_sales` existantes vers `sales` et retirer l'ecriture dans `weapon_sales` depuis `/espace-membres`
+  - `weapon_contract_id` nullable, `notes`, timestamps
+- [x] Modele `Sale` avec scopes `today()`, `inPeriod($period)`, relations `stockItem`, `soldBy`, `validatedBy`, `contract`
+- [x] Pour `stock_item.category = weapon_finished` : decrement auto du `stock_item` + `stock_movement` reason=`sale`
 
 ### Fichiers
 - `database/migrations/2026_04_16_171611_create_sales_table.php`
@@ -115,118 +130,130 @@
 - `app/Http/Controllers/SaleController.php`
 - `resources/views/ventes.blade.php`
 - `public/js/ventes.js`
-- `public/css/mc-layout.css` (blocs `VENTES PAGE` -- `.member-row`, `.members-stat`, `.sale-total`, etc.)
-- Routes : `GET /ventes`, `GET /ventes/api/list`, `POST /ventes/api/create`
+- `public/css/mc-layout.css` (blocs `VENTES PAGE`)
+- Routes : `GET /ventes`, `GET /ventes/api/list`, `GET /ventes/api/catalog`, `POST /ventes/api/create`
 - Hub MC + nav : bouton "Ventes rapides" visible une fois connecte
 
 ---
 
-## Phase H - Harmonisation et deduplication [A PLANIFIER]
-**Priorite : critique -- a traiter avant que les doublons deviennent ingerables**
+## Phase H - Harmonisation et deduplication [TERMINEE]
+**Livree le 16 avril 2026 (soir tardif) -- rationalisation complete du schema**
 
-### Contexte
-Au fil du developpement par phases, chaque nouveau module cree sa propre surface (table + UI) sans
-reprendre systematiquement l'ancien. Resultat : plusieurs chemins aboutissent au meme effet
-metier avec des enregistrements dupliques ou des lectures divergentes. Exemples actuels :
+### Resultat : 3 tables uniques pour 3 concepts metier
 
-- **Ventes d'armes** : le dashboard `/espace-membres` ecrit toujours dans `weapon_sales`,
-  tandis que `/ventes` ecrit dans `sales`. Les historiques sont desynchronises.
-- **Mouvements de stock armurerie** : le simulateur gere `weapon_stock_movements`, mais le futur
-  module stocks generiques (Phase 3) introduira `stock_movements`.
-- **Ajouts/retraits stock** : accessibles a la fois via le dashboard membre et via le panel
-  Filament armurerie -- chaque chemin a sa propre validation.
+Avant la Phase H, plusieurs chemins coexistaient (`weapon_stocks` + `weapon_stock_movements` +
+`weapon_sales` vs `stock_items` + `sales`). Chaque concept est desormais represente par une
+unique table, indexee par `category` + `slug` pour le catalogue.
 
-### H.1 Audit et cartographie
-- [ ] Lister toutes les tables operationnelles et leur finalite reelle.
-- [ ] Identifier les couples (table historique / table generique) et decider de la table maitre.
-- [ ] Identifier les formulaires/pages qui ecrivent dans une table historique et planifier leur migration.
+### H.1 Tables unifiees [FAIT]
+- [x] **`stock_items`** : seul catalogue / stock (colonnes `category`, `slug`, `name`,
+      `weapon_id` nullable, `quantity`, `unit_weight_g`, `default_sell_price`,
+      `default_purchase_price`, `is_sellable`, `is_active`, `sort_order`, `notes`).
+- [x] **`stock_movements`** : journal unique (`stock_item_id`, `quantity_change`, `reason`
+      parmi `purchase|gather|craft_consume|craft_produce|sale|delivery|attribution|adjustment`,
+      `unit_cost`, `weapon_contract_id`, `user_id`, `attributed_to_user_id`, `notes`,
+      `created_at` uniquement).
+- [x] **`sales`** : seule table de ventes (cf. 2.2 ci-dessus).
 
-### H.2 Migration des donnees
-- [ ] Script de migration `weapon_sales` -> `sales` (type=weapon, item_id=weapon_id).
-- [ ] Script de migration `weapon_stocks` + `weapon_stock_movements` -> `stock_items` + `stock_movements`
-      (si Phase 3 retient la voie "tout generique").
-- [ ] Conserver les tables historiques en lecture seule (flag `is_legacy`) ou les supprimer apres verification.
+### H.2 Suppression des tables historiques [FAIT]
+- [x] Tables supprimees : `weapon_stocks`, `weapon_stock_movements`, `weapon_sales`.
+- [x] Modeles supprimes : `WeaponStock`, `WeaponStockMovement`, `WeaponSale`.
 
-### H.3 Unification des UIs
-- [ ] `/espace-membres` : remplacer le formulaire de vente d'arme par un lien/redirect vers `/ventes`
-      (ou embarquer le meme composant).
-- [ ] `/espace-membres` : harmoniser le formulaire de mouvement de stock avec `/stocks` (Phase 3).
-- [ ] Panel Filament armurerie : decider si on conserve l'interface avancee (probablement oui) ou
-      si on la masque apres migration. Le superadmin garde l'acces quoi qu'il arrive.
+### H.3 Unification des UIs [FAIT]
+- [x] `WeaponSimController::createSale()` ecrit desormais dans `sales` (via `stock_item.slug = 'weapon_<slug>'`).
+- [x] `WeaponSimController::apiData()` lit categories `weapon_*` et `raw_material` depuis `stock_items`.
+- [x] `SaleController::apiCreate()` utilise `stock_item_id` avec decrement auto pour `weapon_finished`.
+- [x] Resources Filament refondues : `StockItemResource`, `StockMovementResource`, `SaleResource`.
+- [x] Page Filament `CraftWeapon` reecrite pour `StockItem` + `StockMovement`.
+- [x] `ArmurerieStatsWidget` aligne sur `stock_items` + `sales`.
+- [x] JS front aligne : `simulateur-armes.js` (slugs `weapon_finished`, `weapon_piece`, `weapon_plan`),
+      `ventes.js` reecrit (payload `stock_item_id`, optgroups Tom Select par categorie).
 
-### H.4 Regle de fer
-- [ ] Chaque phase future doit declarer explicitement :
-      a) si elle cree une nouvelle table, b) si elle remplace une table existante, c) les UIs qui
-      doivent etre migrees ou supprimees en meme temps.
-- [ ] Ajouter une check-list "deduplication" dans le modele de commit / PR.
+### H.4 Categories disponibles
+12 categories supportees par `stock_items.category` :
+`weapon_finished`, `weapon_plan`, `weapon_piece`, `raw_material`, `ammo`, `melee`, `drug`,
+`drug_raw`, `farm_consumable`, `tool`, `electronic`, `misc`.
 
----
+### H.5 Regle de fer [ETABLIE]
+- [x] Une seule table pour chaque concept. Toute nouvelle verticale (drogues, armes blanches,
+      consommables agricoles, outils, electronique) DOIT passer par `stock_items` via la
+      colonne `category`, sans creer de table dediee.
+- [x] Toute nouvelle ecriture de mouvement passe par `stock_movements`. Toute vente passe par `sales`.
 
-## Phase 3 - Module stocks generique
-**Priorite : haute -- tracabilite indispensable**
-
-### 3.1 Extension du systeme de stock
-- [ ] Generaliser le concept de stock au-dela des armes :
-  - Armes (deja existant)
-  - Munitions (deja existant partiellement)
-  - Drogues (nouveau)
-  - Armes blanches (nouveau)
-  - Autres items (extensible)
-- [ ] Creer une table `stock_items` generique ou adapter `weapon_stocks` :
-  - `category` (arme, munition, drogue, arme_blanche, autre)
-  - `name`, `slug`, `quantity_in_stock`, `quantity_external`
-  - `purchase_price`, `sell_price`, `sort_order`
-- [ ] Creer une table `stock_movements` generique :
-  - `stock_item_id`, `user_id`, `attributed_to_user_id`
-  - `quantity_change`, `reason` (entree, sortie, vente, perte, don, retour)
-  - `requires_approval`, `approved_by_user_id`, `approved_at`
-  - `notes`, `created_at`
-
-### 3.2 Page etat des stocks
-- [ ] Creer une page `/stocks` montrant pour chaque item :
-  - Quantite en stock
-  - Quantite en exterieur (attribuee a des membres, non reconciliee)
-  - Lien vers le detail (qui a quoi)
-- [ ] Page detail par item : liste des attributions non reconciliees (membre, quantite, date de sortie)
-- [ ] Reconciliation : le membre indique "vendu" (cree une vente), "retour" (retour stock), "perte" (saisie police, etc.), "don"
-
-### 3.3 Validation tresorier
-- [ ] Certains mouvements necessitent approbation : sorties importantes, retours
-- [ ] Notification au tresorier (dans l'app, pas par email)
-- [ ] Page de validation : liste des mouvements en attente, bouton approuver/refuser
-
-### 3.4 Attribution d'items a un membre/prospect (officier+)
-- [ ] Formulaire dedie "Attribuer un item" accessible a officier+ sur `/espace-membres` (ou `/stocks`)
-- [ ] Selection : item (arme/munition/drogue/arme blanche) + quantite + beneficiaire (membre ou prospect)
-- [ ] Enregistre un `stock_movement` de type `attribution` (quantite sortie du stock interne, ajoutee au compte externe du beneficiaire)
-- [ ] Champ `attributed_to_user_id` sur le mouvement (deja present sur `weapon_stock_movements`)
-- [ ] Notes libres (motif, contexte)
-- [ ] Visible sur la fiche du beneficiaire (items actuellement en sa possession, non reconcilies)
-- [ ] Le beneficiaire peut ensuite reconcilier : vendu (genere une vente), perdu, retour stock, don
-- [ ] Historique complet des attributions consultable par officier+
-- [ ] Generalisable a tous les types de stock (arme, munition, drogue, arme blanche)
-
-### 3.4 Import stock via CSV/Excel
-- [ ] Page d'import accessible tresorier/president
-- [ ] Upload fichier CSV/Excel (genere depuis screenshots en jeu via GPT)
-- [ ] L'import ecrase les quantites en stock MAIS ne modifie pas les quantites exterieures (emprunts en cours)
-- [ ] Preview avant validation de l'import
-- [ ] Historique des imports avec date et utilisateur
+### Reste a faire (residuel, non bloquant)
+- [ ] Supprimer le formulaire de vente du dashboard `/espace-membres` et rediriger vers `/ventes`
+      (meme table `sales` atteinte des deux cotes, mais un seul point de saisie serait plus propre).
 
 ---
 
-## Phase 4 - Module drogues
+## Phase 3 - Module stocks generique [A FAIRE]
+**Priorite : haute -- le schema existe, il reste le frontend unifie**
+
+### Etat actuel (post-Phase H)
+- [x] Tables `stock_items` (54 items seedes) et `stock_movements` en place.
+- [x] Modeles `StockItem` (scopes `active`, `sellable`, `ofCategory`, methodes `addQuantity`,
+      `removeQuantity`) et `StockMovement`.
+- [x] Colonne `attributed_to_user_id` sur `stock_movements` pour les attributions.
+- [x] `StockItemResource` Filament avec action inline "Ajuster" (cree le mouvement auto).
+- [x] `StockMovementResource` Filament en lecture seule.
+
+### 3.1 Page publique `/stocks` (officier+) [A FAIRE]
+- [ ] Creer une route `/stocks` + controller dedie, protegee par `page_access_rules` (cle
+      `stocks_generique`, min_role par defaut `officer`).
+- [ ] Vue Blade avec tableau regroupe par `category`, colonnes :
+      nom, quantite en stock, quantite attribuee en exterieur (sum des `attribution` non
+      reconciliees), prix de vente par defaut, poids total.
+- [ ] Filtres : par categorie, par recherche texte.
+- [ ] Vue detail par item : liste des attributions en cours (qui, combien, depuis quand),
+      historique des mouvements recents.
+
+### 3.2 Attribution d'items a un membre/prospect (officier+) [A FAIRE]
+- [ ] Formulaire "Attribuer un item" sur `/stocks` (ou `/espace-membres`).
+- [ ] Champs : `stock_item_id` (Tom Select sellable), `quantity`, `attributed_to_user_id`,
+      `notes`. Crée un `StockMovement` avec `reason=attribution`, `quantity_change = -quantity`.
+- [ ] Endpoint API : `POST /stocks/api/attribute`.
+- [ ] Visible sur la fiche du beneficiaire (Phase 6) : items actuellement non reconcilies.
+
+### 3.3 Reconciliation par le beneficiaire [A FAIRE]
+- [ ] Sur `/espace-membres`, section "Mes attributions en cours" listant les `attribution`
+      non reconciliees (pas de mouvement `sale|delivery|adjustment` ulterieur qui les annule).
+- [ ] Pour chaque ligne, boutons :
+  - **Vendu** : redirige vers `/ventes` pre-rempli (stock_item_id + quantity).
+  - **Retour stock** : cree un `StockMovement` `reason=adjustment` avec `quantity_change = +quantity`.
+  - **Perte / saisie** : cree un `StockMovement` `reason=adjustment` avec note obligatoire.
+  - **Don** : idem perte, note = beneficiaire du don.
+
+### 3.4 Validation tresorier (optionnel) [A FAIRE]
+- [ ] Ajouter colonnes `requires_approval`, `approved_by_user_id`, `approved_at` sur
+      `stock_movements` (migration additive).
+- [ ] Regle : mouvements `attribution` au-dela d'un seuil (configurable via `settings`)
+      passent en attente. Les autres restent immediats.
+- [ ] Page `/stocks/validations` (tresorier+) listant les mouvements en attente.
+
+### 3.5 Import stock via CSV/Excel [A FAIRE]
+- [ ] Page `/stocks/import` (tresorier+) avec upload CSV/Excel (screenshots coffre via GPT).
+- [ ] Preview avant validation : creation / mise a jour des `stock_items` par `slug`.
+- [ ] L'import ecrase `stock_items.quantity` MAIS ne touche pas aux `attribution` en cours.
+- [ ] Trace dans `stock_movements` avec `reason=adjustment` + note "Import CSV du ...".
+- [ ] Historique des imports (migration `stock_imports` ou simple filtrage des mouvements).
+
+---
+
+## Phase 4 - Module drogues [A FAIRE]
 **Priorite : moyenne -- flux economique important**
 
-### 4.1 Referentiel drogues
-- [ ] Creer une table `drugs` (ou utiliser le stock generique) :
-  - Weed (Blue Dream, White Widow, Purple, OG Kush)
-  - Cook
-  - Amphetamine (basse, moyen, haute)
-  - Methamphetamine (basse, moyen, haute)
-  - LSD, MDMA, LEAN
-- [ ] Champs : `name`, `quality` (basse/moyen/haute si applicable), `purchase_price_orga`, `sell_price_street`, `sell_price_sac`, `sell_price_orga`, `min_price_staff`, `fabrication` (Inde-Gangs-MC / Orga-Famille / Cayo)
-- [ ] Seeder avec les donnees de `drogue_indicatif.png` :
+### Etat actuel (post-Phase H)
+- [x] 14 items `category=drug` deja seedes dans `stock_items` (Weed, Cook, Amphetamine,
+      Methamphetamine, LSD, MDMA, LEAN avec qualites et prix).
+- [x] Deja vendables via `/ventes` (cf. SaleController::loadCatalog).
+
+### 4.1 Referentiel drogues (deja en place, a completer) [PARTIEL]
+- [x] Stock via `stock_items.category = drug` (14 items seedes).
+- [ ] Ajouter la sous-categorie `drug_raw` pour les matieres premieres (tete de weed, graine,
+      poudre de cafeine, feuille a rouler) -- deja prevue dans la taxonomie.
+- [ ] Ajouter la sous-categorie `farm_consumable` pour engrais, spray pesticide.
+- [ ] Etendre le seeder avec les donnees de `drogue_indicatif.png` (prix detailles par qualite,
+      source de fabrication), stockees dans `stock_items.notes` ou dans `settings` dediees :
 
 | Drogue | Prix PNJ (Rue) | Prix au sac | Prix vente Orga | Prix min staff | Fabrication |
 |--------|----------------|-------------|-----------------|----------------|-------------|
@@ -245,20 +272,30 @@ metier avec des enregistrements dupliques ou des lectures divergentes. Exemples 
 | MDMA | 2900 | / | 2000-2500 | 2000 | Cayo |
 | LEAN | 2400 | / | 1600-2000 | 1600 | Cayo |
 
-### 4.2 Flux de gestion des drogues
-- [ ] Achat aux organisations : enregistrement quantite + prix + fournisseur
-- [ ] Attribution a un membre/prospect : X unites confiees a une personne
-- [ ] Reconciliation par le membre : vendu (avec montant), perdu (saisie police), retour stock
-- [ ] Dashboard drogue : stock total, stock en exterieur, detail par membre, pertes
-- [ ] Calcul automatique profit/perte par operation
+### 4.2 Flux de gestion des drogues [A FAIRE]
+- [ ] **Achat aux organisations** : formulaire dedie creant un `StockMovement`
+      `reason=purchase` avec `unit_cost` (prix d'achat orga) et notes (fournisseur).
+- [ ] **Attribution a un membre/prospect** : reutilise le formulaire generique de Phase 3.2
+      (`reason=attribution`, `attributed_to_user_id`).
+- [ ] **Reconciliation** : reutilise le flux generique de Phase 3.3 (vendu -> `Sale`, perdu
+      -> `adjustment`, retour -> `adjustment`).
+- [ ] **Dashboard drogue** : page `/drogues` (ou filtre `category=drug` sur `/stocks`) avec
+      stock total, stock en exterieur, detail par membre, pertes, profit cumule.
+- [ ] Calcul automatique profit/perte : somme des `sales.total_price` des drogues - somme des
+      `stock_movements.unit_cost * quantity_change` des achats.
 
 ---
 
-## Phase 5 - Armes blanches
-**Priorite : moyenne -- items simples a integrer**
+## Phase 5 - Armes blanches [A FAIRE]
+**Priorite : basse -- items deja en place, il ne reste que l'UI de vente dediee**
 
-### 5.1 Referentiel armes blanches
-- [ ] Ajouter les armes blanches au systeme de stock generique :
+### Etat actuel (post-Phase H)
+- [x] 10 items `category=melee` deja seedes dans `stock_items` avec `default_sell_price`
+      (multiplicateur x1.5 applique).
+- [x] Deja vendables via `/ventes` (optgroup "Armes blanches" dans le Tom Select).
+
+### 5.1 Referentiel armes blanches (deja en place) [FAIT]
+- [x] 10 items seedes dans `stock_items` :
 
 | Arme | Prix d'achat | Prix de vente (x1.5) |
 |------|-------------|---------------------|
@@ -272,8 +309,10 @@ metier avec des enregistrements dupliques ou des lectures divergentes. Exemples 
 | Hammer | 15 000 | 22 500 |
 | Cle anglaise | 15 000 | 22 500 |
 
-- [ ] Multiplicateur de vente par defaut : x1.5 (configurable dans les parametres)
-- [ ] Integration dans le flux de stock et de vente generique
+- [x] Multiplicateur de vente x1.5 applique au seeding (valeur stockee sur chaque item).
+- [ ] **Reste a faire** : rendre le multiplicateur configurable via `settings` et recalculer
+      `default_sell_price` dynamiquement sur edition depuis le panel Filament.
+- [x] Integration dans le flux de vente generique via `/ventes` (deja operationnel).
 
 ---
 
@@ -359,23 +398,24 @@ metier avec des enregistrements dupliques ou des lectures divergentes. Exemples 
 
 ---
 
-## Resume des tables a creer
+## Resume des tables
 
-| Phase | Tables |
-|-------|--------|
-| 0 | `settings`, `page_access_rules` |
-| 2 | `sales` (generique) -- CREEE |
-| H | -- (migration + deprecation) |
-| 3 | `stock_items`, `stock_movements` (generiques) |
-| 4 | extension de `stock_items` (categorie `drug` / `drug_raw` / `farm_consumable`) |
-| 5 | extension de `stock_items` (categorie `melee`) |
-| 6 | -- (utilise les tables existantes) |
-| 7 | `mc_accounts`, `mc_transactions`, `cotisations` |
-| 8 | `notifications` |
+| Phase | Tables | Statut |
+|-------|--------|--------|
+| 0 | `settings`, `page_access_rules` | CREEES |
+| 2 | `sales` (unifiee, FK `stock_item_id`) | CREEE |
+| H | `stock_items`, `stock_movements` (taxonomie 12 categories) | CREEES |
+| H | Suppression de `weapon_stocks`, `weapon_stock_movements`, `weapon_sales` | FAIT |
+| 3 | (optionnel) `stock_imports`, colonnes `requires_approval` sur `stock_movements` | A FAIRE |
+| 4 | Extension `stock_items` via categorie (`drug_raw`, `farm_consumable` a seeder) | SEEDER A ETENDRE |
+| 5 | Extension `stock_items` categorie `melee` | SEEDE |
+| 6 | -- (utilise les tables existantes) | -- |
+| 7 | `mc_accounts`, `mc_transactions`, `cotisations` | A FAIRE |
+| 8 | `notifications` | A FAIRE |
 
 ---
 
-## Ordre de realisation recommande
+## Ordre de realisation recommande (mis a jour)
 
 ```
 Phase 0 (prerequis)           -- TERMINEE
@@ -387,14 +427,14 @@ Phase 1 (reorganisation UX)   -- TERMINEE
 Phase 2 (ventes rapides)      -- TERMINEE
   |
   v
-Phase H (harmonisation)       -- 1 jour (AVANT d'ajouter d'autres modules doublonnes)
+Phase H (harmonisation)       -- TERMINEE (tables unifiees)
   |
   v
-Phase 3 (stocks generiques)   -- 3-4 jours
+Phase 3 (UI stocks + attrib.) -- 2-3 jours (backend deja en place)
   |
-  +---> Phase 4 (drogues)     -- 2-3 jours
+  +---> Phase 4 (drogues flux) -- 1-2 jours (items seedes, flux a brancher)
   |
-  +---> Phase 5 (armes bl.)   -- 1 jour
+  +---> Phase 5 (armes bl. UI) -- 0.5 jour (items seedes, deja vendables)
   |
   v
 Phase 6 (classements/fiches)  -- 2-3 jours
@@ -406,7 +446,10 @@ Phase 7 (comptabilite)        -- 3-4 jours
 Phase 8 (polissage)           -- continu
 ```
 
-**Estimation totale restante : ~13-17 jours de developpement (Phase H + 3 a 8)**
+**Estimation totale restante : ~8-12 jours de developpement (Phase 3 a 8)**
+La Phase H ayant aplani le schema, les Phases 3 a 5 beneficient deja des tables et des
+seeders. L'essentiel du travail restant est frontend (pages `/stocks`, `/drogues`, flux
+d'attribution / reconciliation) et flux metier (comptabilite, cotisations).
 
 ---
 
@@ -422,9 +465,11 @@ Phase 8 (polissage)           -- continu
 
 5. **Prix d'achat aux orga (drogues)** : manquant dans `drogue_indicatif.png`, a completer manuellement dans les parametres.
 
-6. **Harmonisation** : chaque nouveau module doit etre accompagne d'une verification anti-doublons
-   (cf. Phase H). Ne jamais laisser deux formulaires ecrire dans deux tables differentes pour
-   la meme operation metier.
+6. **Harmonisation (REGLE DE FER post-Phase H)** : une seule table pour chaque concept.
+   `stock_items` pour tout catalogue/stock, `stock_movements` pour tout mouvement, `sales`
+   pour toute vente. Toute nouvelle verticale (drogues, armes blanches, consommables, outils,
+   electronique) passe par `stock_items.category` sans creer de table dediee. Toute ecriture
+   de mouvement passe par `stock_movements`, toute vente par `sales`.
 
 ---
 

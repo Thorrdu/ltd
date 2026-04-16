@@ -113,7 +113,7 @@
     function populateGroupedStockSelect(sel, stock) {
         destroyTomSelect(sel);
         sel.innerHTML = '';
-        var cats = { finished_weapon: 'Armes finies', piece: 'Pi\u00e8ces', plan: 'Plans', raw_material: 'Mati\u00e8res premi\u00e8res' };
+        var cats = { weapon_finished: 'Armes finies', weapon_piece: 'Pi\u00e8ces', weapon_plan: 'Plans', raw_material: 'Mati\u00e8res premi\u00e8res' };
         var grouped = {};
         stock.forEach(function (s) {
             if (!grouped[s.category]) grouped[s.category] = [];
@@ -840,7 +840,7 @@
         var isOut = $('mvDirOut').classList.contains('active');
         btn.disabled = true; btn.textContent = '...';
         auth.apiPost('/simulateur-armes/api/movement', {
-            weapon_stock_id: parseInt($('mvStock').value, 10),
+            stock_item_id: parseInt($('mvStock').value, 10),
             quantity_change: isOut ? -qty : qty,
             reason: $('mvReason').value,
             unit_cost: $('mvReason').value === 'purchase' ? (parseFloat($('mvUnitCost').value) || 0) : null,
@@ -980,8 +980,8 @@
         var stock = data.stock || [];
         var totalWeapons = 0, totalPieces = 0;
         stock.forEach(function (s) {
-            if (s.category === 'finished_weapon') totalWeapons += s.quantity;
-            if (s.category === 'piece' || s.category === 'plan') totalPieces += s.quantity;
+            if (s.category === 'weapon_finished') totalWeapons += s.quantity;
+            if (s.category === 'weapon_piece' || s.category === 'weapon_plan') totalPieces += s.quantity;
         });
         var revenue = (data.finance && data.finance.total_revenue) || 0;
         var contracts = (data.contracts || []).length;
@@ -993,10 +993,10 @@
     }
 
     function renderStockCards(stock) {
-        var cats = { finished_weapon: [], plan: [], piece: [], raw_material: [] };
+        var cats = { weapon_finished: [], weapon_plan: [], weapon_piece: [], raw_material: [] };
         stock.forEach(function (s) { if (cats[s.category]) cats[s.category].push(s); });
         var html = '';
-        cats.finished_weapon.forEach(function (s) {
+        cats.weapon_finished.forEach(function (s) {
             var wid = s.weapon_id || 0;
             html += '<div class="stock-card ' + (s.quantity > 0 ? 'has-stock' : 'no-stock') + '" data-quicksell="' + wid + '" title="Cliquer pour vendre">';
             html += '<div class="stock-card-qty">' + s.quantity + '</div>';
@@ -1007,11 +1007,11 @@
         $('stockWeaponsCards').innerHTML = html || '<div class="empty-msg">Aucune arme</div>';
 
         html = '';
-        cats.plan.forEach(function (s) {
+        cats.weapon_plan.forEach(function (s) {
             var phys = Math.floor(s.quantity / PLANS_PER_ITEM);
             html += '<div class="stock-mini"><span class="sm-name">' + esc(s.name) + '</span><span class="sm-val">' + phys + ' plans (' + s.quantity + ' uses)</span></div>';
         });
-        cats.piece.forEach(function (s) {
+        cats.weapon_piece.forEach(function (s) {
             html += '<div class="stock-mini' + (s.quantity <= 0 ? ' sm-low' : '') + '"><span class="sm-name">' + esc(s.name) + '</span><span class="sm-val">' + fmt(s.quantity) + '</span></div>';
         });
         $('stockPiecesGrid').innerHTML = html || '<div class="empty-msg">\u2014</div>';

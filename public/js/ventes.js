@@ -8,23 +8,18 @@
     function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
     function money(n) { return '$' + (parseInt(n, 10) || 0).toLocaleString('fr-FR'); }
 
-    var TYPE_LABELS = {
-        weapon: 'Arme',
-        ammo: 'Munition',
-        drug: 'Drogue',
-        melee: 'Arme blanche',
-        other: 'Autre'
-    };
-
+    // Labels de categories affiches dans les optgroups et les badges.
     var CATEGORY_LABELS = {
         weapon_finished: 'Armes',
-        ammo: 'Munitions',
-        melee: 'Armes blanches',
-        drug: 'Drogues',
-        drug_raw: 'Drogues (matieres premieres)'
+        ammo:            'Munitions',
+        melee:           'Armes blanches',
+        drug:            'Drogues',
+        drug_raw:        'Drogues (matieres)',
+        misc:            'Divers'
     };
 
-    var CATEGORY_ORDER = ['weapon_finished', 'ammo', 'melee', 'drug', 'drug_raw'];
+    // Ordre d'affichage des optgroups.
+    var CATEGORY_ORDER = ['weapon_finished', 'ammo', 'melee', 'drug', 'drug_raw', 'misc'];
 
     var state = {
         catalog: window.MC_VENTES_CATALOG || [],
@@ -79,7 +74,7 @@
         if (!sel) return;
         if (itemTs) { try { itemTs.destroy(); } catch (e) {} itemTs = null; }
 
-        // Group items by category.
+        // Groupement par category.
         var grouped = {};
         state.catalog.forEach(function (it) {
             if (!grouped[it.category]) grouped[it.category] = [];
@@ -98,7 +93,6 @@
                 if (it.default_sell_price) label += '  (' + money(it.default_sell_price) + ')';
                 opt.textContent = label;
                 opt.setAttribute('data-category', it.category);
-                opt.setAttribute('data-sale-type', it.sale_type);
                 opt.setAttribute('data-price', it.default_sell_price || 0);
                 og.appendChild(opt);
             });
@@ -250,7 +244,9 @@
     }
 
     function renderRow(s) {
-        var typeBadge = '<span class="ts-role-badge role-' + s.item_type + '">' + esc(s.type_label || TYPE_LABELS[s.item_type] || s.item_type) + '</span>';
+        // La categorie de base (weapon_finished, ammo, melee, drug...) sert de classe de badge.
+        var badgeClass = 'ts-role-badge role-' + esc(s.category || 'misc');
+        var typeBadge = '<span class="' + badgeClass + '">' + esc(s.type_short || s.category || '?') + '</span>';
         return '' +
             '<div class="member-row">' +
                 '<div class="member-info">' +

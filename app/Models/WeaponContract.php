@@ -29,12 +29,12 @@ class WeaponContract extends Model
 
     public function movements(): HasMany
     {
-        return $this->hasMany(WeaponStockMovement::class);
+        return $this->hasMany(StockMovement::class);
     }
 
     public function sales(): HasMany
     {
-        return $this->hasMany(WeaponSale::class);
+        return $this->hasMany(Sale::class);
     }
 
     public function getProgressAttribute(): float
