@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'LOST MC')</title>
-    <link rel="stylesheet" href="{{ asset('css/common.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/simulateur-armes.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/mc-layout.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/common.css') }}?v={{ filemtime(public_path('css/common.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/simulateur-armes.css') }}?v={{ filemtime(public_path('css/simulateur-armes.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/mc-layout.css') }}?v={{ filemtime(public_path('css/mc-layout.css')) }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
-    <link rel="stylesheet" href="{{ asset('css/mc-tom-select.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/mc-tom-select.css') }}?v={{ filemtime(public_path('css/mc-tom-select.css')) }}">
     @yield('css')
 </head>
 <body class="simulateur-armes @yield('body-class')">
@@ -79,7 +79,7 @@
     window.MC_ASSIGNABLE_ROLES = {!! isset($assignableRoles) ? json_encode($assignableRoles) : '[]' !!};
     </script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
-    <script src="{{ asset('js/mc-auth.js') }}"></script>
+    <script src="{{ asset('js/mc-auth.js') }}?v={{ filemtime(public_path('js/mc-auth.js')) }}"></script>
     @yield('scripts')
     <script>
     (function () {

@@ -52,13 +52,15 @@
     white-space: nowrap;
 }
 
-.mc-top-nav-link:hover { color: #fff; background: rgba(255, 255, 255, 0.05); }
+.mc-top-nav-link:hover { color: #ddd; background: rgba(255, 255, 255, 0.04); }
 
 .mc-top-nav-link.is-active {
     color: #fff;
-    background: rgba(255, 255, 255, 0.09);
+    background: transparent;
     box-shadow: inset 0 -2px 0 #fff;
 }
+
+.mc-top-nav-link.is-active:hover { background: rgba(255, 255, 255, 0.03); }
 
 .mc-top-spacer { flex: 1; }
 

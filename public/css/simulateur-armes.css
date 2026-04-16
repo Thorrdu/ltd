@@ -741,7 +741,7 @@
    ALERT BANNER
    ============================================ */
 .alert-banner {
-    padding: 6px 12px;
+    padding: 8px 12px;
     background: rgba(204, 51, 51, 0.08);
     border: 1px solid rgba(204, 51, 51, 0.25);
     border-radius: 4px;
@@ -749,7 +749,14 @@
     font-size: 11px;
     color: #e8a0a0;
     margin-bottom: 8px;
+    max-height: 72px;
+    overflow-y: auto;
+    line-height: 1.5;
 }
+
+.alert-banner::-webkit-scrollbar { width: 6px; }
+.alert-banner::-webkit-scrollbar-track { background: transparent; }
+.alert-banner::-webkit-scrollbar-thumb { background: rgba(204, 51, 51, 0.3); border-radius: 3px; }
 
 /* ============================================
    TOAST
