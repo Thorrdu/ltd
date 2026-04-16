@@ -29,7 +29,8 @@
         histScope: 'mine',
         histPeriod: 'today',
         attributionId: null,
-        attributionLocked: false
+        attributionLocked: false,
+        adHoc: false
     };
 
     state.catalog.forEach(function (it) { state.catalogById[it.id] = it; });
@@ -215,7 +216,16 @@
         var buyer = ($('vBuyer').value || '').trim();
         var notes = ($('vNotes').value || '').trim();
 
-        if (!stockItemId) { auth.showToast('Selectionnez un article', 'error'); return; }
+        var adHocName = '';
+        var adHocCategory = '';
+        if (state.adHoc) {
+            adHocName = ($('vAdHocName').value || '').trim();
+            adHocCategory = $('vAdHocCategory').value || 'misc';
+            if (!adHocName) { auth.showToast('Nom de l\'article requis', 'error'); return; }
+        } else {
+            if (!stockItemId) { auth.showToast('Selectionnez un article', 'error'); return; }
+        }
+
         if (!qty || qty < 1) { auth.showToast('Quantite invalide', 'error'); return; }
         if (!total || total < 0) { auth.showToast('Montant total invalide', 'error'); return; }
         if (!buyer) { auth.showToast('Indiquez l\'acheteur', 'error'); return; }
@@ -224,14 +234,21 @@
         btn.disabled = true;
         btn.textContent = 'Enregistrement...';
 
-        auth.apiPost('/ventes/api/create', {
-            stock_item_id: stockItemId,
+        var payload = {
             quantity: qty,
             total_price: total,
             buyer_name: buyer,
             notes: notes || null,
             attribution_id: state.attributionId || null
-        }, function (err, data) {
+        };
+        if (state.adHoc) {
+            payload.ad_hoc_name = adHocName;
+            payload.ad_hoc_category = adHocCategory;
+        } else {
+            payload.stock_item_id = stockItemId;
+        }
+
+        auth.apiPost('/ventes/api/create', payload, function (err, data) {
             btn.disabled = false;
             btn.textContent = 'Enregistrer la vente';
             if (err || !data || data.error) {
@@ -270,6 +287,36 @@
         $('vBuyer').value = '';
         $('vNotes').value = '';
         if (itemTs) itemTs.clear();
+        if (state.adHoc) {
+            $('vAdHocName').value = '';
+            $('vAdHocCategory').value = 'misc';
+        }
+    }
+
+    function setAdHocMode(on) {
+        state.adHoc = !!on;
+        var selWrap = $('vItem');
+        var adHocFields = $('vAdHocFields');
+        if (!adHocFields) return;
+
+        if (on) {
+            adHocFields.style.display = '';
+            if (itemTs) {
+                itemTs.clear();
+                itemTs.disable();
+                if (itemTs.wrapper) itemTs.wrapper.style.display = 'none';
+            } else if (selWrap) {
+                selWrap.style.display = 'none';
+            }
+        } else {
+            adHocFields.style.display = 'none';
+            if (itemTs) {
+                itemTs.enable();
+                if (itemTs.wrapper) itemTs.wrapper.style.display = '';
+            } else if (selWrap) {
+                selWrap.style.display = '';
+            }
+        }
     }
 
     // ── RENDERING ──────────────────────────────────────────
@@ -357,6 +404,18 @@
         $('vBtnSave').addEventListener('click', saveSale);
         $('vScope').addEventListener('change', function () { state.histScope = this.value; refreshHistory(); });
         $('vPeriod').addEventListener('change', function () { state.histPeriod = this.value; refreshHistory(); });
+
+        var toggle = $('vAdHocToggle');
+        if (toggle) {
+            toggle.addEventListener('change', function () {
+                if (state.attributionLocked && this.checked) {
+                    auth.showToast('Impossible en mode reconciliation d\'attribution', 'error');
+                    this.checked = false;
+                    return;
+                }
+                setAdHocMode(this.checked);
+            });
+        }
     }
 
     // ── INIT ───────────────────────────────────────────────

@@ -42,8 +42,41 @@
                     <div class="action-form">
                         <div class="form-row">
                             <div class="form-group full">
-                                <label>Article</label>
+                                <label style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span>Article</span>
+                                    <label class="tiny-toggle" style="font-weight:normal; font-size:11px; color:#9ca3af; cursor:pointer;">
+                                        <input type="checkbox" id="vAdHocToggle" style="vertical-align:middle; margin-right:4px;">
+                                        Article hors catalogue
+                                    </label>
+                                </label>
                                 <select id="vItem" class="fm-input"></select>
+
+                                <div id="vAdHocFields" style="display:none; margin-top:6px;">
+                                    <div class="form-row" style="margin:0;">
+                                        <div class="form-group" style="flex:2;">
+                                            <input type="text" id="vAdHocName" class="fm-input" placeholder="Nom de l'article (non encode)" maxlength="120">
+                                        </div>
+                                        <div class="form-group" style="flex:1;">
+                                            <select id="vAdHocCategory" class="fm-input">
+                                                <option value="misc">Divers</option>
+                                                <option value="weapon_finished">Arme</option>
+                                                <option value="weapon_plan">Plan</option>
+                                                <option value="weapon_piece">Piece armurerie</option>
+                                                <option value="ammo">Munition</option>
+                                                <option value="melee">Arme blanche</option>
+                                                <option value="drug">Drogue</option>
+                                                <option value="drug_raw">Drogue (matiere)</option>
+                                                <option value="farm_consumable">Consommable agricole</option>
+                                                <option value="tool">Outil</option>
+                                                <option value="electronic">Electronique</option>
+                                                <option value="raw_material">Matiere premiere</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div style="font-size:11px; color:#9ca3af; margin-top:2px;">
+                                        Cet article sera cree automatiquement dans le catalogue avec un stock initial de 0. Le stock passera en negatif apres la vente (a regulariser via /stocks).
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

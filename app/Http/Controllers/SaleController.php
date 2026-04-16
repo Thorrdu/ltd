@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class SaleController extends Controller
 {
@@ -136,30 +137,56 @@ class SaleController extends Controller
         $user = $this->authUser($request);
 
         $v = Validator::make($request->all(), [
-            'stock_item_id'  => 'required|integer|exists:stock_items,id',
+            'stock_item_id'  => 'nullable|integer|exists:stock_items,id',
             'quantity'       => 'required|integer|min:1|max:9999',
             'total_price'    => 'required|integer|min:0',
             'buyer_name'     => 'required|string|max:100',
             'notes'          => 'nullable|string|max:500',
             'attribution_id' => 'nullable|integer|exists:stock_movements,id',
+            // Article hors catalogue : fourni quand stock_item_id est vide.
+            // Permet de declarer une vente d'un article non encore encode.
+            'ad_hoc_name'     => 'nullable|string|max:120',
+            'ad_hoc_category' => 'nullable|string|in:' . implode(',', self::SELLABLE_CATEGORIES),
         ]);
 
         if ($v->fails()) {
             return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
         }
 
-        $item = StockItem::find($request->input('stock_item_id'));
-        if (! $item || ! $item->is_active) {
-            return response()->json(['error' => 'Article indisponible'], 404);
-        }
-        if (! $item->is_sellable || ! in_array($item->category, self::SELLABLE_CATEGORIES, true)) {
-            return response()->json(['error' => 'Cet article n\'est pas vendable depuis /ventes'], 422);
+        $warning = null;
+        $attributionId = $request->input('attribution_id');
+
+        if ($request->filled('stock_item_id')) {
+            $item = StockItem::find($request->input('stock_item_id'));
+            if (! $item || ! $item->is_active) {
+                return response()->json(['error' => 'Article indisponible'], 404);
+            }
+            if (! $item->is_sellable || ! in_array($item->category, self::SELLABLE_CATEGORIES, true)) {
+                return response()->json(['error' => 'Cet article n\'est pas vendable depuis /ventes'], 422);
+            }
+        } else {
+            // Mode ad-hoc : l'article n'est pas dans le catalogue. On le cree
+            // a la volee (stock initial 0, sera decremente par la vente et
+            // passera en negatif), puis on procede comme d'habitude. Le tresorier
+            // pourra ensuite ajuster / regulariser via /stocks.
+            if ($attributionId) {
+                return response()->json(['error' => 'Impossible de reconcilier une attribution avec un article ad-hoc'], 422);
+            }
+            $name = trim((string) $request->input('ad_hoc_name'));
+            $category = (string) $request->input('ad_hoc_category', 'misc');
+            if ($name === '') {
+                return response()->json(['error' => 'Nom de l\'article requis (mode hors catalogue)'], 422);
+            }
+            if (! in_array($category, self::SELLABLE_CATEGORIES, true)) {
+                $category = 'misc';
+            }
+            $item = $this->createAdHocStockItem($name, $category);
+            $warning = 'Article hors catalogue cree (' . $item->slug . '). Stock initial 0 : passera en negatif apres la vente.';
         }
 
         $qty   = (int) $request->input('quantity');
         $total = (int) $request->input('total_price');
         $unit  = (int) round($total / max($qty, 1));
-        $attributionId = $request->input('attribution_id');
 
         // If this sale reconciles an attribution, validate it and skip stock decrement
         // (the stock was already decremented when the attribution was created).
@@ -184,13 +211,11 @@ class SaleController extends Controller
             }
         }
 
-        $warning = null;
-
         // Toute vente décremente le stock du stock_item + crée un mouvement sale.
         // Si la vente reconcilie une attribution, le stock a deja ete decremente a l'attribution.
         $saleMovement = null;
         if (! $attribution) {
-            if ($item->quantity < $qty) {
+            if ($item->quantity < $qty && $warning === null) {
                 $warning = 'Stock insuffisant (' . $item->quantity . ' en stock). Le stock passe en négatif.';
             }
             $item->decrement('quantity', $qty);
@@ -243,6 +268,38 @@ class SaleController extends Controller
     }
 
     // ── Helpers ─────────────────────────────────────────────
+
+    /**
+     * Cree un stock_item a la volee pour un article vendu mais pas encore
+     * encode dans le catalogue. Utilise un slug unique derivé du nom.
+     * L'item est cree avec quantity=0 : la vente le fera passer en negatif,
+     * signalant qu'une regularisation est necessaire via /stocks.
+     */
+    private function createAdHocStockItem(string $name, string $category): StockItem
+    {
+        $base = 'adhoc_' . Str::slug($name, '_');
+        if (strlen($base) > 100) {
+            $base = substr($base, 0, 100);
+        }
+        $slug = $base;
+        $i = 1;
+        while (StockItem::where('slug', $slug)->exists()) {
+            $i++;
+            $slug = $base . '_' . $i;
+        }
+
+        return StockItem::create([
+            'category'           => $category,
+            'slug'               => $slug,
+            'name'               => $name,
+            'quantity'           => 0,
+            'default_sell_price' => null,
+            'is_sellable'        => true,
+            'is_active'          => true,
+            'sort_order'         => 9000,
+            'notes'              => 'Cree automatiquement depuis /ventes (article hors catalogue).',
+        ]);
+    }
 
     private function loadCatalog()
     {
