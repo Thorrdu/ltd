@@ -98,7 +98,7 @@
                         <label class="ammo-sim-label" for="ammoTargetMuns">Munitions à fabriquer</label>
                         <input type="number" class="ammo-sim-input ammo-sim-input-muns" id="ammoTargetMuns" min="1" max="9999999" step="1" value="1000" inputmode="numeric">
                         <label class="ammo-sim-label" for="ammoTargetSellPriceMun">Prix vente / mun (optionnel)</label>
-                        <input type="number" class="ammo-sim-input" id="ammoTargetSellPriceMun" min="0" step="0.01" placeholder="Tableau" inputmode="decimal" title="Vide = prix du tableau pour ce calibre">
+                        <input type="number" class="ammo-sim-input" id="ammoTargetSellPriceMun" min="0" step="0.01" placeholder="Tableau" inputmode="decimal" autocomplete="off" data-form-type="other" name="ltd_ammo_sell_override" title="Vide = prix du tableau pour ce calibre">
                     </div>
                     <div class="results-table ammo-target-results" id="ammoTargetResults"></div>
                 </div>
@@ -145,9 +145,31 @@
                         <label class="ammo-sim-label" for="weaponTargetSlug">Arme</label>
                         <select id="weaponTargetSlug" class="ammo-sim-select" aria-label="Arme pour la simulation"></select>
                         <label class="ammo-sim-label" for="weaponTargetQty">Armes à fabriquer</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-muns" id="weaponTargetQty" min="1" max="9999" step="1" value="10" inputmode="numeric">
+                        <input type="number" class="ammo-sim-input ammo-sim-input-muns" id="weaponTargetQty" min="1" max="9999" step="1" value="10" inputmode="numeric" autocomplete="off">
                         <label class="ammo-sim-label" for="weaponTargetSellPrice">Prix vente / arme (optionnel)</label>
-                        <input type="number" class="ammo-sim-input" id="weaponTargetSellPrice" min="0" step="0.01" placeholder="Base" inputmode="decimal" title="Vide = prix de vente en base pour cette arme">
+                        <input type="number" class="ammo-sim-input" id="weaponTargetSellPrice" min="0" step="0.01" placeholder="Base" inputmode="decimal" autocomplete="off" data-form-type="other" name="ltd_weapon_sell_override" title="Nombre uniquement. Vide = prix en base pour cette arme">
+                    </div>
+                    <div class="weapon-stock-block">
+                        <div class="weapon-stock-title">Déjà en stock (optionnel)</div>
+                        <p class="ammo-sim-intro ammo-sim-intro-tight">Unités <strong>non facturées</strong> pour cette commande : déduites du besoin (recette × quantité), dans la limite du stock saisi. <strong>Plans</strong> = utilisations de plan. <strong>SNS</strong> = armes déjà possédées (réduit seulement l’acquisition, pas le craft).</p>
+                        <div class="ammo-sim-params weapon-stock-grid">
+                            <label class="ammo-sim-label" for="weaponStockPlans">Plans (util.)</label>
+                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPlans" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                            <label class="ammo-sim-label" for="weaponStockCorp">Corp</label>
+                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCorp" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                            <label class="ammo-sim-label" for="weaponStockRessort">Ressort</label>
+                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockRessort" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                            <label class="ammo-sim-label" for="weaponStockCanon">Canon</label>
+                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCanon" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                            <label class="ammo-sim-label" for="weaponStockPoignee">Poignée</label>
+                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPoignee" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                            <label class="ammo-sim-label" for="weaponStockMetal">Métal</label>
+                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockMetal" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                            <label class="ammo-sim-label" for="weaponStockPolymere">Polymère</label>
+                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPolymere" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                            <label class="ammo-sim-label" for="weaponStockSns">SNS (armes)</label>
+                            <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockSns" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off" title="Utilisé seulement si l’arme choisie est le SNS">
+                        </div>
                     </div>
                     <div class="results-table ammo-target-results" id="weaponTargetResults"></div>
                 </div>

@@ -1484,6 +1484,30 @@ select.fm-input option {
     margin: 0 auto;
 }
 
+.weapon-stock-block {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.weapon-stock-title {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #aaa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.weapon-stock-grid {
+    justify-content: center;
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .ammo-craft-wrap {
     overflow-x: auto;
     border: 1px solid rgba(255, 255, 255, 0.08);
