@@ -1,7 +1,6 @@
 (function () {
     'use strict';
 
-    // ===== DATA =====
     var weaponList = window.WEAPONS || [];
     var memberList = window.MEMBERS || [];
     var weapons = {};
@@ -39,35 +38,14 @@
     var POLYMERE_COST = 4500;
     var WEAPON_CRAFT_CORP_EUR = 15000;
     var WEAPON_CRAFT_WEAPON_PIECE_EUR = 5000;
-    var AMMO_GUNPOWDER_PRICE = 100;
-    var AMMO_YIELD_PER_CRAFT = 10;
-    var AMMO_FRAGMENTS_PER_FER_UNIT = 2;
-    var AMMO_RECIPES = [
-        { name: '9mm', craftSec: 5, poudre: 5, fragment: 10 },
-        { name: '.38 LC', craftSec: 10, poudre: 15, fragment: 10 },
-        { name: '.45 ACP', craftSec: 5, poudre: 5, fragment: 10 },
-        { name: '.50 AE', craftSec: 5, poudre: 10, fragment: 10 },
-        { name: '5.56x45', craftSec: 10, poudre: 20, fragment: 25 },
-        { name: '7.62x39', craftSec: 10, poudre: 20, fragment: 25 },
-        { name: '12 Gauge', craftSec: 10, poudre: 30, fragment: 20 },
-        { name: '7.62x51', craftSec: 10, poudre: 20, fragment: 30 },
-        { name: '.50 BMG', craftSec: 10, poudre: 20, fragment: 35 }
-    ];
-    var AMMO_SELL_POWDER_THRESHOLD_EUR = 50;
-    var AMMO_SELL_MARKUP_SMALL = 2;
-    var AMMO_SELL_MARKUP_LARGE = 1.5;
     var METAL_MINERAI_RATE = 5;
     var RESSORT_METAL_RATE = 1;
     var RESSORT_MINERAI_RATE = 3;
     var PLANS_PER_ITEM = 4;
 
-    var currentUserId = sessionStorage.getItem('lmc_uid') ? parseInt(sessionStorage.getItem('lmc_uid'), 10) : null;
-    var currentUserName = sessionStorage.getItem('lmc_name') || '';
-    var currentUserRole = sessionStorage.getItem('lmc_role') || '';
-    var isLoggedIn = false;
+    var auth = window.McAuth;
     var cachedData = null;
 
-    // ===== HELPERS =====
     function esc(s) { if (s == null) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
     function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
     function fmtEuro(n) {
@@ -85,7 +63,7 @@
         return fmtK(wd.priceMin) + ' \u2013 ' + fmtK(wd.priceMax);
     }
     function $(id) { return document.getElementById(id); }
-    function csrfToken() { var el = document.querySelector('meta[name="csrf-token"]'); return el ? el.getAttribute('content') : ''; }
+    function showToast(msg, type) { if (auth && auth.showToast) auth.showToast(msg, type); }
 
     function makeRow(label, value, cls) {
         return '<div class="result-row"><span class="label">' + label + '</span><span class="dot-leader"></span><span class="value' + (cls ? ' ' + cls : '') + '">' + value + '</span></div>';
@@ -99,50 +77,12 @@
         return m + ' min' + (r ? ' ' + r + ' sec' : '');
     }
 
-    function showToast(msg, type) {
-        var t = $('toast');
-        t.textContent = msg;
-        t.className = 'toast show ' + (type || 'info');
-        clearTimeout(t._timer);
-        t._timer = setTimeout(function () { t.className = 'toast'; }, 3500);
+    function ammoBenClass(v) {
+        if (v > 0) return 'ammo-ben-pos';
+        if (v < 0) return 'ammo-ben-neg';
+        return 'ammo-ben-zero';
     }
 
-    // ===== API HELPERS =====
-    function apiHeaders() {
-        var h = { 'Accept': 'application/json' };
-        if (currentUserId) h['X-Sim-User'] = '' + currentUserId;
-        return h;
-    }
-
-    function apiGet(cb) {
-        fetch('/simulateur-armes/api/data', { headers: apiHeaders() })
-            .then(function (r) { return r.json(); })
-            .then(function (d) { cb(null, d); })
-            .catch(function (e) { cb(e); });
-    }
-
-    function apiPost(url, body, cb) {
-        var h = apiHeaders();
-        h['Content-Type'] = 'application/json';
-        h['X-CSRF-TOKEN'] = csrfToken();
-        fetch(url, { method: 'POST', headers: h, body: JSON.stringify(body) })
-            .then(function (r) { return r.json(); })
-            .then(function (d) { cb(null, d); })
-            .catch(function (e) { cb(e); });
-    }
-
-    function apiPut(url, body, cb) {
-        var h = apiHeaders();
-        h['Content-Type'] = 'application/json';
-        h['X-CSRF-TOKEN'] = csrfToken();
-        h['X-HTTP-Method-Override'] = 'PUT';
-        fetch(url, { method: 'POST', headers: h, body: JSON.stringify(body) })
-            .then(function (r) { return r.json(); })
-            .then(function (d) { cb(null, d); })
-            .catch(function (e) { cb(e); });
-    }
-
-    // ===== GROUPED SELECT =====
     function populateGroupedStockSelect(sel, stock) {
         sel.innerHTML = '';
         var cats = { finished_weapon: 'Armes finies', piece: 'Pi\u00e8ces', plan: 'Plans', raw_material: 'Mati\u00e8res premi\u00e8res' };
@@ -174,18 +114,20 @@
 
     // ===== BUILD WEAPON CARDS =====
     var grid = $('weaponsGrid');
-    weaponList.forEach(function (w) {
-        grid.insertAdjacentHTML('beforeend',
-            '<div class="weapon-card" data-weapon="' + esc(w.slug) + '">' +
-            '<div class="weapon-name">' + esc(w.name) + '</div>' +
-            '<div class="weapon-craft-time">\u23f1 ' + (w.craft_time_seconds ? w.craft_time_seconds + 's' : '?') + '</div>' +
-            '<div class="weapon-qty-row">' +
-            '<button class="qty-btn minus" data-weapon="' + esc(w.slug) + '">\u2212</button>' +
-            '<input type="number" class="qty-input" id="qty-' + esc(w.slug) + '" value="0" min="0" max="99">' +
-            '<button class="qty-btn plus" data-weapon="' + esc(w.slug) + '">+</button>' +
-            '</div></div>'
-        );
-    });
+    if (grid) {
+        weaponList.forEach(function (w) {
+            grid.insertAdjacentHTML('beforeend',
+                '<div class="weapon-card" data-weapon="' + esc(w.slug) + '">' +
+                '<div class="weapon-name">' + esc(w.name) + '</div>' +
+                '<div class="weapon-craft-time">\u23f1 ' + (w.craft_time_seconds ? w.craft_time_seconds + 's' : '?') + '</div>' +
+                '<div class="weapon-qty-row">' +
+                '<button class="qty-btn minus" data-weapon="' + esc(w.slug) + '">\u2212</button>' +
+                '<input type="number" class="qty-input" id="qty-' + esc(w.slug) + '" value="0" min="0" max="99">' +
+                '<button class="qty-btn plus" data-weapon="' + esc(w.slug) + '">+</button>' +
+                '</div></div>'
+            );
+        });
+    }
 
     // ===== TAB SWITCHING =====
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
@@ -193,7 +135,8 @@
             document.querySelectorAll('.tab-btn').forEach(function (b) { b.classList.remove('active'); });
             document.querySelectorAll('.tab-content').forEach(function (c) { c.classList.remove('active'); });
             btn.classList.add('active');
-            $('tab-' + btn.getAttribute('data-tab')).classList.add('active');
+            var target = $('tab-' + btn.getAttribute('data-tab'));
+            if (target) target.classList.add('active');
         });
     });
     document.querySelectorAll('.sub-tab').forEach(function (btn) {
@@ -201,7 +144,8 @@
             document.querySelectorAll('.sub-tab').forEach(function (b) { b.classList.remove('active'); });
             document.querySelectorAll('.sub-content').forEach(function (c) { c.classList.remove('active'); });
             btn.classList.add('active');
-            $('sub-' + btn.getAttribute('data-subtab')).classList.add('active');
+            var target = $('sub-' + btn.getAttribute('data-subtab'));
+            if (target) target.classList.add('active');
         });
     });
 
@@ -221,8 +165,8 @@
         document.querySelectorAll('.weapon-card').forEach(function (card) {
             card.classList.toggle('active', (orders[card.getAttribute('data-weapon')] || 0) > 0);
         });
-        if (!hasAny) { resultsSection.style.display = 'none'; return; }
-        resultsSection.style.display = '';
+        if (!hasAny) { if (resultsSection) resultsSection.style.display = 'none'; return; }
+        if (resultsSection) resultsSection.style.display = '';
 
         var html = '', totals = {};
         pieceKeys.forEach(function (k) { totals[k] = 0; });
@@ -243,7 +187,7 @@
         pieceKeys.forEach(function (p) { if (totals[p]) html += makeRow(pieceNames[p], fmt(totals[p])); });
         $('totalPieces').innerHTML = html;
 
-        if (isLoggedIn && cachedData && cachedData.stock) {
+        if (auth && auth.isLoggedIn && cachedData && cachedData.stock) {
             $('simStockCompare').style.display = '';
             var stockMap = {};
             cachedData.stock.forEach(function (s) { stockMap[s.slug] = s.quantity; });
@@ -268,7 +212,8 @@
             });
             $('simStockTable').innerHTML = html;
         } else {
-            $('simStockCompare').style.display = 'none';
+            var ssc = $('simStockCompare');
+            if (ssc) ssc.style.display = 'none';
         }
 
         var metalForR = totals.ressort * RESSORT_METAL_RATE;
@@ -313,148 +258,17 @@
         $('craftTime').textContent = timeStr;
     }
 
-    grid.addEventListener('click', function (e) {
-        var btn = e.target.closest('.qty-btn');
-        if (!btn) return;
-        var w = btn.getAttribute('data-weapon');
-        var input = $('qty-' + w);
-        var val = parseInt(input.value, 10) || 0;
-        input.value = btn.classList.contains('plus') ? Math.min(val + 1, 99) : Math.max(val - 1, 0);
-        calculate();
-    });
-    grid.addEventListener('input', function (e) { if (e.target.classList.contains('qty-input')) calculate(); });
-
-    function ammoBenClass(v) {
-        if (v > 0) return 'ammo-ben-pos';
-        if (v < 0) return 'ammo-ben-neg';
-        return 'ammo-ben-zero';
-    }
-
-    function ammoRecipeByName(name) {
-        for (var i = 0; i < AMMO_RECIPES.length; i++) {
-            if (AMMO_RECIPES[i].name === name) return AMMO_RECIPES[i];
-        }
-        return null;
-    }
-
-    function ammoCostPerMun(r, prixFer) {
-        var pf = Math.max(0, prixFer);
-        var achatPoudre = r.poudre * AMMO_GUNPOWDER_PRICE;
-        var ferUnits = r.fragment / AMMO_FRAGMENTS_PER_FER_UNIT;
-        return (achatPoudre + ferUnits * pf) / AMMO_YIELD_PER_CRAFT;
-    }
-
-    function ammoCostPoudrePerMun(r) {
-        return (r.poudre * AMMO_GUNPOWDER_PRICE) / AMMO_YIELD_PER_CRAFT;
-    }
-
-    var AMMO_SELL_PRETTY_EUR = { '5.56x45': 350, '7.62x39': 500, '12 Gauge': 400 };
-
-    function ammoSellPriceForRecipe(r, prixFer) {
-        if (!r) return 0;
-        if (AMMO_SELL_PRETTY_EUR[r.name] != null) return AMMO_SELL_PRETTY_EUR[r.name];
-        var sansFer = ammoCostPoudrePerMun(r);
-        var c = ammoCostPerMun(r, prixFer);
-        var sell = sansFer <= AMMO_SELL_POWDER_THRESHOLD_EUR ? sansFer * AMMO_SELL_MARKUP_SMALL : c * AMMO_SELL_MARKUP_LARGE;
-        return Math.round(sell / 10) * 10;
-    }
-
-    function updateAmmoTargetSim() {
-        var sel = $('ammoTargetSlug');
-        var munsIn = $('ammoTargetMuns');
-        var sellOv = $('ammoTargetSellPriceMun');
-        var out = $('ammoTargetResults');
-        var priceIn = $('ammoFerPrice');
-        if (!sel || !munsIn || !out || !priceIn) return;
-        var r = ammoRecipeByName(sel.value);
-        if (!r) {
-            out.innerHTML = '<div class="result-row"><span class="label">\u2014</span><span class="value">Choisissez un calibre</span></div>';
-            return;
-        }
-        var Mraw = parseInt(munsIn.value, 10);
-        var M = Math.max(1, Math.min(9999999, isNaN(Mraw) ? 1000 : Mraw));
-        if (munsIn.value === '' || isNaN(Mraw) || Mraw < 1) munsIn.value = M;
-        var crafts = Math.ceil(M / AMMO_YIELD_PER_CRAFT);
-        var produced = crafts * AMMO_YIELD_PER_CRAFT;
-        var prixFer = Math.max(0, parseFloat(priceIn.value) || 0);
-        var achatPoudre = r.poudre * AMMO_GUNPOWDER_PRICE;
-        var ferUnits = r.fragment / AMMO_FRAGMENTS_PER_FER_UNIT;
-        var coutMetalFerAchete = ferUnits * prixFer;
-        var revientFerAcheteCraft = achatPoudre + coutMetalFerAchete;
-        var revientFerRecolteCraft = achatPoudre;
-        var costAch = revientFerAcheteCraft * crafts;
-        var costRec = revientFerRecolteCraft * crafts;
-        var refSell = ammoSellPriceForRecipe(r, prixFer);
-        var sellParsedAmmo = sellOv ? parseEuroOptionalInput(sellOv.value) : { ok: true, empty: true, value: 0 };
-        var useOverride = !!(sellOv && sellParsedAmmo.ok && !sellParsedAmmo.empty);
-        var prixVenteMun = useOverride ? sellParsedAmmo.value : refSell;
-        var venteTotale = prixVenteMun * produced;
-        var margeAch = venteTotale - costAch;
-        var margeRec = venteTotale - costRec;
-        var coutMunAch = revientFerAcheteCraft / AMMO_YIELD_PER_CRAFT;
-        var coutMunRec = revientFerRecolteCraft / AMMO_YIELD_PER_CRAFT;
-        var margeMunAch = prixVenteMun - coutMunAch;
-        var margeMunRec = prixVenteMun - coutMunRec;
-        var timeTotal = crafts * (r.craftSec || 0);
-        var sellNote = useOverride ? '(sc\u00e9nario)' : '(tableau)';
-        var html = '';
-        html += makeRow('Calibre', esc(r.name));
-        html += makeRow('Munitions vis\u00e9es', fmt(M));
-        if (produced !== M) {
-            html += makeRow('Munitions produites (lots de 10)', fmt(produced), 'highlight');
-        }
-        html += makeRow('Crafts n\u00e9cessaires', fmt(crafts));
-        html += makeRow('Temps de craft total', formatTime(timeTotal));
-        html += makeSectionHeader('Par munition');
-        html += makeRow('Co\u00fbt / mun (fer achet\u00e9)', fmtEuro(coutMunAch));
-        html += makeRow('Co\u00fbt / mun (fer r\u00e9colt\u00e9)', fmtEuro(coutMunRec));
-        html += makeRow('Prix vente / mun ' + sellNote, fmtEuro(prixVenteMun));
-        html += makeRow('Marge / mun (fer achet\u00e9)', fmtEuro(margeMunAch), ammoBenClass(margeMunAch));
-        html += makeRow('Marge / mun (fer r\u00e9colt\u00e9)', fmtEuro(margeMunRec), ammoBenClass(margeMunRec));
-        html += makeSectionHeader('Sur la production (' + fmt(produced) + ' mun.)');
-        html += makeRow('Co\u00fbt total (fer achet\u00e9)', fmtEuro(costAch), 'highlight');
-        html += makeRow('Co\u00fbt total (fer r\u00e9colt\u00e9)', fmtEuro(costRec), 'highlight');
-        html += makeRow('Chiffre d\u2019affaires (lot vendu)', fmtEuro(venteTotale), 'highlight');
-        html += makeRow('Marge totale (fer achet\u00e9)', fmtEuro(margeAch), ammoBenClass(margeAch));
-        html += makeRow('Marge totale (fer r\u00e9colt\u00e9)', fmtEuro(margeRec), ammoBenClass(margeRec));
-        out.innerHTML = html;
-    }
-
-    function updateAmmoCraft() {
-        var tbody = $('ammoCraftBody');
-        var priceIn = $('ammoFerPrice');
-        if (!tbody || !priceIn) return;
-        var prixFer = Math.max(0, parseFloat(priceIn.value) || 0);
-        var html = '';
-        AMMO_RECIPES.forEach(function (r) {
-            var achatPoudre = r.poudre * AMMO_GUNPOWDER_PRICE;
-            var ferUnits = r.fragment / AMMO_FRAGMENTS_PER_FER_UNIT;
-            var coutMetalFerAchete = ferUnits * prixFer;
-            var revientFerAcheteCraft = achatPoudre + coutMetalFerAchete;
-            var revientFerRecolteCraft = achatPoudre;
-            var coutMunAch = revientFerAcheteCraft / AMMO_YIELD_PER_CRAFT;
-            var coutMunRec = revientFerRecolteCraft / AMMO_YIELD_PER_CRAFT;
-            var prixVenteParMun = ammoSellPriceForRecipe(r, prixFer);
-            var margeMunAch = prixVenteParMun - coutMunAch;
-            var margeMunRec = prixVenteParMun - coutMunRec;
-            html += '<tr>';
-            html += '<td>' + esc(r.name) + '</td>';
-            html += '<td>' + r.craftSec + ' s</td>';
-            html += '<td>' + fmt(r.poudre) + '</td>';
-            html += '<td>' + fmt(r.fragment) + '</td>';
-            html += '<td>' + fmtEuro(coutMunAch) + '</td>';
-            html += '<td>' + fmtEuro(coutMunRec) + '</td>';
-            html += '<td>' + fmtEuro(prixVenteParMun) + '</td>';
-            html += '<td class="' + ammoBenClass(margeMunAch) + '">' + fmtEuro(margeMunAch) + '</td>';
-            html += '<td class="' + ammoBenClass(margeMunRec) + '">' + fmtEuro(margeMunRec) + '</td>';
-            html += '</tr>';
+    if (grid) {
+        grid.addEventListener('click', function (e) {
+            var btn = e.target.closest('.qty-btn');
+            if (!btn) return;
+            var w = btn.getAttribute('data-weapon');
+            var input = $('qty-' + w);
+            var val = parseInt(input.value, 10) || 0;
+            input.value = btn.classList.contains('plus') ? Math.min(val + 1, 99) : Math.max(val - 1, 0);
+            calculate();
         });
-        tbody.innerHTML = html;
-    }
-
-    function refreshAmmoSimulators() {
-        updateAmmoCraft();
-        updateAmmoTargetSim();
+        grid.addEventListener('input', function (e) { if (e.target.classList.contains('qty-input')) calculate(); });
     }
 
     // ===== WEAPON CRAFT COST =====
@@ -483,14 +297,7 @@
         var costPoly = (p.polymere || 0) * POLYMERE_COST;
         var totalAch = costPlans + costComp + costMat + costPoly;
         var totalRec = costPlans + costComp + costPoly;
-        return {
-            costPlans: costPlans,
-            costComp: costComp,
-            costMat: costMat,
-            costPoly: costPoly,
-            totalAch: totalAch,
-            totalRec: totalRec
-        };
+        return { costPlans: costPlans, costComp: costComp, costMat: costMat, costPoly: costPoly, totalAch: totalAch, totalRec: totalRec };
     }
 
     function weaponStockPaidUnits(need, stockAvail) {
@@ -504,32 +311,20 @@
         var pp = Math.max(0, planPriceEu);
         var fp = Math.max(0, ferPrice);
         var u = weaponStockPaidUnits;
-
         var costPlans = u(Q * (p.plans || 0), st.plans) * pp;
-
         var costComp = 0;
         if (!compsInStock) {
             costComp = u(Q * (p.corp || 0), st.corp) * WEAPON_CRAFT_CORP_EUR
                      + u(Q * (p.canon || 0), st.canon) * WEAPON_CRAFT_WEAPON_PIECE_EUR
                      + u(Q * (p.poignee || 0), st.poignee) * WEAPON_CRAFT_WEAPON_PIECE_EUR;
         }
-
         var metalNeeded = u(Q * (p.metal || 0), st.metal);
         var ressortNeeded = u(Q * (p.ressort || 0), st.ressort);
         var costMat = (metalNeeded * METAL_MINERAI_RATE + ressortNeeded * MINERAI_PER_RESSORT) * fp;
-
         var costPoly = u(Q * (p.polymere || 0), st.polymere) * POLYMERE_COST;
-
         var totalAch = costPlans + costComp + costMat + costPoly;
         var totalRec = costPlans + costComp + costPoly;
-        return {
-            costPlans: costPlans,
-            costComp: costComp,
-            costMat: costMat,
-            costPoly: costPoly,
-            totalAch: totalAch,
-            totalRec: totalRec
-        };
+        return { costPlans: costPlans, costComp: costComp, costMat: costMat, costPoly: costPoly, totalAch: totalAch, totalRec: totalRec };
     }
 
     function weaponStockReadFromForm() {
@@ -540,14 +335,10 @@
             return Math.max(0, isNaN(v) ? 0 : Math.min(v, 999999));
         }
         return {
-            plans: iv('weaponStockPlans'),
-            corp: iv('weaponStockCorp'),
-            ressort: iv('weaponStockRessort'),
-            canon: iv('weaponStockCanon'),
-            poignee: iv('weaponStockPoignee'),
-            metal: iv('weaponStockMetal'),
-            polymere: iv('weaponStockPolymere'),
-            sns: iv('weaponStockSns')
+            plans: iv('weaponStockPlans'), corp: iv('weaponStockCorp'),
+            ressort: iv('weaponStockRessort'), canon: iv('weaponStockCanon'),
+            poignee: iv('weaponStockPoignee'), metal: iv('weaponStockMetal'),
+            polymere: iv('weaponStockPolymere'), sns: iv('weaponStockSns')
         };
     }
 
@@ -575,7 +366,6 @@
         return el ? el.checked : false;
     }
 
-    // ===== WEAPON CRAFT TABLE (11 columns) =====
     function updateWeaponCraftTable() {
         var tbody = $('weaponCraftBody');
         var planIn = $('weaponCraftPlanPrice');
@@ -621,7 +411,6 @@
         tbody.innerHTML = html;
     }
 
-    // ===== WEAPON TARGET SIM (fer ach. / fer rec.) =====
     function updateWeaponTargetSim() {
         var sel = $('weaponTargetSlug');
         var qtyIn = $('weaponTargetQty');
@@ -688,9 +477,7 @@
         html += makeRow('Arme', esc(wd.name || slug));
         html += makeRow('Armes \u00e0 fabriquer', fmt(Q));
         html += makeRow('Temps de craft total', bought ? '\u2014 (arme non craft\u00e9e)' : (timeTot != null ? formatTime(timeTot) : 'Inconnu'));
-        if (sellInvalid) {
-            html += makeRow('Prix vente (champ optionnel)', 'Saisie non num\u00e9rique \u2014 prix en base utilis\u00e9', '');
-        }
+        if (sellInvalid) html += makeRow('Prix vente (champ optionnel)', 'Saisie non num\u00e9rique \u2014 prix en base utilis\u00e9', '');
 
         html += makeSectionHeader('Par arme');
         if (bought) {
@@ -708,16 +495,12 @@
                 html += makeRow('Co\u00fbt / arme (fer achet\u00e9)', fmtEuro(costOneAch), 'highlight');
                 html += makeRow('Co\u00fbt / arme (fer r\u00e9colt\u00e9)', fmtEuro(costOneRec), 'highlight');
             }
-            if (!compsInStock) {
-                html += makeRow('\u00a0\u00a0\u00a0dont composants', fmtEuro(bOne.costComp), '');
-            }
+            if (!compsInStock) html += makeRow('\u00a0\u00a0\u00a0dont composants', fmtEuro(bOne.costComp), '');
             html += makeRow('\u00a0\u00a0\u00a0dont mat. craft\u00e9es (fer ach.)', fmtEuro(bOne.costMat), '');
         }
         html += makeRow('Prix vente / arme ' + sellNote, prixVente > 0 ? fmtEuro(prixVente) : '\u2014');
         var rangeTarget = fmtPriceRange(wd);
-        if (rangeTarget) {
-            html += makeRow('Range autoris\u00e9e', rangeTarget, '');
-        }
+        if (rangeTarget) html += makeRow('Range autoris\u00e9e', rangeTarget, '');
         if (prixVente > 0) {
             if (bought) {
                 html += makeRow('Marge / arme (revente)', margeOneRevente != null ? fmtEuro(margeOneRevente) : '\u2014', ammoBenClass(margeOneRevente));
@@ -745,9 +528,7 @@
         } else {
             html += makeRow('Co\u00fbt total (fer achet\u00e9)', fmtEuro(costTotAch), 'highlight');
             html += makeRow('Co\u00fbt total (fer r\u00e9colt\u00e9)', fmtEuro(costTotRec), 'highlight');
-            if (bOne.costMat > 0) {
-                html += makeRow('\u00c9cart fer ach. \u2212 fer r\u00e9c. (cette commande)', fmtEuro(costTotAch - costTotRec), 'ammo-ben-pos');
-            }
+            if (bOne.costMat > 0) html += makeRow('\u00c9cart fer ach. \u2212 fer r\u00e9c. (cette commande)', fmtEuro(costTotAch - costTotRec), 'ammo-ben-pos');
         }
         html += makeRow('Chiffre d\u2019affaires', prixVente > 0 ? fmtEuro(venteTotale) : '\u2014', prixVente > 0 ? 'highlight' : '');
         if (prixVente > 0) {
@@ -768,41 +549,7 @@
         updateWeaponTargetSim();
     }
 
-    // ===== EVENT LISTENERS =====
-    var ammoTargetSlugEl = $('ammoTargetSlug');
-    if (ammoTargetSlugEl && ammoTargetSlugEl.options.length === 0) {
-        AMMO_RECIPES.forEach(function (rec) {
-            ammoTargetSlugEl.insertAdjacentHTML('beforeend', '<option value="' + esc(rec.name) + '">' + esc(rec.name) + '</option>');
-        });
-        var pref = '.45 ACP';
-        for (var ai = 0; ai < AMMO_RECIPES.length; ai++) {
-            if (AMMO_RECIPES[ai].name === pref) {
-                ammoTargetSlugEl.value = pref;
-                break;
-            }
-        }
-    }
-
-    var ammoFerEl = $('ammoFerPrice');
-    if (ammoFerEl) {
-        ammoFerEl.addEventListener('input', refreshAmmoSimulators);
-        ammoFerEl.addEventListener('change', refreshAmmoSimulators);
-    }
-    var ammoTargetMunsEl = $('ammoTargetMuns');
-    if (ammoTargetMunsEl) {
-        ammoTargetMunsEl.addEventListener('input', updateAmmoTargetSim);
-        ammoTargetMunsEl.addEventListener('change', updateAmmoTargetSim);
-    }
-    if (ammoTargetSlugEl) {
-        ammoTargetSlugEl.addEventListener('change', updateAmmoTargetSim);
-    }
-    var ammoTargetSellEl = $('ammoTargetSellPriceMun');
-    if (ammoTargetSellEl) {
-        ammoTargetSellEl.addEventListener('input', updateAmmoTargetSim);
-        ammoTargetSellEl.addEventListener('change', updateAmmoTargetSim);
-    }
-    refreshAmmoSimulators();
-
+    // ===== WEAPON CRAFT EVENT LISTENERS =====
     var weaponCraftPlanEl = $('weaponCraftPlanPrice');
     if (weaponCraftPlanEl) {
         weaponCraftPlanEl.addEventListener('input', refreshWeaponCraftSims);
@@ -845,52 +592,23 @@
     });
     refreshWeaponCraftSims();
 
-    // ===== LOGIN =====
-    var loginSel = $('loginMemberSelect');
-    memberList.forEach(function (m) {
-        loginSel.insertAdjacentHTML('beforeend', '<option value="' + m.id + '">' + esc(m.name) + '</option>');
-    });
-
-    $('btnLogin').addEventListener('click', doLogin);
-    $('loginPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
-
-    function doLogin() {
-        var uid = parseInt(loginSel.value, 10);
-        var pin = $('loginPin').value;
-        if (!uid) { $('errLogin').textContent = 'S\u00e9lectionnez votre nom'; $('errLogin').classList.add('visible'); return; }
-        if (!pin) { $('errLogin').textContent = 'Entrez votre PIN'; $('errLogin').classList.add('visible'); return; }
-
-        apiPost('/simulateur-armes/api/login', { user_id: uid, pin: pin }, function (err, data) {
-            if (err || !data || data.error) {
-                $('errLogin').textContent = (data && data.error) || 'Erreur de connexion';
-                $('errLogin').classList.add('visible');
-                return;
-            }
-            $('errLogin').classList.remove('visible');
-            currentUserId = data.user.id;
-            currentUserName = data.user.name;
-            currentUserRole = data.user.role;
-            sessionStorage.setItem('lmc_uid', '' + currentUserId);
-            sessionStorage.setItem('lmc_name', currentUserName);
-            sessionStorage.setItem('lmc_role', currentUserRole);
-            isLoggedIn = true;
-            showDashboard();
-        });
-    }
-
+    // ===== MEMBER DASHBOARD =====
     function showDashboard() {
-        $('lockMembres').style.display = 'none';
+        var tabMembres = $('tab-membres');
+        if (!tabMembres) return;
         $('memberDashboard').style.display = '';
-        $('currentMemberName').textContent = '\ud83d\udc64 ' + currentUserName;
-        $('currentMemberRole').textContent = currentUserRole === 'officer' ? '\u2b50 Officier' : 'Membre';
-        $('currentMemberRole').className = 'member-bar-role role-' + currentUserRole;
-        $('subTabGestion').style.display = currentUserRole === 'officer' ? '' : 'none';
+        $('currentMemberName').textContent = auth.userName;
+        var roleEl = $('currentMemberRole');
+        var labels = { president: 'President', treasurer: 'Tresorier', officer: 'Officier', member: 'Membre', prospect: 'Prospect' };
+        roleEl.textContent = labels[auth.userRole] || auth.userRole;
+        roleEl.className = 'member-bar-role role-' + auth.userRole;
+        $('subTabGestion').style.display = auth.isOfficer() ? '' : 'none';
         loadDashboardData();
     }
 
     function loadDashboardData() {
-        apiGet(function (err, data) {
-            if (err || !data || data.error) { doLogout(); return; }
+        auth.apiGet('/simulateur-armes/api/data', function (err, data) {
+            if (err || !data || data.error) return;
             cachedData = data;
             if (data.members) memberList = data.members;
             populateForms();
@@ -898,26 +616,15 @@
         });
     }
 
-    $('btnLogout').addEventListener('click', doLogout);
-
-    function doLogout() {
-        currentUserId = null;
-        currentUserName = '';
-        currentUserRole = '';
-        isLoggedIn = false;
+    function hideDashboard() {
         cachedData = null;
-        sessionStorage.removeItem('lmc_uid');
-        sessionStorage.removeItem('lmc_name');
-        sessionStorage.removeItem('lmc_role');
-        $('lockMembres').style.display = '';
-        $('memberDashboard').style.display = 'none';
-        $('loginPin').value = '';
+        var dash = $('memberDashboard');
+        if (dash) dash.style.display = 'none';
     }
 
-    if (currentUserId) {
-        isLoggedIn = true;
-        showDashboard();
-    }
+    auth.onLogin(function () { showDashboard(); });
+    auth.onLogout(function () { hideDashboard(); });
+    if (auth.isLoggedIn) showDashboard();
 
     // ===== POPULATE FORMS =====
     function getWeaponStock(weaponId) {
@@ -933,6 +640,7 @@
 
     function populateForms() {
         var sw = $('saleWeapon');
+        if (!sw) return;
         sw.innerHTML = '';
         weaponList.forEach(function (w) {
             var st = getWeaponStock(w.id);
@@ -954,43 +662,48 @@
             });
         }
         updateMvCostVisibility();
-
         document.querySelectorAll('.ct-weapon').forEach(function (sel) { populateWeaponSelect(sel); });
     }
 
     function onSaleWeaponChange() {
-        var wid = parseInt($('saleWeapon').value, 10);
+        var sw = $('saleWeapon');
+        if (!sw) return;
+        var wid = parseInt(sw.value, 10);
         var w = weaponById[wid];
-        if (w && w.sell_price) {
-            $('salePrice').value = w.sell_price;
-        }
+        if (w && w.sell_price) $('salePrice').value = w.sell_price;
         updateSalePreview();
     }
-    $('saleWeapon').addEventListener('change', onSaleWeaponChange);
+    var saleWeaponEl = $('saleWeapon');
+    if (saleWeaponEl) saleWeaponEl.addEventListener('change', onSaleWeaponChange);
 
     // ===== SALE =====
     function updateSalePreview() {
-        var qty = parseInt($('saleQty').value, 10) || 0;
-        var price = parseFloat($('salePrice').value) || 0;
+        var qtyEl = $('saleQty'), priceEl = $('salePrice'), prevEl = $('salePreview');
+        if (!qtyEl || !priceEl || !prevEl) return;
+        var qty = parseInt(qtyEl.value, 10) || 0;
+        var price = parseFloat(priceEl.value) || 0;
         var total = qty * price;
-        $('salePreview').innerHTML = total > 0 ? '<span class="preview-total">Total : <strong>' + fmt(total) + ' \u20ac</strong></span>' : '';
+        prevEl.innerHTML = total > 0 ? '<span class="preview-total">Total : <strong>' + fmt(total) + ' \u20ac</strong></span>' : '';
     }
-    $('saleQty').addEventListener('input', updateSalePreview);
-    $('salePrice').addEventListener('input', updateSalePreview);
+    var saleQtyEl = $('saleQty');
+    if (saleQtyEl) saleQtyEl.addEventListener('input', updateSalePreview);
+    var salePriceEl = $('salePrice');
+    if (salePriceEl) salePriceEl.addEventListener('input', updateSalePreview);
 
-    $('btnSale').addEventListener('click', function () {
+    var btnSale = $('btnSale');
+    if (btnSale) btnSale.addEventListener('click', function () {
         var btn = $('btnSale');
         var buyer = $('saleBuyer').value.trim();
         if (!buyer) { showToast('Indiquez le nom de l\'acheteur', 'error'); return; }
-        btn.disabled = true; btn.textContent = '\u23f3 ...';
-        apiPost('/simulateur-armes/api/sale', {
+        btn.disabled = true; btn.textContent = '...';
+        auth.apiPost('/simulateur-armes/api/sale', {
             weapon_id: parseInt($('saleWeapon').value, 10),
             quantity: parseInt($('saleQty').value, 10) || 1,
             unit_price: parseFloat($('salePrice').value) || 0,
             buyer_name: buyer,
             notes: $('saleNotes').value
         }, function (err, data) {
-            btn.disabled = false; btn.textContent = '\ud83d\udcb0 Enregistrer la vente';
+            btn.disabled = false; btn.textContent = 'Enregistrer la vente';
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             if (data.warning) showToast(data.warning, 'error');
             else showToast(data.message, 'success');
@@ -1000,39 +713,48 @@
     });
 
     // ===== DIRECTION TOGGLE =====
-    $('mvDirIn').addEventListener('click', function () { $('mvDirIn').classList.add('active'); $('mvDirOut').classList.remove('active'); });
-    $('mvDirOut').addEventListener('click', function () { $('mvDirOut').classList.add('active'); $('mvDirIn').classList.remove('active'); });
+    var mvDirIn = $('mvDirIn'), mvDirOut = $('mvDirOut');
+    if (mvDirIn) mvDirIn.addEventListener('click', function () { mvDirIn.classList.add('active'); mvDirOut.classList.remove('active'); });
+    if (mvDirOut) mvDirOut.addEventListener('click', function () { mvDirOut.classList.add('active'); mvDirIn.classList.remove('active'); });
 
     function updateMvCostVisibility() {
-        var isPurchase = $('mvReason').value === 'purchase';
-        $('mvCostRow').style.display = isPurchase ? '' : 'none';
+        var reasonEl = $('mvReason'), costRow = $('mvCostRow');
+        if (!reasonEl || !costRow) return;
+        var isPurchase = reasonEl.value === 'purchase';
+        costRow.style.display = isPurchase ? '' : 'none';
         updateMvCostPreview();
     }
     function updateMvCostPreview() {
-        var qty = parseInt($('mvQty').value, 10) || 0;
-        var cost = parseFloat($('mvUnitCost').value) || 0;
+        var qtyEl = $('mvQty'), costEl = $('mvUnitCost'), prevEl = $('mvCostPreview');
+        if (!qtyEl || !costEl || !prevEl) return;
+        var qty = parseInt(qtyEl.value, 10) || 0;
+        var cost = parseFloat(costEl.value) || 0;
         var total = qty * cost;
-        $('mvCostPreview').innerHTML = total > 0 ? '<span class="preview-total">Co\u00fbt total : <strong>' + fmt(total) + ' \u20ac</strong></span>' : '';
+        prevEl.innerHTML = total > 0 ? '<span class="preview-total">Co\u00fbt total : <strong>' + fmt(total) + ' \u20ac</strong></span>' : '';
     }
-    $('mvReason').addEventListener('change', updateMvCostVisibility);
-    $('mvQty').addEventListener('input', updateMvCostPreview);
-    $('mvUnitCost').addEventListener('input', updateMvCostPreview);
+    var mvReasonEl = $('mvReason');
+    if (mvReasonEl) mvReasonEl.addEventListener('change', updateMvCostVisibility);
+    var mvQtyEl = $('mvQty');
+    if (mvQtyEl) mvQtyEl.addEventListener('input', updateMvCostPreview);
+    var mvUnitCostEl = $('mvUnitCost');
+    if (mvUnitCostEl) mvUnitCostEl.addEventListener('input', updateMvCostPreview);
 
     // ===== MOVEMENT =====
-    $('btnMovement').addEventListener('click', function () {
+    var btnMv = $('btnMovement');
+    if (btnMv) btnMv.addEventListener('click', function () {
         var btn = $('btnMovement');
         var qty = parseInt($('mvQty').value, 10) || 0;
         if (qty <= 0) { showToast('Quantit\u00e9 invalide', 'error'); return; }
         var isOut = $('mvDirOut').classList.contains('active');
-        btn.disabled = true; btn.textContent = '\u23f3 ...';
-        apiPost('/simulateur-armes/api/movement', {
+        btn.disabled = true; btn.textContent = '...';
+        auth.apiPost('/simulateur-armes/api/movement', {
             weapon_stock_id: parseInt($('mvStock').value, 10),
             quantity_change: isOut ? -qty : qty,
             reason: $('mvReason').value,
             unit_cost: $('mvReason').value === 'purchase' ? (parseFloat($('mvUnitCost').value) || 0) : null,
             notes: $('mvNotes').value
         }, function (err, data) {
-            btn.disabled = false; btn.textContent = '\ud83d\udce6 Enregistrer le mouvement';
+            btn.disabled = false; btn.textContent = 'Enregistrer le mouvement';
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             showToast(data.message, 'success');
             $('mvNotes').value = ''; $('mvQty').value = 1; $('mvUnitCost').value = 0; $('mvCostPreview').innerHTML = '';
@@ -1041,7 +763,8 @@
     });
 
     // ===== CONTRACT CREATE =====
-    $('btnAddCtItem').addEventListener('click', function () {
+    var btnAddItem = $('btnAddCtItem');
+    if (btnAddItem) btnAddItem.addEventListener('click', function () {
         var row = document.createElement('div');
         row.className = 'form-row ct-item-row';
         row.innerHTML = '<div class="form-group"><select class="fm-input ct-weapon"></select></div>' +
@@ -1052,7 +775,8 @@
         row.querySelector('.rm-btn').addEventListener('click', function () { row.remove(); });
     });
 
-    $('btnCreateContract').addEventListener('click', function () {
+    var btnCt = $('btnCreateContract');
+    if (btnCt) btnCt.addEventListener('click', function () {
         var btn = $('btnCreateContract');
         var name = $('ctName').value.trim();
         var client = $('ctClient').value.trim();
@@ -1064,9 +788,9 @@
             if (wid && qty > 0) items.push({ weapon_id: wid, qty_ordered: qty });
         });
         if (!items.length) { showToast('Ajoutez au moins une arme', 'error'); return; }
-        btn.disabled = true; btn.textContent = '\u23f3 ...';
-        apiPost('/simulateur-armes/api/contract', { name: name, client_name: client, notes: $('ctNotes').value, items: items }, function (err, data) {
-            btn.disabled = false; btn.textContent = '\ud83d\udcdd Cr\u00e9er le contrat';
+        btn.disabled = true; btn.textContent = '...';
+        auth.apiPost('/simulateur-armes/api/contract', { name: name, client_name: client, notes: $('ctNotes').value, items: items }, function (err, data) {
+            btn.disabled = false; btn.textContent = 'Creer le contrat';
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             showToast(data.message, 'success');
             $('ctName').value = ''; $('ctClient').value = ''; $('ctNotes').value = '';
@@ -1077,33 +801,32 @@
         });
     });
 
-    // ===== MEMBER MANAGEMENT (officers) =====
-    $('btnCreateMember').addEventListener('click', function () {
+    // ===== MEMBER MANAGEMENT =====
+    var btnCreateMember = $('btnCreateMember');
+    if (btnCreateMember) btnCreateMember.addEventListener('click', function () {
         var btn = $('btnCreateMember');
         var name = $('newMemberName').value.trim();
         var pin = $('newMemberPin').value.trim();
         if (!name || !pin) { showToast('Nom et PIN requis', 'error'); return; }
-        btn.disabled = true; btn.textContent = '\u23f3 ...';
-        apiPost('/simulateur-armes/api/member', { name: name, pin: pin, role: $('newMemberRole').value }, function (err, data) {
-            btn.disabled = false; btn.textContent = '\ud83d\udc64 Cr\u00e9er le membre';
+        btn.disabled = true; btn.textContent = '...';
+        auth.apiPost('/simulateur-armes/api/member', { name: name, pin: pin, role: $('newMemberRole').value }, function (err, data) {
+            btn.disabled = false; btn.textContent = 'Creer le membre';
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             showToast(data.message, 'success');
             $('newMemberName').value = ''; $('newMemberPin').value = '';
-            if (data.member) {
-                loginSel.insertAdjacentHTML('beforeend', '<option value="' + data.member.id + '">' + esc(data.member.name) + '</option>');
-            }
             refreshData();
         });
     });
 
-    $('btnChangePin').addEventListener('click', function () {
+    var btnPin = $('btnChangePin');
+    if (btnPin) btnPin.addEventListener('click', function () {
         var btn = $('btnChangePin');
         var cur = $('pinCurrent').value;
         var nw = $('pinNew').value;
         if (!cur || !nw) { showToast('Remplissez les deux champs', 'error'); return; }
-        btn.disabled = true; btn.textContent = '\u23f3 ...';
-        apiPost('/simulateur-armes/api/change-pin', { current_pin: cur, new_pin: nw }, function (err, data) {
-            btn.disabled = false; btn.textContent = '\ud83d\udd11 Modifier';
+        btn.disabled = true; btn.textContent = '...';
+        auth.apiPost('/simulateur-armes/api/change-pin', { current_pin: cur, new_pin: nw }, function (err, data) {
+            btn.disabled = false; btn.textContent = 'Modifier';
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             showToast(data.message, 'success');
             $('pinCurrent').value = ''; $('pinNew').value = '';
@@ -1112,7 +835,7 @@
 
     // ===== REFRESH =====
     function refreshData() {
-        apiGet(function (err, data) {
+        auth.apiGet('/simulateur-armes/api/data', function (err, data) {
             if (err || !data || data.error) return;
             cachedData = data;
             if (data.members) memberList = data.members;
@@ -1157,7 +880,7 @@
             html += '<div class="stock-card ' + (s.quantity > 0 ? 'has-stock' : 'no-stock') + '" data-quicksell="' + wid + '" title="Cliquer pour vendre">';
             html += '<div class="stock-card-qty">' + s.quantity + '</div>';
             html += '<div class="stock-card-name">' + esc(s.name) + '</div>';
-            if (s.quantity > 0 && wid) html += '<div class="stock-card-action">\ud83d\udcb0 Vendre</div>';
+            if (s.quantity > 0 && wid) html += '<div class="stock-card-action">Vendre</div>';
             html += '</div>';
         });
         $('stockWeaponsCards').innerHTML = html || '<div class="empty-msg">Aucune arme</div>';
@@ -1180,14 +903,16 @@
     }
 
     function renderAlerts(alerts) {
-        if (!alerts || !alerts.length) { $('alertBanner').style.display = 'none'; return; }
-        var html = '\u26a0\ufe0f Stock bas : ';
+        var banner = $('alertBanner');
+        if (!banner) return;
+        if (!alerts || !alerts.length) { banner.style.display = 'none'; return; }
+        var html = 'Stock bas : ';
         alerts.forEach(function (a, i) {
             if (i > 0) html += ', ';
             html += '<strong>' + esc(a.name) + '</strong> (' + a.quantity + ')';
         });
-        $('alertBanner').innerHTML = html;
-        $('alertBanner').style.display = '';
+        banner.innerHTML = html;
+        banner.style.display = '';
     }
 
     document.addEventListener('click', function (e) {
@@ -1197,12 +922,15 @@
         if (!wid) return;
         document.querySelectorAll('.sub-tab').forEach(function (b) { b.classList.remove('active'); });
         document.querySelectorAll('.sub-content').forEach(function (c) { c.classList.remove('active'); });
-        document.querySelector('.sub-tab[data-subtab="actions"]').classList.add('active');
-        $('sub-actions').classList.add('active');
-        $('saleWeapon').value = wid;
-        onSaleWeaponChange();
+        var actionsTab = document.querySelector('.sub-tab[data-subtab="actions"]');
+        if (actionsTab) actionsTab.classList.add('active');
+        var actionsContent = $('sub-actions');
+        if (actionsContent) actionsContent.classList.add('active');
+        var sw = $('saleWeapon');
+        if (sw) { sw.value = wid; onSaleWeaponChange(); }
         $('saleQty').value = 1;
-        $('saleBuyer').focus();
+        var buyerEl = $('saleBuyer');
+        if (buyerEl) buyerEl.focus();
     });
 
     // ===== CONTRACTS =====
@@ -1215,7 +943,7 @@
     }
 
     function renderContractCards(contracts, showActions) {
-        var isOfficer = currentUserRole === 'officer';
+        var isOfficer = auth.isOfficer();
         var html = '';
         contracts.forEach(function (c) {
             html += '<div class="contract-card">';
@@ -1265,7 +993,7 @@
         var newVal = Math.max(0, cur + delta);
         countEl.textContent = newVal;
         btn.disabled = true;
-        apiPut('/simulateur-armes/api/contract-item/' + iid, { qty_delivered: newVal }, function (err, data) {
+        auth.apiPut('/simulateur-armes/api/contract-item/' + iid, { qty_delivered: newVal }, function (err, data) {
             btn.disabled = false;
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             refreshData();
@@ -1277,7 +1005,7 @@
         var iid = e.target.getAttribute('data-iid');
         var newQty = parseInt(e.target.value, 10);
         if (!newQty || newQty < 1) return;
-        apiPut('/simulateur-armes/api/contract-item/' + iid, { qty_ordered: newQty }, function (err, data) {
+        auth.apiPut('/simulateur-armes/api/contract-item/' + iid, { qty_ordered: newQty }, function (err, data) {
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             showToast('Quantit\u00e9 mise \u00e0 jour', 'success');
             refreshData();
@@ -1290,9 +1018,9 @@
         var cid = btn.getAttribute('data-cid');
         var sel = document.querySelector('.ct-status-sel[data-cid="' + cid + '"]');
         if (!sel) return;
-        btn.disabled = true; btn.textContent = '\u23f3';
-        apiPut('/simulateur-armes/api/contract/' + cid, { status: sel.value }, function (err, data) {
-            btn.disabled = false; btn.textContent = 'Mettre \u00e0 jour';
+        btn.disabled = true; btn.textContent = '...';
+        auth.apiPut('/simulateur-armes/api/contract/' + cid, { status: sel.value }, function (err, data) {
+            btn.disabled = false; btn.textContent = 'Statut';
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             showToast(data.message, 'success');
             refreshData();
@@ -1398,7 +1126,7 @@
             html += '<span class="mv-reason">' + esc(m.reason_label) + '</span>';
             html += '<span class="mv-user">' + esc(m.user) + '</span>';
             if (m.notes) html += '<span class="mv-notes">' + esc(m.notes) + '</span>';
-            if (m.unit_cost) html += '<span class="mv-notes">\ud83d\udcb0 ' + fmt(m.unit_cost) + ' \u20ac/u (total: ' + fmt(m.unit_cost * Math.abs(m.quantity_change)) + ' \u20ac)</span>';
+            if (m.unit_cost) html += '<span class="mv-notes">' + fmt(m.unit_cost) + ' \u20ac/u (total: ' + fmt(m.unit_cost * Math.abs(m.quantity_change)) + ' \u20ac)</span>';
             html += '</div>';
         });
         $('movementsList').innerHTML = html || '<div class="empty-msg">Aucun mouvement</div>';
@@ -1419,7 +1147,7 @@
 
     // ===== MEMBERS LIST =====
     function renderMembers(members) {
-        if (currentUserRole !== 'officer') return;
+        if (!auth.isOfficer()) return;
         var html = '';
         members.forEach(function (m) {
             var badge = m.role === 'officer' ? '<span class="member-badge officer">Officier</span>' : '<span class="member-badge">Membre</span>';
@@ -1434,8 +1162,8 @@
         if (!btn) return;
         var mid = btn.getAttribute('data-mid');
         var newRole = btn.getAttribute('data-role') === 'officer' ? 'member' : 'officer';
-        btn.disabled = true; btn.textContent = '\u23f3';
-        apiPut('/simulateur-armes/api/member/' + mid, { role: newRole }, function (err, data) {
+        btn.disabled = true; btn.textContent = '...';
+        auth.apiPut('/simulateur-armes/api/member/' + mid, { role: newRole }, function (err, data) {
             btn.disabled = false;
             if (err || (data && data.error)) { showToast((data && data.error) || 'Erreur', 'error'); return; }
             showToast(data.message, 'success');

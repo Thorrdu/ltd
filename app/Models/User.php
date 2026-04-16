@@ -2,23 +2,25 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
 
 class User extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    public const ROLES = [
+        'prospect'  => ['label' => 'Prospect',  'level' => 1],
+        'member'    => ['label' => 'Membre',     'level' => 2],
+        'officer'   => ['label' => 'Officier',   'level' => 3],
+        'treasurer' => ['label' => 'Trésorier',  'level' => 4],
+        'president' => ['label' => 'Président',  'level' => 5],
+    ];
+
     protected $fillable = [
         'name',
         'email',
@@ -27,22 +29,12 @@ class User extends Authenticatable implements FilamentUser
         'sim_pin',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
         'sim_pin',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -51,15 +43,67 @@ class User extends Authenticatable implements FilamentUser
         ];
     }
 
-    public function canAccessPanel(Panel $panel): bool
+    // ── Role helpers ─────────────────────────────────────────
+
+    public function getRoleLevel(): int
     {
-        return true;
+        return self::ROLES[$this->role]['level'] ?? 0;
+    }
+
+    public function getRoleLabelAttribute(): string
+    {
+        return self::ROLES[$this->role]['label'] ?? $this->role;
+    }
+
+    public function isAtLeast(string $role): bool
+    {
+        $required = self::ROLES[$role]['level'] ?? 0;
+
+        return $this->getRoleLevel() >= $required;
+    }
+
+    public function isProspect(): bool
+    {
+        return $this->role === 'prospect';
+    }
+
+    public function isMember(): bool
+    {
+        return $this->isAtLeast('member');
     }
 
     public function isOfficer(): bool
     {
-        return $this->role === 'officer';
+        return $this->isAtLeast('officer');
     }
+
+    public function isTreasurer(): bool
+    {
+        return $this->isAtLeast('treasurer');
+    }
+
+    public function isPresident(): bool
+    {
+        return $this->role === 'president';
+    }
+
+    public static function roleOptions(): array
+    {
+        return collect(self::ROLES)->mapWithKeys(fn ($v, $k) => [$k => $v['label']])->all();
+    }
+
+    // ── Filament access ──────────────────────────────────────
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return match ($panel->getId()) {
+            'admin'     => $this->isAtLeast('treasurer'),
+            'armurerie' => $this->isAtLeast('officer'),
+            default     => false,
+        };
+    }
+
+    // ── Sim PIN ──────────────────────────────────────────────
 
     public function checkSimPin(string $pin): bool
     {
@@ -67,6 +111,6 @@ class User extends Authenticatable implements FilamentUser
             return false;
         }
 
-        return \Illuminate\Support\Facades\Hash::check($pin, $this->sim_pin);
+        return Hash::check($pin, $this->sim_pin);
     }
 }

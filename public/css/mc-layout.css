@@ -1,0 +1,329 @@
+/* ============================================
+   MC TOP BAR -- minimal
+   ============================================ */
+.mc-top-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: #0a0a0a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.mc-top-home {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: 3px;
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color 0.15s;
+}
+
+.mc-top-home:hover { color: #999; }
+
+.mc-top-spacer { flex: 1; }
+
+.mc-top-auth {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mc-login-btn {
+    padding: 5px 14px;
+    background: #fff;
+    border: none;
+    border-radius: 3px;
+    color: #000;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.mc-login-btn:hover { background: #ddd; }
+
+.mc-auth-logged-in {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mc-user-name {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.mc-user-role {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.08);
+    color: #888;
+}
+
+.mc-user-role.role-president { color: #ffd700; background: rgba(255, 215, 0, 0.12); }
+.mc-user-role.role-treasurer { color: #60a5fa; background: rgba(96, 165, 250, 0.12); }
+.mc-user-role.role-officer { color: #ccc; background: rgba(255, 255, 255, 0.1); }
+.mc-user-role.role-member { color: #666; background: rgba(255, 255, 255, 0.04); }
+.mc-user-role.role-prospect { color: #555; background: rgba(255, 255, 255, 0.03); }
+
+.mc-logout-btn {
+    padding: 3px 8px;
+    background: #0e0e0e;
+    border: 1px solid #333;
+    border-radius: 3px;
+    color: #666;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+    text-decoration: none;
+}
+
+.mc-logout-btn:hover { color: #fff; border-color: #fff; }
+
+/* ============================================
+   MC LOGIN PANEL (dropdown)
+   ============================================ */
+.mc-login-panel {
+    position: fixed;
+    top: 42px;
+    right: 16px;
+    background: linear-gradient(160deg, #141414, #1a1a1a);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    padding: 20px;
+    z-index: 200;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    animation: fadeIn 0.15s;
+    min-width: 260px;
+}
+
+.mc-login-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.mc-login-title {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+/* ============================================
+   MC HUB PAGE
+   ============================================ */
+.mc-hub {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 16px 60px;
+}
+
+.mc-hub-header {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+.mc-hub-emblem {
+    width: 100px;
+    height: auto;
+    filter: invert(1) drop-shadow(0 0 12px rgba(255, 255, 255, 0.2));
+    margin-bottom: 10px;
+}
+
+.mc-hub-motto {
+    font-family: 'Georgia', 'Times New Roman', serif;
+    font-size: 10px;
+    font-style: italic;
+    color: #444;
+    letter-spacing: 1px;
+}
+
+/* Section labels */
+.mc-hub-section {
+    margin-top: 28px;
+}
+
+.mc-hub-section:first-child {
+    margin-top: 0;
+}
+
+.mc-hub-section-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    padding-left: 4px;
+}
+
+/* Button grid */
+.mc-hub-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.mc-hub-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 16px;
+    background: linear-gradient(145deg, #151515, #0e0e0e);
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    min-height: 100px;
+}
+
+.mc-hub-btn:hover {
+    border-color: #fff;
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.mc-hub-btn-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #e0e0e0;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.mc-hub-btn-desc {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    color: #555;
+    margin-top: 4px;
+    text-align: center;
+}
+
+.mc-hub-btn.mc-hub-btn-wide {
+    grid-column: 1 / -1;
+}
+
+/* Login prompt on hub */
+.mc-hub-login-prompt {
+    text-align: center;
+    padding: 20px;
+    margin-top: 28px;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.mc-hub-login-prompt p {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    color: #555;
+    margin: 0 0 10px;
+}
+
+/* ============================================
+   PAGE HEADER (used inside content pages)
+   ============================================ */
+.mc-page-header {
+    text-align: center;
+    padding: 16px 0 8px;
+}
+
+.mc-page-header img {
+    width: 80px;
+    height: auto;
+    filter: invert(1) drop-shadow(0 0 8px rgba(255, 255, 255, 0.15));
+    margin-bottom: 4px;
+}
+
+.mc-page-title {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+.mc-page-back {
+    display: inline-block;
+    margin-top: 6px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: #444;
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    transition: color 0.15s;
+}
+
+.mc-page-back:hover { color: #fff; }
+
+/* ============================================
+   MEMBER BAR (espace-membres page)
+   ============================================ */
+.mc-member-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: linear-gradient(135deg, #151515 0%, #1a1a1a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+
+.mc-member-bar-name {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex: 1;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 600px) {
+    .mc-top-bar {
+        padding: 6px 10px;
+    }
+    .mc-top-home { font-size: 11px; letter-spacing: 2px; }
+    .mc-hub { padding: 24px 12px 40px; }
+    .mc-hub-grid { grid-template-columns: 1fr; }
+    .mc-hub-btn { min-height: 70px; padding: 20px 16px; }
+    .mc-login-panel { right: 8px; left: 8px; }
+}
+
+@media (max-width: 380px) {
+    .mc-auth-logged-in { flex-wrap: wrap; justify-content: flex-end; }
+}

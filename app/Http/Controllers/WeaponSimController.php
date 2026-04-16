@@ -16,6 +16,15 @@ use Illuminate\Support\Facades\Validator;
 
 class WeaponSimController extends Controller
 {
+    public function hub()
+    {
+        $members = User::orderBy('name')->get(['id', 'name', 'role']);
+
+        return view('mc-hub', [
+            'members' => $members,
+        ]);
+    }
+
     public function index()
     {
         $weapons = Weapon::active()->orderBy('sort_order')->get();
@@ -23,7 +32,28 @@ class WeaponSimController extends Controller
 
         return view('simulateur-armes', [
             'weaponsJson' => $weapons->toJson(),
+            'members' => $members,
+        ]);
+    }
+
+    public function munitions()
+    {
+        $members = User::orderBy('name')->get(['id', 'name', 'role']);
+
+        return view('simulateur-munitions', [
+            'members' => $members,
+        ]);
+    }
+
+    public function espaceMembres()
+    {
+        $weapons = Weapon::active()->orderBy('sort_order')->get();
+        $members = User::orderBy('name')->get(['id', 'name', 'role']);
+
+        return view('espace-membres', [
+            'weaponsJson' => $weapons->toJson(),
             'membersJson' => $members->toJson(),
+            'members' => $members,
         ]);
     }
 
@@ -333,7 +363,7 @@ class WeaponSimController extends Controller
         }
 
         $user = $this->authUser($request);
-        if ($user->role !== 'officer') {
+        if (! $user->isOfficer()) {
             return response()->json(['error' => 'Réservé aux officiers'], 403);
         }
 
@@ -381,7 +411,7 @@ class WeaponSimController extends Controller
         }
         if ($request->has('qty_ordered')) {
             $user = $this->authUser($request);
-            if ($user->role !== 'officer') {
+            if (! $user->isOfficer()) {
                 return response()->json(['error' => 'Réservé aux officiers'], 403);
             }
             $item->qty_ordered = $request->qty_ordered;
@@ -400,13 +430,14 @@ class WeaponSimController extends Controller
         }
 
         $user = $this->authUser($request);
-        if ($user->role !== 'officer') {
+        if (! $user->isOfficer()) {
             return response()->json(['error' => 'Réservé aux officiers'], 403);
         }
 
+        $allowedRoles = array_keys(User::ROLES);
         $v = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
-            'role' => 'required|string|in:member,officer',
+            'role' => 'required|string|in:' . implode(',', $allowedRoles),
             'pin' => 'required|string|min:4|max:20',
         ]);
 
@@ -438,15 +469,16 @@ class WeaponSimController extends Controller
         }
 
         $user = $this->authUser($request);
-        if ($user->role !== 'officer') {
+        if (! $user->isOfficer()) {
             return response()->json(['error' => 'Réservé aux officiers'], 403);
         }
 
         $member = User::findOrFail($id);
 
+        $allowedRoles = array_keys(User::ROLES);
         $v = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:100',
-            'role' => 'sometimes|string|in:member,officer',
+            'role' => 'sometimes|string|in:' . implode(',', $allowedRoles),
             'pin' => 'sometimes|string|min:4|max:20',
         ]);
 

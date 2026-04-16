@@ -1,0 +1,67 @@
+@extends('layouts.mc')
+
+@section('title', 'LOST MC -- Simulateur Munitions')
+
+@section('content')
+<div class="menu-board" style="width:960px;">
+    <div class="inner-board">
+
+        <div class="mc-page-header">
+            <img src="{{ asset('img/3651.webp') }}" alt="Lost MC">
+            <div class="mc-page-title">Simulateur Munitions</div>
+            <a href="/mc" class="mc-page-back">&larr; Retour a l'accueil</a>
+        </div>
+
+        <div class="sim-section" id="ammoCraftSection">
+            <div class="sim-section-title">Craft munitions</div>
+            <p class="ammo-sim-intro">Chaque craft produit <strong>10 munitions</strong>. Les couts sont affiches <strong>par munition</strong>. La poudre coute <strong>100 EUR</strong>/u et <strong>1 minerai de fer = 2 fragments</strong>. Les prix de vente sont calcules automatiquement a partir des couts (exceptions : 5.56x45, 7.62x39, 12 Gauge). Le tableau se met a jour en temps reel si vous modifiez le prix du fer.</p>
+            <div class="ammo-sim-params">
+                <label class="ammo-sim-label" for="ammoFerPrice">Prix du fer (EUR / unite)</label>
+                <input type="number" class="ammo-sim-input" id="ammoFerPrice" min="0" step="0.01" value="30" inputmode="decimal">
+            </div>
+            <div class="ammo-craft-wrap">
+                <table class="ammo-craft-table" aria-label="Couts et marges des munitions">
+                    <thead>
+                        <tr>
+                            <th>Munition</th>
+                            <th>Tps craft</th>
+                            <th>Pdr / craft</th>
+                            <th>Frag / craft</th>
+                            <th>Cout / mun (F ach.)</th>
+                            <th>Cout / mun (F rec.)</th>
+                            <th>Vente / mun</th>
+                            <th>Marge / mun (F ach.)</th>
+                            <th>Marge / mun (F rec.)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ammoCraftBody"></tbody>
+                    <tfoot>
+                        <tr class="ammo-craft-foot">
+                            <td colspan="9">EUR par munition. Vente : poudre / mun <= 50 EUR -> x 2 sur la poudre ; sinon x 1,5 sur le cout fer achete ; arrondi 10 EUR ; exceptions 5.56x45, 7.62x39, 12 Gauge. Pdr/Frag = par craft.</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="ammo-target-block">
+                <div class="sim-section-title">Objectif en munitions</div>
+                <p class="ammo-sim-intro ammo-sim-intro-tight">Saisissez le <strong>nombre de munitions</strong> a fabriquer (ex. 1000 munitions, pas 1000 crafts). Les crafts se font par lots de <strong>10 munitions</strong> : le nombre de crafts est arrondi au superieur. Le <strong>prix de vente / munition</strong> est pris du tableau par defaut ; vous pouvez le <strong>remplacer</strong> pour tester une marge.</p>
+                <div class="ammo-sim-params ammo-target-params">
+                    <label class="ammo-sim-label" for="ammoTargetSlug">Calibre</label>
+                    <select id="ammoTargetSlug" class="ammo-sim-select" aria-label="Calibre pour la simulation"></select>
+                    <label class="ammo-sim-label" for="ammoTargetMuns">Munitions a fabriquer</label>
+                    <input type="number" class="ammo-sim-input ammo-sim-input-muns" id="ammoTargetMuns" min="1" max="9999999" step="1" value="1000" inputmode="numeric">
+                    <label class="ammo-sim-label" for="ammoTargetSellPriceMun">Prix vente / mun (optionnel)</label>
+                    <input type="number" class="ammo-sim-input" id="ammoTargetSellPriceMun" min="0" step="0.01" placeholder="Tableau" inputmode="decimal" autocomplete="off">
+                </div>
+                <div class="results-table ammo-target-results" id="ammoTargetResults"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+@endsection
+
+@section('scripts')
+<script src="{{ asset('js/simulateur-munitions.js') }}"></script>
+@endsection

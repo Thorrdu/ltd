@@ -12,7 +12,10 @@ Route::middleware(AllowIframe::class)->group(function () {
     Route::get('/entreprises', [PageController::class, 'entreprises'])->name('entreprises');
 });
 
+Route::get('/mc', [WeaponSimController::class, 'hub'])->name('mc.hub');
 Route::get('/simulateur-armes', [WeaponSimController::class, 'index'])->name('simulateur-armes');
+Route::get('/simulateur-munitions', [WeaponSimController::class, 'munitions'])->name('simulateur-munitions');
+Route::get('/espace-membres', [WeaponSimController::class, 'espaceMembres'])->name('espace-membres');
 Route::post('/simulateur-armes/api/login', [WeaponSimController::class, 'login']);
 Route::get('/simulateur-armes/api/data', [WeaponSimController::class, 'apiData']);
 Route::post('/simulateur-armes/api/sale', [WeaponSimController::class, 'createSale']);
