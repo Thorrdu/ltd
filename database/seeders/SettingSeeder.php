@@ -28,6 +28,9 @@ class SettingSeeder extends Seeder
             ['group' => 'cotisations', 'key' => 'cotisation_prospect', 'label' => 'Cotisation prospect (par semaine)', 'type' => 'integer', 'value' => '2000',  'description' => 'Montant hebdomadaire pour les prospects',          'sort_order' => 1],
             ['group' => 'cotisations', 'key' => 'cotisation_member',   'label' => 'Cotisation membre (par semaine)',   'type' => 'integer', 'value' => '5000',  'description' => 'Montant hebdomadaire pour les membres',            'sort_order' => 2],
             ['group' => 'cotisations', 'key' => 'cotisation_officer',  'label' => 'Cotisation officier (par semaine)', 'type' => 'integer', 'value' => '10000', 'description' => 'Montant hebdomadaire pour les officiers et au-dessus', 'sort_order' => 3],
+
+            ['group' => 'rankings', 'key' => 'rankings.eligible_categories', 'label' => 'Categories eligibles pour le classement', 'type' => 'json', 'value' => '["drug","weapon_finished","ammo","melee","drug_raw","misc"]', 'description' => 'Categories de stock_items qui comptent dans le classement', 'sort_order' => 1],
+            ['group' => 'rankings', 'key' => 'rankings.criteria',             'label' => 'Critere de classement',                  'type' => 'string', 'value' => 'revenue', 'description' => 'revenue = CA, count = nb ventes, quantity = qte totale', 'sort_order' => 2],
         ];
 
         $keys = array_column($settings, 'key');

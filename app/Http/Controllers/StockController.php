@@ -738,6 +738,141 @@ class StockController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────
+    // Stock movement (Phase 3B.1)
+    // ─────────────────────────────────────────────────────────
+
+    public function apiMovement(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireAccess($request)) {
+            return $denied;
+        }
+        $user = $this->authUser($request);
+
+        $v = Validator::make($request->all(), [
+            'stock_item_id' => 'required|integer|exists:stock_items,id',
+            'quantity'      => 'required|integer|min:1|max:999999999',
+            'direction'     => 'required|in:in,out',
+            'reason'        => 'required|string|in:' . implode(',', array_keys(StockMovement::REASONS)),
+            'unit_cost'     => 'nullable|integer|min:0|max:999999999',
+            'notes'         => 'nullable|string|max:500',
+        ]);
+        if ($v->fails()) {
+            return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
+        }
+
+        $item = StockItem::find($request->input('stock_item_id'));
+        if (! $item || ! $item->is_active) {
+            return response()->json(['error' => 'Article indisponible'], 404);
+        }
+
+        $qty = (int) $request->input('quantity');
+        $direction = $request->input('direction');
+        $delta = $direction === 'in' ? $qty : -$qty;
+        $reason = $request->input('reason');
+        $unitCost = $request->input('unit_cost');
+        $notes = $request->input('notes');
+        $warning = null;
+
+        if ($direction === 'out' && $item->quantity < $qty) {
+            $warning = 'Stock insuffisant (' . $item->quantity . ' en stock). Le stock passera en negatif.';
+        }
+
+        DB::transaction(function () use ($item, $delta, $reason, $unitCost, $user, $notes) {
+            $item->increment('quantity', $delta);
+            StockMovement::create([
+                'stock_item_id'   => $item->id,
+                'quantity_change' => $delta,
+                'reason'          => $reason,
+                'unit_cost'       => $reason === 'purchase' ? $unitCost : null,
+                'user_id'         => $user->id,
+                'notes'           => $notes,
+                'created_at'      => now(),
+            ]);
+        });
+
+        $label = $direction === 'in' ? 'Entree' : 'Sortie';
+
+        return response()->json([
+            'ok'      => true,
+            'message' => $label . ' de ' . $qty . '× ' . $item->name . ' enregistree',
+            'warning' => $warning,
+        ]);
+    }
+
+    public function apiCreateItem(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireAccess($request)) {
+            return $denied;
+        }
+        $user = $this->authUser($request);
+
+        $categories = array_keys(StockItem::CATEGORIES);
+
+        $v = Validator::make($request->all(), [
+            'name'                   => 'required|string|max:120',
+            'category'               => 'required|string|in:' . implode(',', $categories),
+            'quantity'               => 'nullable|integer|min:0|max:999999999',
+            'default_sell_price'     => 'nullable|integer|min:0|max:999999999',
+            'default_purchase_price' => 'nullable|integer|min:0|max:999999999',
+            'unit_weight_g'          => 'nullable|integer|min:0|max:9999999',
+            'notes'                  => 'nullable|string|max:1000',
+        ]);
+        if ($v->fails()) {
+            return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
+        }
+
+        $name = trim($request->input('name'));
+        $category = $request->input('category');
+        $slug = \Illuminate\Support\Str::slug($category . '_' . $name, '_');
+        if (strlen($slug) > 110) {
+            $slug = substr($slug, 0, 110);
+        }
+        $base = $slug;
+        $i = 1;
+        while (StockItem::where('slug', $slug)->exists()) {
+            $i++;
+            $slug = $base . '_' . $i;
+        }
+
+        $qty = (int) ($request->input('quantity') ?? 0);
+
+        $item = DB::transaction(function () use ($slug, $name, $category, $qty, $request, $user) {
+            $item = StockItem::create([
+                'slug'                   => $slug,
+                'name'                   => $name,
+                'category'               => $category,
+                'quantity'               => $qty,
+                'default_sell_price'     => $request->input('default_sell_price'),
+                'default_purchase_price' => $request->input('default_purchase_price'),
+                'unit_weight_g'          => $request->input('unit_weight_g'),
+                'is_sellable'            => true,
+                'is_active'              => true,
+                'sort_order'             => 5000,
+                'notes'                  => $request->input('notes'),
+            ]);
+
+            if ($qty > 0) {
+                StockMovement::create([
+                    'stock_item_id'   => $item->id,
+                    'quantity_change' => $qty,
+                    'reason'          => 'adjustment',
+                    'user_id'         => $user->id,
+                    'notes'           => 'Creation article avec stock initial de ' . $qty,
+                    'created_at'      => now(),
+                ]);
+            }
+
+            return $item;
+        });
+
+        return response()->json([
+            'ok'      => true,
+            'message' => 'Article "' . $item->name . '" cree (slug: ' . $item->slug . ')',
+            'item'    => $this->mapItem($item),
+        ]);
+    }
+
+    // ─────────────────────────────────────────────────────────
     // Import CSV (Phase 3.5)
     // ─────────────────────────────────────────────────────────
 

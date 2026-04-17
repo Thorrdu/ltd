@@ -27,6 +27,7 @@ class Setting extends Model
         'drugs'          => 'Drogues',
         'melee_weapons'  => 'Armes blanches',
         'cotisations'    => 'Cotisations',
+        'rankings'       => 'Classements',
         'general'        => 'Général',
     ];
 

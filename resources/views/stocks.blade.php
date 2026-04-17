@@ -24,6 +24,7 @@
 
             <div class="sub-tab-bar">
                 <button class="sub-tab active" data-subtab="overview">Vue d'ensemble</button>
+                <button class="sub-tab" data-subtab="movement">Mouvement</button>
                 <button class="sub-tab" data-subtab="attribute">Attribuer</button>
                 <button class="sub-tab" data-subtab="attributions">Attributions en cours</button>
                 <button class="sub-tab" data-subtab="validations" id="tabValidations" style="display:none;">Validations</button>
@@ -41,10 +42,81 @@
                             <option value="{{ $key }}">{{ $label }}</option>
                         @endforeach
                     </select>
+                    <button class="action-btn-sm" id="btnNewItem" style="margin-left:auto;">+ Nouvel article</button>
+                </div>
+
+                {{-- Formulaire creation article (masque par defaut) --}}
+                <div class="action-card" id="newItemForm" style="display:none; margin-bottom:12px;">
+                    <div class="action-card-title">Creer un nouvel article</div>
+                    <div class="action-form">
+                        <div class="form-row">
+                            <div class="form-group"><label>Nom</label><input type="text" id="niName" class="fm-input" maxlength="120" placeholder="Ex: Brique de cocaine"></div>
+                            <div class="form-group sm"><label>Categorie</label>
+                                <select id="niCategory" class="fm-input">
+                                    @foreach($categoriesMap as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group sm"><label>Quantite initiale</label><input type="number" id="niQty" class="fm-input" value="0" min="0" max="999999999"></div>
+                            <div class="form-group sm"><label>Prix vente ($)</label><input type="number" id="niSellPrice" class="fm-input" value="0" min="0"></div>
+                            <div class="form-group sm"><label>Prix achat ($)</label><input type="number" id="niPurchPrice" class="fm-input" value="0" min="0"></div>
+                            <div class="form-group sm"><label>Poids (g)</label><input type="number" id="niWeight" class="fm-input" value="0" min="0"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full"><label>Notes <span class="optional">(opt.)</span></label><input type="text" id="niNotes" class="fm-input" placeholder="..."></div>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="action-btn sale-btn" id="niBtnSave" style="flex:1;">Creer l'article</button>
+                            <button class="action-btn-sm" id="niBtnCancel">Annuler</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="stocks-totals" id="stocksTotals"></div>
                 <div class="stocks-list" id="stocksList">
                     <div class="empty-msg">Chargement...</div>
+                </div>
+            </div>
+
+            {{-- SUB : Mouvement de stock --}}
+            <div class="sub-content" id="sub-movement">
+                <div class="action-card">
+                    <div class="action-card-title">Enregistrer un mouvement de stock</div>
+                    <p class="action-hint">
+                        Entree (achat, recolte, craft) ou sortie (pret, don, perte, ajustement) d'articles dans le coffre central.
+                    </p>
+                    <div class="action-form">
+                        <div class="form-row">
+                            <div class="form-group full"><label>Article</label><select id="mItem" class="fm-input"></select></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Direction</label>
+                                <div class="direction-toggle">
+                                    <button class="dir-btn active" data-dir="in" id="mDirIn">+ Entree</button>
+                                    <button class="dir-btn" data-dir="out" id="mDirOut">- Sortie</button>
+                                </div>
+                            </div>
+                            <div class="form-group sm"><label>Quantite</label><input type="number" id="mQty" class="fm-input" value="1" min="1" max="999999999"></div>
+                            <div class="form-group"><label>Raison</label>
+                                <select id="mReason" class="fm-input">
+                                    @foreach($reasonsMap as $key => $label)
+                                        <option value="{{ $key }}">{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row" id="mCostRow" style="display:none;">
+                            <div class="form-group sm"><label>Cout unitaire ($)</label><input type="number" id="mUnitCost" class="fm-input" value="0" min="0"></div>
+                            <div class="form-group"><div class="mv-cost-preview" id="mCostPreview"></div></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group full"><label>Notes <span class="optional">(opt.)</span></label><input type="text" id="mNotes" class="fm-input" placeholder="Ex: achat 5x metal a la fonderie"></div>
+                        </div>
+                        <button class="action-btn mv-btn" id="mBtnSave">Enregistrer le mouvement</button>
+                    </div>
                 </div>
             </div>
 
@@ -109,6 +181,17 @@
                             <option value="all">Toutes</option>
                         </select>
                     </div>
+
+                    {{-- Barre d'actions groupees --}}
+                    <div class="att-bulk-bar" id="attBulkBar" style="display:none;">
+                        <label class="att-bulk-count" id="attBulkCount">0 selectionnee(s)</label>
+                        <input type="text" id="attBulkMotif" class="fm-input fm-sm" placeholder="Motif (opt.)" style="flex:1; max-width:250px;">
+                        <button class="btn-xs return" id="attBulkReturn">Retour groupé</button>
+                        <button class="btn-xs" id="attBulkCancel" style="background:rgba(255,165,0,0.15); color:#ffa500;">Annuler groupé</button>
+                        <button class="btn-xs loss" id="attBulkLoss">Perte groupée</button>
+                        <button class="btn-xs" id="attBulkAlready" style="background:rgba(100,200,100,0.12); color:#6c6;">Déjà en stock</button>
+                    </div>
+
                     <div class="members-table" id="attList">
                         <div class="empty-msg">Chargement...</div>
                     </div>

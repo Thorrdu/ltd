@@ -45,7 +45,7 @@ class StockItem extends Model
         'weapon_id',
         'quantity',
         'unit_weight_g',
-        'default_sell_price', 'default_purchase_price',
+        'default_sell_price', 'price_min', 'price_max', 'default_purchase_price',
         'is_sellable', 'is_active',
         'sort_order', 'notes',
     ];

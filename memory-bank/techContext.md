@@ -11,12 +11,13 @@
 - **Blade** : moteur de templates pour les pages publiques
 - **Tom Select 2.3.1** : selects recherchables cote front (CDN jsdelivr)
 - **CSS custom** : fichiers originaux catalogue + simulateur + layout MC + theme Tom Select
-- **JS custom** : mc-auth.js, simulateur-armes.js, simulateur-munitions.js, membres.js, ventes.js
+- **JS custom** : mc-auth.js, simulateur-armes.js, simulateur-munitions.js, membres.js, ventes.js, stocks.js, stocks-detail.js, classements.js
 
 ## Environnement de developpement
 - Workspace : `c:\laragon\www\ltd`
 - Serveur : Laragon (Apache sur Windows) + `php artisan serve --port=8080`
 - URL locale : `http://ltd.test/` (ou `http://127.0.0.1:8080` via artisan serve)
+- URL classements : `/classements`
 - URL admin : `/admin`
 - URL armurerie : `/armurerie`
 - URL hub MC : `/mc`
@@ -77,7 +78,7 @@
 - `MenuSeeder` : menus et promos
 - `UserSeeder` : 10 utilisateurs avec roles et PIN
 - `WeaponSeeder` : armes, stocks matieres/pieces/plans/armes finies
-- `SettingSeeder` : 19 parametres globaux (matieres, pieces, recettes, multiplicateurs, cotisations)
+- `SettingSeeder` : 21 parametres globaux (matieres, pieces, recettes, multiplicateurs, cotisations, rankings)
 - `PageAccessRuleSeeder` : 13 regles d'acces (panneaux Filament + pages MC + pages futures)
 
 ## URLs
@@ -108,6 +109,12 @@
 - `POST /membres/api/create`, `PUT /membres/api/{id}`, `DELETE /membres/api/{id}`
 - `POST /membres/api/{id}/reset-pin`
 - `GET /membres/api/matrix`, `PUT /membres/api/matrix/{id}` (superadmin)
+
+### API classements (`/classements/api/*`)
+- `GET /rankings?period=week|last_week|month|all` : classement temps reel depuis `sales` + `stock_items`
+- `GET /config` : categories eligibles + critere (officer+)
+- `POST /config` : mise a jour config (officer+)
+- `GET /eagle-history` : historique 12 semaines des aigles
 
 ### Panneaux Filament
 - `GET /admin`, `GET /armurerie` (acces regi par `PageAccessRule` + `User::canAccessPanel`)

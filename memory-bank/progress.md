@@ -3,13 +3,16 @@
 ## Statut actuel
 Projet Laravel 12 + Filament 5 fonctionnel avec deux domaines operationnels : catalogue LTD et armurerie.
 Toolbox MC en construction : Phases 0 (roles + settings + matrice d'acces + gestion membres),
-1 (refonte UX), 2 (ventes rapides), H (harmonisation du schema) et 3 (stocks generiques + attributions
-+ validations + import CSV) TERMINEES.
-Session du 16 avril (soir) : Phase 3 livree avec page `/stocks` (officier+), page detail
-`/stocks/{slug}`, formulaire d'attribution, flux de reconciliation (retour/perte/don/vente),
-validation tresorier avec seuil configurable, import CSV avec preview. Le formulaire de vente
-residuel de `/espace-membres` a ete retire (redirection vers `/ventes`). Prochaine etape :
-Phase 4 (drogues : flux achat orga + dashboard profit) ou Phase 6 (classements + fiches membres).
+1 (refonte UX), 2 (ventes rapides), H (harmonisation du schema), 3 (stocks generiques + attributions
++ validations + import CSV) et 3B (ameliorations UX front : stocks, attributions en masse, vente express,
+classements) TERMINEES.
+Session du 17 avril 2026 : Phase 3B livree avec 5 sous-phases :
+- 3B.0 : bouton admin retire du hub
+- 3B.1 : stocks ameliores (mouvement direct, creation article, boutons rapides par ligne)
+- 3B.2 : attributions en masse (checkboxes, barre d'actions groupees, annuler/deja en stock)
+- 3B.3 : vente express repensee (accordeon par categorie, batch API, recap fixe)
+- 3B.4 : classements configurables (page `/classements`, aigle de la semaine, config officer+)
+Prochaine etape : Phase 4 (drogues) ou Phase 6 (fiches membres).
 
 ## Ce qui fonctionne
 
@@ -99,11 +102,27 @@ Phase 4 (drogues : flux achat orga + dashboard profit) ou Phase 6 (classements +
       active, notes). Endpoint `PUT /stocks/api/item/{slug}` (officier+) avec
       creation d'un mouvement adjustment qty=0 tracant les champs changes.
 
+### Phase 3B - Ameliorations UX front MC (17 avril 2026) -- TERMINEE
+- [x] 3B.0 : Bouton admin (`/armurerie`, `/admin`) retire du hub MC.
+- [x] 3B.1 : Stocks ameliores : sous-onglet Mouvement (formulaire direction in/out, raison,
+      cout), bouton "+ Nouvel article" avec formulaire inline, boutons rapides par ligne
+      (Vendre, Attribuer, Detail). Backend : `POST /stocks/api/movement` + `POST /stocks/api/create-item`.
+- [x] 3B.2 : Attributions en masse : checkboxes (`att-check`), barre d'actions groupees
+      (`att-bulk-bar`), boutons Annuler et Deja en stock (individuels + masse), bulk reconcile.
+- [x] 3B.3 : Vente Express : `/ventes` restructuree en 3 onglets (Express/Classique/Historique),
+      accordeon par categorie (drogue en premier), carte par item avec clic-to-increment,
+      barre de recap fixe, `POST /ventes/api/batch` (multi-items en une transaction).
+- [x] 3B.4 : Classements configurables : page `/classements` (RankingController), 3 sous-onglets
+      (Classement/Historique Aigles/Configuration), selecteur de periode (semaine/sem. prec./mois/global),
+      tableau gold/silver/bronze + highlight membre connecte, banniere "Aigle de la semaine",
+      historique 12 semaines, config officer+ (categories eligibles + critere CA/count/quantity),
+      settings `rankings.eligible_categories` (JSON) + `rankings.criteria` (string), lien hub + navbar.
+
 ### Infrastructure
 - [x] 24 migrations appliquees (ajout de `add_attribution_fields_to_stock_movements`)
 - [x] 9 seeders : CategoryProduct, Enterprise, Menu, User, Weapon, StockItem,
       StockInventory, Setting, PageAccessRule
-- [x] 15 modeles Eloquent (ajout de `Sale`, `StockItem`, `StockMovement`)
+- [x] 16 modeles Eloquent (ajout de `Sale`, `StockItem`, `StockMovement`)
 - [x] Systeme de roles avec hierarchie numerique (prospect 1, member 2, officer 3, vice_president 4, president 5, treasurer 99)
 - [x] Auth PIN pour simulateur via header `X-Sim-User`
 - [x] Documentation (architecture, reglement BXL Life, Memory Bank, plan-developpement)
@@ -115,8 +134,8 @@ Phase 4 (drogues : flux achat orga + dashboard profit) ou Phase 6 (classements +
       un `StockMovement` reason=`purchase` avec `unit_cost` et fournisseur), dashboard drogue
       avec calcul profit/perte cumule, extension seeder pour sous-categories `drug_raw` et
       `farm_consumable`.
-- [ ] **Phase 6** : classements (global/mois/semaine) + fiches membres `/membres/{id}`
-      avec historique complet (attributions, ventes, cotisations, argent rapporte).
+- [ ] **Phase 6** : fiches membres `/membres/{id}` avec historique complet (attributions,
+      ventes, cotisations, argent rapporte). Note : classements faits en Phase 3B.4.
 - [ ] Aligner le vhost Laragon sur `public/` (residuel).
 
 ### Priorite moyenne
@@ -129,6 +148,12 @@ Phase 4 (drogues : flux achat orga + dashboard profit) ou Phase 6 (classements +
 - [ ] Phase 8 : polissage (responsive fin, notifications in-app, dashboards par role).
 
 ## Historique
+- **17 avril 2026** : Phase 3B livree -- ameliorations UX front MC : bouton admin retire (3B.0),
+  stocks ameliores avec mouvement direct + creation article + boutons rapides (3B.1), attributions
+  en masse avec checkboxes et barre d'actions groupees (3B.2), vente express repensee avec accordeon
+  par categorie et batch API (3B.3), classements configurables avec aigle de la semaine et config
+  officer+ (3B.4). Nouveaux fichiers : RankingController, classements.blade.php, classements.js,
+  5 routes `/classements/api/*`, settings `rankings.*`, lien hub + navbar.
 - **16 avril 2026 (soir, apres Phase H)** : Phase 3 livree -- module stocks generique complet :
   page `/stocks` (officier+) avec sous-onglets (Vue d'ensemble, Attribuer, Attributions en cours,
   Validations tresorier+, Import tresorier+), page detail `/stocks/{slug}`, flux de

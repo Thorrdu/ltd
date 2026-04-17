@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PageController;
+use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\WeaponSimController;
@@ -47,6 +48,7 @@ Route::get('/ventes', [SaleController::class, 'index'])->name('ventes');
 Route::get('/ventes/api/list', [SaleController::class, 'apiList']);
 Route::get('/ventes/api/catalog', [SaleController::class, 'apiCatalog']);
 Route::post('/ventes/api/create', [SaleController::class, 'apiCreate']);
+Route::post('/ventes/api/batch', [SaleController::class, 'apiBatch']);
 
 // Stocks generiques (Phase 3)
 Route::get('/stocks', [StockController::class, 'index'])->name('stocks');
@@ -60,6 +62,8 @@ Route::put('/stocks/api/item/{slug}', [StockController::class, 'apiUpdateItem'])
 Route::put('/stocks/api/item/{slug}/quantity', [StockController::class, 'apiSetQuantity'])
     ->where('slug', '[a-z0-9_\-]+');
 Route::post('/stocks/api/attribute', [StockController::class, 'apiAttribute']);
+Route::post('/stocks/api/movement', [StockController::class, 'apiMovement']);
+Route::post('/stocks/api/create-item', [StockController::class, 'apiCreateItem']);
 Route::post('/stocks/api/reconcile/{id}', [StockController::class, 'apiReconcile'])
     ->where('id', '[0-9]+');
 Route::post('/stocks/api/validations/{id}/approve', [StockController::class, 'apiApprove'])
@@ -71,3 +75,10 @@ Route::post('/stocks/api/import/commit', [StockController::class, 'apiImportComm
 Route::get('/stocks/{slug}', [StockController::class, 'show'])
     ->where('slug', '[a-z0-9_\-]+')
     ->name('stocks.show');
+
+// Classements (Phase 3B.4)
+Route::get('/classements', [RankingController::class, 'index'])->name('classements');
+Route::get('/classements/api/rankings', [RankingController::class, 'apiRankings']);
+Route::get('/classements/api/config', [RankingController::class, 'apiConfig']);
+Route::post('/classements/api/config', [RankingController::class, 'apiUpdateConfig']);
+Route::get('/classements/api/eagle-history', [RankingController::class, 'apiEagleHistory']);

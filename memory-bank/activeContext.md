@@ -1,27 +1,54 @@
 # Active Context - Station LTD / Toolbox Lost MC
 
 ## Travail en cours
-Phase 3 **LIVRÉE** le 16 avril 2026 (soir) : module stocks générique complet avec page
-`/stocks` (officier+), formulaire d'attribution, page détail `/stocks/{slug}`, flux de
-réconciliation, validations trésorier (seuil configurable) et import CSV. Le formulaire
-de vente résiduel de `/espace-membres` a été supprimé : la saisie passe exclusivement
-par `/ventes` (redirige avec `stock_item_id`/`quantity`/`attribution_id` en query string).
+Phase 3B **LIVRÉE** le 17 avril 2026 : améliorations UX front-end MC/armes.
 
-Ajout 16 avril (soir, post-Phase 3) :
-- **`StockInventorySeeder`** : peuple les quantités observées dans le stockage Lost MC
-  (captures Discord) et crée les items manquants (crosse, corps SMG/fusils, suppresseurs,
-  plans hors catalogue craft, variantes drogues, consommables agricoles, outils,
-  électronique, argent sale, sacs). 97 items au total après seed.
-- **Vente hors catalogue** dans `/ventes` : toggle "Article hors catalogue" qui remplace
-  le select par deux champs (nom + catégorie). Le backend (`SaleController::apiCreate`)
-  crée à la volée un `stock_item` (slug `adhoc_*`) avec quantity=0 qui passe en négatif
-  après la vente (à régulariser via `/stocks`).
-- **Édition des fiches articles** sur `/stocks/{slug}` : nouveau endpoint
-  `PUT /stocks/api/item/{slug}` (officier+, scope `stocks_generique`) qui accepte
-  name, category, default_sell_price, default_purchase_price, unit_weight_g,
-  is_sellable, is_active, notes. Un `StockMovement` reason=`adjustment` qty=0 est
-  créé avec un résumé des champs modifiés pour la traçabilité. Côté UI : bouton
-  "Modifier" dans le bloc "Fiche article" qui révèle un formulaire inline.
+Phase 3 livrée le 16 avril 2026 (soir). Phase 3B enchaînée le 17 avril 2026.
+
+### Phase 3B livrée (17 avril 2026)
+
+**3B.0 – Bouton Admin retiré** : suppression des liens `/armurerie` et `/admin` du hub MC.
+
+**3B.1 – Stocks améliorés** :
+- Sous-onglet "Mouvement" ajouté entre Vue d'ensemble et Attribuer : formulaire de
+  mouvement direct (direction in/out, quantité, raison, coût unitaire, notes).
+- Bouton "+ Nouvel article" dans la vue d'ensemble : formulaire inline de création
+  d'article (nom, catégorie, quantité, prix, poids, notes).
+- Boutons rapides par ligne : "Vendre" (lien vers `/ventes`), "Attribuer" (switch
+  vers l'onglet), "Détail" (lien vers `/stocks/{slug}`).
+- Backend : `POST /stocks/api/movement` et `POST /stocks/api/create-item`.
+
+**3B.2 – Attributions en masse** :
+- Checkboxes sur chaque attribution en cours.
+- Barre d'actions en masse (Annuler, Déjà en stock, Perte, Retour) avec compteur.
+- Actions "Annuler" (retour avec notes "Annulation") et "Déjà en stock" (perte avec
+  notes "Déjà en stock") ajoutées aux boutons individuels et en masse.
+
+**3B.3 – Vente Express repensée** :
+- `/ventes` restructurée en 3 onglets : Vente Express (défaut), Vente classique, Historique.
+- Accordéon par catégorie (drogues en premier, ouvert par défaut), chaque item = carte
+  avec nom/prix/stock/contrôles quantité, click-to-increment.
+- Barre de récap fixe en bas : items sélectionnés, total, argent rapporté, acheteur, notes.
+- Backend : `POST /ventes/api/batch` (vente multi-items en une transaction).
+
+**3B.4 – Classements configurables** :
+- Page `/classements` accessible à tous les membres connectés.
+- 3 sous-onglets : Classement, Historique Aigles, Configuration (officier+).
+- Sélecteur de période : Semaine / Sem. précédente / Mois / Global.
+- Tableau avec rang, nom, rôle, ventes, quantité, CA. Top 3 mis en évidence
+  (or/argent/bronze). Membre connecté toujours visible (highlight bleu).
+- "Aigle de la semaine" : bannière dorée avec le #1 hebdomadaire + historique 12 sem.
+- Configuration officer+ : choix des catégories éligibles + critère de tri
+  (CA / nb ventes / quantité). Settings `rankings.eligible_categories` (JSON)
+  et `rankings.criteria` (string) en BD.
+- Backend : `RankingController` avec `apiRankings`, `apiConfig`, `apiUpdateConfig`,
+  `apiEagleHistory`. Calcul en temps réel depuis `sales` + `stock_items`.
+- Lien ajouté au hub MC et à la navbar (gate=logged).
+
+### Contexte précédent
+Phase 3 livrée le 16 avril 2026 (soir) : module stocks générique complet.
+Ajouts post-Phase 3 : `StockInventorySeeder` (97 items), vente hors catalogue,
+édition fiches articles sur `/stocks/{slug}`.
 
 ## Phase 3 - Module stocks générique (16 avril 2026, soir) -- LIVRÉE
 
@@ -186,8 +213,8 @@ avec detection des slugs inconnus. Tous les cas passent (HTTP 200, quantités co
    le formulaire d'achat orga dédié et le dashboard drogue (profit/perte cumulé).
 2. **Phase 5 – armes blanches** : 10 items `melee` déjà seedés et vendables via `/ventes`.
    Reste uniquement à rendre le multiplicateur x1.5 configurable via `settings`.
-3. **Phase 6 – classements + fiches membres** : leaderboard global/mois/semaine,
-   pages `/membres/{id}` avec historique complet (attributions, ventes, cotisations).
+3. **Phase 6 – fiches membres** : pages `/membres/{id}` avec historique complet
+   (attributions, ventes, cotisations). Note : classements déplacés en Phase 3B.4 (fait).
 4. **Phase 7 – comptabilité MC** : argent sale/propre, transactions, cotisations
    avec validation trésorier.
 5. **Phase 8 – polissage** : responsive, notifications, dashboards par rôle.

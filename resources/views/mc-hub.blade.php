@@ -32,6 +32,10 @@
                 <span class="mc-hub-btn-label">Ventes rapides</span>
                 <span class="mc-hub-btn-desc">Saisie rapide (armes, drogues, autres)</span>
             </a>
+            <a href="/classements" class="mc-hub-btn mc-hub-btn-wide">
+                <span class="mc-hub-btn-label">Classements</span>
+                <span class="mc-hub-btn-desc">Performance, aigle de la semaine</span>
+            </a>
             <a href="/espace-membres" class="mc-hub-btn mc-hub-btn-wide">
                 <span class="mc-hub-btn-label">Espace membres</span>
                 <span class="mc-hub-btn-desc">Stocks, contrats, historique</span>
@@ -44,14 +48,7 @@
                 <span class="mc-hub-btn-label">Gestion membres</span>
                 <span class="mc-hub-btn-desc">Roles, acces, PIN (VP+)</span>
             </a>
-            <a href="/armurerie" target="_blank" class="mc-hub-btn mc-hub-btn-officer" style="display:none;">
-                <span class="mc-hub-btn-label">Panel Armurerie</span>
-                <span class="mc-hub-btn-desc">Gestion avancee (Filament)</span>
-            </a>
-            <a href="/admin" target="_blank" class="mc-hub-btn mc-hub-btn-treasurer" style="display:none;">
-                <span class="mc-hub-btn-label">Panel Admin LTD</span>
-                <span class="mc-hub-btn-desc">Catalogue + parametres (Tresorier)</span>
-            </a>
+
         </div>
     </div>
 

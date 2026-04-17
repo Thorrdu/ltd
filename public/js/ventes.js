@@ -15,11 +15,17 @@
         melee:           'Armes blanches',
         drug:            'Drogues',
         drug_raw:        'Drogues (matieres)',
+        electronic:      'Electronique',
+        tool:            'Outils',
+        farm_consumable: 'Consommables ferme',
+        raw_material:    'Matieres premieres',
+        weapon_piece:    'Pieces d\'armes',
+        weapon_plan:     'Plans d\'armes',
         misc:            'Divers'
     };
 
-    // Ordre d'affichage des optgroups.
-    var CATEGORY_ORDER = ['weapon_finished', 'ammo', 'melee', 'drug', 'drug_raw', 'misc'];
+    // Ordre d'affichage des categories dans l'accordeon express.
+    var CATEGORY_ORDER = ['drug', 'weapon_finished', 'ammo', 'melee', 'drug_raw', 'electronic', 'tool', 'farm_consumable', 'raw_material', 'weapon_piece', 'weapon_plan', 'misc'];
 
     var state = {
         catalog: window.MC_VENTES_CATALOG || [],
@@ -67,6 +73,7 @@
             state.todaySales = data.sales || [];
             renderToday(data.totals || {});
             populateItemSelect();
+            buildExpressAccordions();
             applyPrefill();
             refreshHistory();
         });
@@ -365,6 +372,15 @@
 
     function renderToday(totals) {
         renderStats($('vTodayStats'), totals);
+        if ($('veTodayStats')) renderStats($('veTodayStats'), totals);
+        var veList = $('veTodayList');
+        if (veList) {
+            if (!state.todaySales.length) {
+                veList.innerHTML = '<div class="empty-msg">Aucune vente aujourd\'hui.</div>';
+            } else {
+                veList.innerHTML = state.todaySales.slice(0, 5).map(renderRow).join('');
+            }
+        }
         var listEl = $('vTodayList');
         if (!state.todaySales.length) {
             listEl.innerHTML = '<div class="empty-msg">Aucune vente enregistree aujourd\'hui.</div>';
@@ -411,6 +427,219 @@
         });
     }
 
+    // ── VENTE EXPRESS (Phase 3B.3) ────────────────────────
+
+    var expressCart = {}; // { itemId: quantity }
+
+    function buildExpressAccordions() {
+        var el = $('veAccordions');
+        if (!el) return;
+
+        var grouped = {};
+        state.catalog.forEach(function (it) {
+            if (!grouped[it.category]) grouped[it.category] = [];
+            grouped[it.category].push(it);
+        });
+
+        var html = '';
+        CATEGORY_ORDER.forEach(function (cat, idx) {
+            if (!grouped[cat] || !grouped[cat].length) return;
+            var label = CATEGORY_LABELS[cat] || cat;
+            var openClass = idx === 0 ? ' open' : ''; // First category (drug) open by default
+            var count = grouped[cat].length;
+            html += '<div class="ve-accordion' + openClass + '" data-cat="' + esc(cat) + '">';
+            html += '<div class="ve-acc-header">';
+            html += '<span class="ve-acc-title">' + esc(label) + '</span>';
+            html += '<span class="ve-acc-count">' + count + ' articles</span>';
+            html += '<span class="ve-acc-arrow">▼</span>';
+            html += '</div>';
+            html += '<div class="ve-acc-body"><div class="ve-items-grid">';
+            grouped[cat].forEach(function (it) {
+                var noStock = it.current_stock <= 0 ? ' no-stock' : '';
+                var selClass = expressCart[it.id] ? ' selected' : '';
+                var qtyVal = expressCart[it.id] || 0;
+                html += '<div class="ve-item' + noStock + selClass + '" data-id="' + it.id + '">';
+                html += '<div class="ve-item-name">' + esc(it.name) + '</div>';
+                html += '<div class="ve-item-price">' + (it.default_sell_price ? money(it.default_sell_price) : '-') + '</div>';
+                html += '<div class="ve-item-stock">Stock: ' + (it.current_stock || 0) + '</div>';
+                html += '<div class="ve-item-qty">';
+                html += '<button class="qty-btn ve-minus" data-id="' + it.id + '">−</button>';
+                html += '<input type="number" class="qty-input ve-qty-input" data-id="' + it.id + '" value="' + qtyVal + '" min="0" max="999999">';
+                html += '<button class="qty-btn ve-plus" data-id="' + it.id + '">+</button>';
+                html += '</div>';
+                html += '</div>';
+            });
+            html += '</div></div></div>';
+        });
+        el.innerHTML = html || '<div class="empty-msg">Aucun article dans le catalogue.</div>';
+
+        // Accordion toggle
+        el.querySelectorAll('.ve-acc-header').forEach(function (hdr) {
+            hdr.addEventListener('click', function () {
+                hdr.parentElement.classList.toggle('open');
+            });
+        });
+
+        // Qty buttons
+        el.querySelectorAll('.ve-plus').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var id = parseInt(btn.getAttribute('data-id'), 10);
+                expressCart[id] = (expressCart[id] || 0) + 1;
+                updateExpressItem(id);
+            });
+        });
+        el.querySelectorAll('.ve-minus').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var id = parseInt(btn.getAttribute('data-id'), 10);
+                var cur = expressCart[id] || 0;
+                if (cur > 0) {
+                    expressCart[id] = cur - 1;
+                    if (expressCart[id] <= 0) delete expressCart[id];
+                }
+                updateExpressItem(id);
+            });
+        });
+        el.querySelectorAll('.ve-qty-input').forEach(function (inp) {
+            inp.addEventListener('change', function () {
+                var id = parseInt(inp.getAttribute('data-id'), 10);
+                var val = parseInt(inp.value, 10) || 0;
+                if (val > 0) {
+                    expressCart[id] = val;
+                } else {
+                    delete expressCart[id];
+                    inp.value = 0;
+                }
+                updateExpressItem(id);
+            });
+        });
+
+        // Item card click toggles +1
+        el.querySelectorAll('.ve-item').forEach(function (card) {
+            card.addEventListener('click', function (e) {
+                if (e.target.closest('.qty-btn') || e.target.closest('.qty-input')) return;
+                var id = parseInt(card.getAttribute('data-id'), 10);
+                expressCart[id] = (expressCart[id] || 0) + 1;
+                updateExpressItem(id);
+            });
+        });
+
+        updateExpressRecap();
+    }
+
+    function updateExpressItem(id) {
+        var qty = expressCart[id] || 0;
+        var inp = document.querySelector('.ve-qty-input[data-id="' + id + '"]');
+        if (inp) inp.value = qty;
+        var card = document.querySelector('.ve-item[data-id="' + id + '"]');
+        if (card) {
+            if (qty > 0) card.classList.add('selected');
+            else card.classList.remove('selected');
+        }
+        updateExpressRecap();
+    }
+
+    function updateExpressRecap() {
+        var recap = $('veRecap');
+        var itemsEl = $('veRecapItems');
+        var totalEl = $('veRecapTotal');
+        if (!recap || !itemsEl) return;
+
+        var keys = Object.keys(expressCart);
+        if (!keys.length) {
+            recap.style.display = 'none';
+            return;
+        }
+        recap.style.display = '';
+
+        var total = 0;
+        var html = '';
+        keys.forEach(function (idStr) {
+            var id = parseInt(idStr, 10);
+            var qty = expressCart[id];
+            if (!qty) return;
+            var it = state.catalogById[id];
+            if (!it) return;
+            var lineTotal = (it.default_sell_price || 0) * qty;
+            total += lineTotal;
+            html += '<div class="ve-recap-item">' +
+                '<span class="ri-name">' + esc(it.name) + '</span>' +
+                '<span class="ri-qty">x' + qty + '</span>' +
+                '<span class="ri-total">' + money(lineTotal) + '</span>' +
+                '<span class="ri-remove" data-id="' + id + '" title="Retirer">✕</span>' +
+                '</div>';
+        });
+        itemsEl.innerHTML = html;
+        if (totalEl) totalEl.textContent = money(total);
+
+        // Pre-fill actual amount with theoretical
+        var actualEl = $('veActual');
+        if (actualEl && !actualEl.value) actualEl.placeholder = String(total);
+
+        // Remove item
+        itemsEl.querySelectorAll('.ri-remove').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = parseInt(btn.getAttribute('data-id'), 10);
+                delete expressCart[id];
+                updateExpressItem(id);
+            });
+        });
+    }
+
+    function submitExpressSale() {
+        var keys = Object.keys(expressCart);
+        if (!keys.length) { auth.showToast('Selectionnez au moins un article', 'error'); return; }
+
+        var buyer = ($('veBuyer').value || '').trim();
+        if (!buyer) { auth.showToast('Indiquez l\'acheteur', 'error'); return; }
+
+        var items = [];
+        keys.forEach(function (idStr) {
+            var id = parseInt(idStr, 10);
+            var qty = expressCart[id];
+            if (qty > 0) items.push({ stock_item_id: id, quantity: qty });
+        });
+        if (!items.length) { auth.showToast('Aucun article avec quantite > 0', 'error'); return; }
+
+        var actual = parseInt($('veActual').value, 10);
+        var notes = ($('veNotes').value || '').trim();
+
+        var btn = $('veBtnSave');
+        btn.disabled = true;
+        btn.textContent = 'Enregistrement...';
+
+        auth.apiPost('/ventes/api/batch', {
+            items: items,
+            actual_amount: actual || null,
+            buyer_name: buyer,
+            notes: notes || null
+        }, function (err, data) {
+            btn.disabled = false;
+            btn.textContent = 'Valider la vente';
+            if (err || !data || data.error) {
+                var msg = (data && data.error) || 'Erreur';
+                if (data && data.messages) msg = Object.values(data.messages).flat().join(' | ');
+                auth.showToast(msg, 'error');
+                return;
+            }
+            auth.showToast(data.message || 'Vente enregistree', 'success');
+            if (data.warnings && data.warnings.length) {
+                data.warnings.forEach(function (w) {
+                    setTimeout(function () { auth.showToast(w, 'error'); }, 500);
+                });
+            }
+            // Reset
+            expressCart = {};
+            $('veBuyer').value = '';
+            $('veNotes').value = '';
+            $('veActual').value = '';
+            buildExpressAccordions();
+            // Refresh today's sales
+            tryLoad();
+        });
+    }
+
     // ── SUB-TABS ───────────────────────────────────────────
 
     function initSubTabs() {
@@ -434,6 +663,8 @@
         $('vQty').addEventListener('input', onQtyChange);
         $('vTotal').addEventListener('input', recomputeUnit);
         $('vBtnSave').addEventListener('click', saveSale);
+        var veBtnSave = $('veBtnSave');
+        if (veBtnSave) veBtnSave.addEventListener('click', submitExpressSale);
         $('vScope').addEventListener('change', function () { state.histScope = this.value; refreshHistory(); });
         $('vPeriod').addEventListener('change', function () { state.histPeriod = this.value; refreshHistory(); });
 

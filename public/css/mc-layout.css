@@ -1057,7 +1057,7 @@
 /* Attributions list + actions */
 .att-row {
     display: grid;
-    grid-template-columns: 1.6fr 0.9fr 1fr 1fr auto;
+    grid-template-columns: 30px 1.4fr 0.7fr 1fr 1fr auto;
     gap: 10px;
     padding: 10px 12px;
     align-items: center;
@@ -1065,6 +1065,8 @@
     font-family: 'Segoe UI', sans-serif;
     font-size: 12px;
 }
+.att-row .a-check { text-align: center; }
+.att-row .a-check input[type="checkbox"] { cursor: pointer; }
 .att-row:nth-child(even) { background: rgba(255, 255, 255, 0.012); }
 .att-row:hover { background: rgba(255, 255, 255, 0.03); }
 .att-row .a-item { color: #fff; font-weight: 700; }
@@ -1088,6 +1090,26 @@
 .att-row .a-status.rejected   { background: rgba(239, 68, 68, 0.15); color: #f87171; }
 .att-row .a-meta { color: #888; font-size: 11px; }
 .att-row .a-meta strong { color: #ddd; }
+
+/* Bulk action bar */
+.att-bulk-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+.att-bulk-count {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    min-width: 120px;
+}
 
 .att-actions {
     display: flex;
@@ -1245,3 +1267,334 @@
 .imp-row .imp-delta.pos { color: #4ade80; font-weight: 700; }
 .imp-row .imp-delta.neg { color: #f87171; font-weight: 700; }
 .imp-row .imp-delta.zero { color: #666; }
+
+/* ============================================
+   VENTE EXPRESS — Accordion panels
+   ============================================ */
+.ve-accordion {
+    margin-bottom: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 5px;
+    overflow: hidden;
+}
+.ve-acc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: linear-gradient(135deg, #151515, #1a1a1a);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+}
+.ve-acc-header:hover { background: #1e1e1e; }
+.ve-acc-header .ve-acc-title {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.ve-acc-header .ve-acc-count {
+    font-family: 'Consolas', monospace;
+    font-size: 11px;
+    color: #888;
+}
+.ve-acc-header .ve-acc-arrow {
+    color: #555;
+    font-size: 14px;
+    transition: transform 0.2s;
+}
+.ve-accordion.open .ve-acc-arrow { transform: rotate(180deg); }
+.ve-acc-body {
+    display: none;
+    padding: 10px 14px;
+    background: #0e0e0e;
+}
+.ve-accordion.open .ve-acc-body { display: block; }
+.ve-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 6px;
+}
+.ve-item {
+    background: linear-gradient(145deg, #151515, #0e0e0e);
+    border: 1px solid #2a2a2a;
+    border-radius: 5px;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+}
+.ve-item:hover { border-color: #fff; }
+.ve-item.selected {
+    border-color: #fff;
+    background: linear-gradient(145deg, #1c1c1c, #141414);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+}
+.ve-item.no-stock { opacity: 0.4; }
+.ve-item-name {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #e0e0e0;
+    margin-bottom: 2px;
+}
+.ve-item-price {
+    font-size: 10px;
+    color: #888;
+    margin-bottom: 4px;
+}
+.ve-item-stock {
+    font-size: 9px;
+    color: #555;
+    margin-bottom: 4px;
+}
+.ve-item-qty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-top: 4px;
+}
+.ve-item-qty .qty-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 14px;
+}
+.ve-item-qty .qty-input {
+    width: 36px;
+    height: 24px;
+    font-size: 12px;
+}
+
+/* Recap bar */
+.ve-recap {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, #141414, #1a1a1a);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+}
+.ve-recap-items {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+}
+.ve-recap-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    color: #ccc;
+}
+.ve-recap-item .ri-name { flex: 1; }
+.ve-recap-item .ri-qty { color: #ffd700; font-weight: 700; min-width: 40px; text-align: center; }
+.ve-recap-item .ri-total { color: #fff; font-weight: 700; min-width: 80px; text-align: right; }
+.ve-recap-item .ri-remove {
+    cursor: pointer;
+    color: #666;
+    margin-left: 8px;
+    font-size: 14px;
+}
+.ve-recap-item .ri-remove:hover { color: #f87171; }
+.ve-recap-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: #fff;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════
+   CLASSEMENTS PAGE (Phase 3B.4)
+   ═══════════════════════════════════════════════════════ */
+
+/* Eagle banner */
+.rank-eagle-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 165, 0, 0.08));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+}
+.rank-eagle-icon { font-size: 36px; }
+.rank-eagle-title {
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 11px;
+    color: #ffd700;
+}
+.rank-eagle-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px;
+    color: #fff;
+}
+.rank-eagle-score {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Period bar */
+.rank-period-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.rank-period-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #ccc;
+    border-radius: 4px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    transition: all 0.15s;
+}
+.rank-period-btn:hover { background: rgba(255, 255, 255, 0.1); }
+.rank-period-btn.active {
+    background: rgba(255, 215, 0, 0.15);
+    border-color: rgba(255, 215, 0, 0.4);
+    color: #ffd700;
+}
+
+.rank-criteria-label {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 10px;
+    font-style: italic;
+}
+
+/* Ranking table */
+.rank-header-row, .rank-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 90px 90px 120px;
+    gap: 6px;
+    padding: 8px 12px;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+}
+.rank-header-row {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.rank-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: #ccc;
+    transition: background 0.15s;
+}
+.rank-row:hover { background: rgba(255, 255, 255, 0.04); }
+.rank-col-pos { font-weight: 700; text-align: center; }
+.rank-col-stat { text-align: right; }
+.rank-col-revenue { font-weight: 700; color: #4ade80; }
+.rank-member-name { margin-right: 6px; }
+
+/* Medal rows */
+.rank-gold .rank-col-pos { color: #ffd700; font-size: 16px; }
+.rank-gold { background: rgba(255, 215, 0, 0.06); }
+.rank-silver .rank-col-pos { color: #c0c0c0; font-size: 15px; }
+.rank-silver { background: rgba(192, 192, 192, 0.04); }
+.rank-bronze .rank-col-pos { color: #cd7f32; font-size: 15px; }
+.rank-bronze { background: rgba(205, 127, 50, 0.04); }
+
+/* Highlight current user */
+.rank-me {
+    background: rgba(96, 165, 250, 0.1) !important;
+    border-left: 3px solid #60a5fa;
+}
+
+.rank-separator {
+    color: rgba(255, 255, 255, 0.3);
+    font-style: italic;
+    border-top: 1px dashed rgba(255, 255, 255, 0.15);
+}
+
+.rank-eagle-mini { font-size: 14px; }
+
+/* Eagle history table */
+.rank-eagle-table {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+}
+.rank-eagle-hdr, .rank-eagle-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 120px;
+    gap: 8px;
+    padding: 8px 12px;
+}
+.rank-eagle-hdr {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.rank-eagle-row {
+    color: #ccc;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* Config */
+.rank-config-section {
+    margin-bottom: 20px;
+}
+.rank-config-title {
+    font-family: 'Oswald', sans-serif;
+    color: #fff;
+    font-size: 15px;
+    margin-bottom: 6px;
+}
+.rank-config-desc {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 10px;
+}
+.rank-cat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 6px;
+}
+.rank-cat-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    color: #ccc;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+}
+.rank-cat-checkbox:hover { background: rgba(255, 255, 255, 0.06); }
+.rank-cat-checkbox input[type="checkbox"] { accent-color: #ffd700; }
+
+.rank-criteria-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.rank-radio {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    color: #ccc;
+    cursor: pointer;
+}
+.rank-radio input[type="radio"] { accent-color: #ffd700; }

@@ -21,6 +21,7 @@
             ['route' => 'simulateur-armes',    'url' => '/simulateur-armes',     'label' => 'Armes',      'gate' => 'any'],
             ['route' => 'simulateur-munitions','url' => '/simulateur-munitions', 'label' => 'Munitions',  'gate' => 'any'],
             ['route' => 'ventes',              'url' => '/ventes',               'label' => 'Ventes',     'gate' => 'logged'],
+            ['route' => 'classements',         'url' => '/classements',          'label' => 'Classements','gate' => 'logged'],
             ['route' => 'espace-membres',      'url' => '/espace-membres',       'label' => 'Espace',     'gate' => 'logged'],
             ['route' => 'stocks',              'url' => '/stocks',               'label' => 'Stocks',     'gate' => 'officer'],
             ['route' => 'membres',             'url' => '/membres',              'label' => 'Gestion',    'gate' => 'vice_president'],
@@ -58,6 +59,9 @@
     <div class="mc-login-panel" id="mcLoginPanel" style="display:none;">
         <div class="mc-login-inner">
             <div class="mc-login-title">Connexion membre</div>
+            {{-- Dummy fields to absorb Chrome autofill --}}
+            <input type="text" name="prevent_autofill" style="display:none" tabindex="-1" aria-hidden="true">
+            <input type="password" name="prevent_autofill_pw" style="display:none" tabindex="-1" aria-hidden="true">
             <select class="lock-input" id="loginMemberSelect">
                 <option value="">-- Qui etes-vous ? --</option>
                 @if(isset($members))
@@ -66,7 +70,7 @@
                     @endforeach
                 @endif
             </select>
-            <input type="password" class="lock-input" id="loginPin" placeholder="PIN" autocomplete="off" maxlength="20">
+            <input type="password" class="lock-input" id="loginPin" placeholder="PIN" autocomplete="new-password" maxlength="20">
             <button class="lock-btn" id="btnLogin">Valider</button>
             <div class="lock-error" id="errLogin"></div>
         </div>
@@ -93,7 +97,15 @@
                 searchField: ['text'],
                 allowEmptyOption: true,
                 maxOptions: 500,
-                plugins: ['dropdown_input']
+                plugins: ['dropdown_input'],
+                onInitialize: function () {
+                    var di = this.dropdown.querySelector('input');
+                    if (di) {
+                        di.setAttribute('type', 'search');
+                        di.setAttribute('autocomplete', 'nope');
+                        di.setAttribute('role', 'searchbox');
+                    }
+                }
             });
         }
     })();

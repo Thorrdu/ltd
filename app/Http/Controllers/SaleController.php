@@ -341,6 +341,100 @@ class SaleController extends Controller
             ->values();
     }
 
+    /**
+     * Batch sale: create multiple sales at once (one per item), all with
+     * the same buyer, notes, and seller. Used by the "Vente Express" UI.
+     */
+    public function apiBatch(Request $request): JsonResponse
+    {
+        if ($denied = $this->requireAccess($request)) {
+            return $denied;
+        }
+
+        $user = $this->authUser($request);
+
+        $v = Validator::make($request->all(), [
+            'items'           => 'required|array|min:1|max:100',
+            'items.*.stock_item_id' => 'required|integer|exists:stock_items,id',
+            'items.*.quantity'      => 'required|integer|min:1|max:999999999',
+            'actual_amount'   => 'nullable|integer|min:0',
+            'buyer_name'      => 'required|string|max:100',
+            'notes'           => 'nullable|string|max:500',
+        ]);
+        if ($v->fails()) {
+            return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
+        }
+
+        $items = $request->input('items');
+        $buyerName = $request->input('buyer_name');
+        $notes = $request->input('notes');
+        $actualAmount = $request->input('actual_amount');
+
+        $sales = [];
+        $warnings = [];
+        $totalTheoretical = 0;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($items, $buyerName, $notes, $user, &$sales, &$warnings, &$totalTheoretical) {
+            foreach ($items as $line) {
+                $item = StockItem::find($line['stock_item_id']);
+                if (! $item || ! $item->is_active) {
+                    $warnings[] = 'Article #' . $line['stock_item_id'] . ' introuvable';
+                    continue;
+                }
+
+                $qty = (int) $line['quantity'];
+                $unitPrice = (int) ($item->default_sell_price ?? 0);
+                $lineTotal = $unitPrice * $qty;
+                $totalTheoretical += $lineTotal;
+
+                if ($item->quantity < $qty) {
+                    $warnings[] = $item->name . ' : stock insuffisant (' . $item->quantity . ')';
+                }
+
+                $item->decrement('quantity', $qty);
+
+                StockMovement::create([
+                    'stock_item_id'   => $item->id,
+                    'quantity_change' => -$qty,
+                    'reason'          => 'sale',
+                    'user_id'         => $user->id,
+                    'notes'           => 'Vente express: ' . $qty . '× ' . $item->name . ' → ' . $buyerName,
+                    'created_at'      => now(),
+                ]);
+
+                $sale = Sale::create([
+                    'stock_item_id'   => $item->id,
+                    'quantity'        => $qty,
+                    'unit_price'      => $unitPrice,
+                    'total_price'     => $lineTotal,
+                    'buyer_name'      => $buyerName,
+                    'sold_by_user_id' => $user->id,
+                    'notes'           => $notes,
+                ]);
+
+                $sales[] = [
+                    'item_name' => $item->name,
+                    'quantity'  => $qty,
+                    'total'     => $lineTotal,
+                ];
+            }
+        });
+
+        $actualNote = '';
+        if ($actualAmount !== null && $actualAmount != $totalTheoretical) {
+            $actualNote = ' (encaissé: $' . number_format($actualAmount, 0, '.', ' ') . ')';
+        }
+
+        return response()->json([
+            'ok'        => true,
+            'message'   => count($sales) . ' article(s) vendu(s) à ' . $buyerName . $actualNote,
+            'sales'     => $sales,
+            'total'     => $totalTheoretical,
+            'actual'    => $actualAmount,
+            'warnings'  => $warnings,
+        ]);
+    }
+
     private function mapSale(Sale $s): array
     {
         $item = $s->stockItem;

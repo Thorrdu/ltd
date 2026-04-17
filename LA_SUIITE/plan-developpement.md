@@ -1,7 +1,7 @@
 # Plan de developpement - Toolbox Lost MC
 
 > Document de reference pour le developpement des fonctionnalites futures.
-> Base sur `LA_SUIITE/next.md` et l'etat actuel du projet au 16 avril 2026.
+> Base sur `LA_SUIITE/next.md` et l'etat actuel du projet au 17 avril 2026.
 > Objectif global : faciliter la gestion quotidienne et comptable du MC.
 
 ---
@@ -266,6 +266,208 @@ unique table, indexee par `category` + `slug` pour le catalogue.
 
 ---
 
+## Phase 3B - UX Pratique MC [A FAIRE]
+**Priorite : HAUTE -- demandee le 17 avril 2026 -- simplifier l'utilisation quotidienne**
+
+> Les motards du MC ont besoin d'une interface simple et rapide.
+> Cette phase regroupe toutes les ameliorations UX identifiees apres la livraison
+> des Phases 1-3 : suppression de liens inutiles, meilleure gestion des stocks,
+> attributions plus pratiques, vente express repensee, et classements configurables.
+
+### 3B.0 Nettoyage de l'interface [A FAIRE]
+- [ ] **Retirer le bouton "Admin" (lien vers `/armurerie`)** de la barre membre sur
+      `/espace-membres`. Ce lien n'a rien a faire dans l'interface motard ;
+      les admin accedent au panel Filament directement via l'URL.
+- [ ] Verifier qu'aucun autre lien vers `/admin` ou `/armurerie` ne subsiste
+      dans les vues MC (hub, simulateur, ventes, stocks).
+
+### 3B.1 Stocks : gestion complete sans quitter la page [A FAIRE]
+**Probleme actuel :** le menu stock a des lacunes -- possibilite reduite de declarer
+des mouvements, pas de creation d'items, obligation de naviguer vers un autre menu
+pour dire qu'on a prete/vendu.
+
+- [ ] **Mouvement de stock rapide sur `/stocks`** : ajouter un sous-onglet "Mouvement"
+      (ou integrer dans "Vue d'ensemble") avec formulaire simplifie :
+  - Select stock item (Tom Select, groupé par categorie)
+  - Direction : Entree / Sortie (toggle)
+  - Quantite
+  - Raison (select : achat, recolte, craft, perte, pret, don, ajustement)
+  - Cout unitaire (si achat)
+  - Notes (optionnel)
+  - Bouton "Enregistrer" -> cree un `StockMovement`, met a jour la quantite
+- [ ] **Creation d'item en ligne sur `/stocks`** : bouton "+ Nouvel article" dans
+      "Vue d'ensemble" (officier+) ouvrant un mini-formulaire :
+  - Nom, Categorie (select des 12), Slug (auto-genere), Prix vente, Prix achat,
+    Poids (g), Vendable (toggle), Quantite initiale, Notes
+  - Cree le `StockItem` + un `StockMovement` reason=`adjustment` si qty > 0
+- [ ] **Vente directe depuis `/stocks`** : sur chaque item de stock vendable,
+      un bouton "Vendre" qui redirige vers `/ventes?stock_item_id=X` (pre-remplit
+      l'article et le prix). Deja partiellement fait pour les armes finies sur
+      `/espace-membres`, a generaliser a tous les items sur `/stocks`.
+- [ ] **Pret/Attribution rapide** : bouton "Attribuer" directement sur la ligne
+      d'un item dans la vue d'ensemble (en plus du sous-onglet dedie).
+
+### 3B.2 Attributions en cours : gestion pratique et en masse [A FAIRE]
+**Probleme actuel :** pas de possibilite d'annuler, de dire "c'est deja traite en stock",
+pas de retour sur plusieurs objets a la fois, pas de champ quantite directement visible.
+
+- [ ] **Champ quantite directe** : afficher la quantite attribuee de maniere visible
+      et editable sur chaque ligne d'attribution en cours. Permettre de modifier
+      (retour partiel) sans passer par un formulaire separe.
+- [ ] **Champ motif unique** : un seul champ texte "Motif" unifie pour toutes les
+      actions de reconciliation (retour, perte, don, annulation).
+- [ ] **Action "Annuler"** : nouveau bouton sur chaque attribution en cours qui
+      reconcilie l'attribution comme un retour complet (stock restaure) avec
+      motif = "Annulation". Distinction visuelle avec le bouton "Retour".
+- [ ] **Action "Deja traite"** : bouton "Deja en stock" qui reconcilie sans
+      mouvement de stock (l'item est physiquement deja de retour dans le coffre,
+      c'est juste l'ecriture qui manquait). Cree un mouvement qty=0 avec
+      raison "adjustment" et note explicative.
+- [ ] **Actions en masse** : checkbox sur chaque ligne d'attribution + bouton
+      "Action groupee" avec :
+  - Retour total (restaure le stock pour toutes les lignes cochees)
+  - Annulation (idem retour avec motif "Annulation groupee")
+  - Perte (reconcilie toutes les lignes cochees comme pertes)
+  Le motif est saisi une seule fois pour toutes les lignes.
+- [ ] **Filtres** : par membre, par categorie d'item, par date d'attribution.
+- [ ] **Vue compacte** : afficher directement sur la ligne : article, quantite,
+      attribue a, date, et les boutons d'action (sans deplier un sous-menu).
+
+### 3B.3 Vente Express repensee [A FAIRE]
+**Probleme actuel :** le menu de vente actuel (`/ventes`) est fonctionnel mais trop
+technique pour une utilisation rapide par les motards. Les articles les plus vendus
+sont les drogues, les armes et les munitions -- il faut un workflow de saisie express.
+
+#### Architecture de la vente express
+- [ ] **Refonte de `/ventes`** ou creation d'une page `/vente-express` dediee :
+  la page affiche toutes les categories d'items sous forme de **panneaux
+  depliables/repliables** (accordeons).
+
+- [ ] **Panneaux par categorie** (dans l'ordre de priorite) :
+  1. **Drogues** (`drug`) -- DEPLIE par defaut (c'est le plus vendu)
+  2. **Armes a feu** (`weapon_finished`)
+  3. **Munitions** (`ammo`)
+  4. **Armes blanches** (`melee`)
+  5. **Electronique** (`electronic`)
+  6. **Outils** (`tool`)
+  7. **Divers** (`misc`, `farm_consumable`, etc.)
+
+- [ ] **Contenu de chaque panneau** :
+  - Les items de la categorie affiches sous forme de **boutons-toggle** ou
+    **grille de cartes compactes** (comme les weapon-cards du simulateur).
+  - Chaque item affiche : nom, stock actuel, prix de vente par defaut.
+  - Au clic sur un item, un **champ quantite** apparait (ou s'incremente).
+  - Les items avec stock = 0 sont grises mais restent cliquables (vente
+    possible meme en negatif, avec warning).
+
+- [ ] **Zone de recapitulatif en bas** (toujours visible, fixe) :
+  - Liste des articles selectionnes avec quantites
+  - Total calcule automatiquement (somme des qty * prix unitaire)
+  - Champ **"Argent rapporte"** (le montant reellement encaisse, peut differer
+    du total theorique si le client negocie ou si c'est un pack)
+  - Champ **"Acheteur"** (nom libre)
+  - Champ **"Notes"** (optionnel)
+  - Bouton **"Valider la vente"**
+
+- [ ] **Logique backend** :
+  - Un appel API unique qui cree N `sales` (une par article) + N `stock_movements`
+    en une seule transaction.
+  - Endpoint : `POST /ventes/api/batch` (nouveau) ou extension de `POST /ventes/api/create`
+    pour accepter un tableau d'items.
+  - Chaque `sale` a le meme `buyer_name`, meme `notes`, meme `sold_by_user_id`.
+  - Le champ "Argent rapporte" est stocke dans un champ `actual_amount` ou en notes
+    si different du total theorique.
+  - Response : recapitulatif (articles vendus, stock mis a jour, warnings si negatif).
+
+- [ ] **Reset apres validation** : retour a l'etat initial (panneaux depliables,
+      toast de confirmation, compteurs remis a zero), pret pour la vente suivante.
+
+- [ ] **Historique rapide** : sous la zone de saisie, un mini-historique "Mes ventes
+      recentes" (5 dernieres) avec montant et heure, lien vers l'historique complet.
+
+### 3B.4 Classements configurables [A FAIRE]
+**Probleme actuel :** aucun classement n'existe. Le MC veut motiver les membres
+avec un "Aigle de la semaine" et des stats de performance.
+
+> **Note :** cette section remplace et enrichit l'ancienne Phase 6.1 (classements).
+> La Phase 6.2 (fiches membres) reste inchangee.
+
+- [ ] **Page `/classements`** accessible a tous les membres connectes.
+
+- [ ] **Configuration par les admins du front** (officier+) :
+  - Sous-onglet "Configuration" (ou dans la matrice d'acces / settings).
+  - Selection des **categories de stock_items** qui comptent pour le classement
+    (ex : cocher `drug`, `weapon_finished`, `ammo` ; decocher `tool`, `electronic`).
+  - Enregistre dans `settings` (cle `rankings.eligible_categories`, valeur = JSON
+    array des categories selectionnees).
+  - Possibilite de choisir le critere de classement :
+    - Chiffre d'affaires total (somme `sales.total_price`)
+    - Nombre de ventes (count `sales`)
+    - Quantite totale vendue (somme `sales.quantity`)
+  - Enregistre dans `settings` (cle `rankings.criteria`, defaut = `revenue`).
+
+- [ ] **Vues du classement** :
+  - **Semaine en cours** : du lundi 00:00 au dimanche 23:59
+  - **Semaine precedente** : affichee a cote ou via un selecteur
+  - **Mois en cours**
+  - **Global** (depuis le debut)
+  - Selecteur de periode en haut de page (onglets ou boutons).
+
+- [ ] **"Aigle de la semaine"** :
+  - Le membre #1 du classement hebdomadaire recoit le badge "Aigle de la semaine".
+  - Badge affiche sur le hub `/mc`, sur la page classements, et sur la barre membre.
+  - Historique des aigles precedents (tableau semaine / nom / score).
+  - Le badge est calcule automatiquement au changement de semaine (ou a chaque
+    consultation du classement).
+
+- [ ] **Tableau de classement** :
+  - Colonnes : Rang, Nom, Nombre de ventes, Quantite, Chiffre d'affaires, Badge
+  - Mise en evidence du top 3 (or/argent/bronze ou style Lost MC).
+  - Le membre connecte est toujours visible (meme s'il est loin dans le classement).
+  - Pagination ou scroll infini si beaucoup de membres.
+
+- [ ] **Donnees** : les classements sont calcules en temps reel a partir de la table
+      `sales` filtree par :
+  - `sales.stock_item_id` -> `stock_items.category` IN (categories eligibles)
+  - Periode (semaine, mois, global)
+  - Groupement par `sales.sold_by_user_id`
+  - Pas de table de cache (le volume de donnees est faible).
+
+### Fichiers prevus pour Phase 3B
+- `resources/views/espace-membres.blade.php` -- suppression bouton Admin
+- `resources/views/stocks.blade.php` -- sous-onglet Mouvement, bouton Nouvel article
+- `public/js/stocks.js` -- formulaire mouvement, creation item, vente directe
+- `resources/views/ventes.blade.php` (ou `vente-express.blade.php`) -- refonte accordeon
+- `public/js/ventes.js` (ou `vente-express.js`) -- logique vente express multi-articles
+- `public/css/mc-layout.css` -- styles accordeon, panneau express, classement
+- `app/Http/Controllers/StockController.php` -- endpoint mouvement + creation item
+- `app/Http/Controllers/SaleController.php` -- endpoint batch vente
+- `resources/views/classements.blade.php` -- page classements
+- `public/js/classements.js` -- logique classements + config admin
+- `app/Http/Controllers/RankingController.php` -- endpoints classements + config
+- `database/seeders/SettingSeeder.php` -- settings `rankings.eligible_categories`, `rankings.criteria`
+- `database/seeders/PageAccessRuleSeeder.php` -- cle `classements` (deja seedee, min_role a verifier)
+- Routes : extensions sur `/stocks/api/*`, `/ventes/api/batch`, `/classements`, `/classements/api/*`
+
+### Ordre de realisation interne (Phase 3B)
+```
+3B.0 Nettoyage (bouton Admin)        ~15 min
+  |
+  v
+3B.1 Stocks : mouvements + creation  ~2-3h
+  |
+  v
+3B.2 Attributions : actions en masse  ~2-3h
+  |
+  v
+3B.3 Vente Express repensee           ~4-5h (plus gros morceau)
+  |
+  v
+3B.4 Classements configurables        ~3-4h
+```
+
+---
+
 ## Phase 4 - Module drogues [A FAIRE]
 **Priorite : moyenne -- flux economique important**
 
@@ -343,18 +545,13 @@ unique table, indexee par `category` + `slug` pour le catalogue.
 
 ---
 
-## Phase 6 - Classements et fiches membres
-**Priorite : moyenne -- motivation et suivi**
+## Phase 6 - Fiches membres detaillees
+**Priorite : moyenne -- suivi individuel**
 
-### 6.1 Classements
-- [ ] Page `/classements` accessible a tous les membres connectes
-- [ ] Classement global (depuis le debut)
-- [ ] Classement mensuel
-- [ ] Classement hebdomadaire
-- [ ] Criteres : montant total des ventes, nombre de ventes, profit genere
-- [ ] "Aigle de la semaine" : membre le plus productif (badge visible sur sa fiche)
+> Les classements (ancienne 6.1) ont ete remontes dans la Phase 3B.4 car ils sont
+> directement lies a l'UX quotidienne du MC et a la motivation des membres.
 
-### 6.2 Fiches membres
+### 6.1 Fiches membres (ancienne 6.2)
 - [ ] Page `/membres/{id}` accessible uniquement par officiers et president
 - [ ] Contenu de la fiche :
   - Informations : nom, role, date d'arrivee
@@ -434,6 +631,7 @@ unique table, indexee par `category` + `slug` pour le catalogue.
 | H | `stock_items`, `stock_movements` (taxonomie 12 categories) | CREEES |
 | H | Suppression de `weapon_stocks`, `weapon_stock_movements`, `weapon_sales` | FAIT |
 | 3 | Colonnes `requires_approval`, `reconciled_at` etc. sur `stock_movements` | FAIT |
+| 3B | -- (utilise tables existantes + settings `rankings.*`) | A FAIRE |
 | 4 | Extension `stock_items` via categorie (`drug_raw`, `farm_consumable` a seeder) | SEEDER A ETENDRE |
 | 5 | Extension `stock_items` categorie `melee` | SEEDE |
 | 6 | -- (utilise les tables existantes) | -- |
@@ -459,12 +657,20 @@ Phase H (harmonisation)       -- TERMINEE (tables unifiees)
   v
 Phase 3 (UI stocks + attrib.) -- TERMINEE
   |
+  v
+Phase 3B (UX pratique MC)     -- PROCHAINE ETAPE
+  |  3B.0 Nettoyage (bouton Admin)
+  |  3B.1 Stocks complets
+  |  3B.2 Attributions en masse
+  |  3B.3 Vente Express
+  |  3B.4 Classements configurables
+  |
   +---> Phase 4 (drogues flux) -- 1-2 jours (items seedes, flux a brancher)
   |
   +---> Phase 5 (armes bl. UI) -- 0.5 jour (items seedes, deja vendables)
   |
   v
-Phase 6 (classements/fiches)  -- 2-3 jours
+Phase 6 (fiches membres)      -- 1-2 jours
   |
   v
 Phase 7 (comptabilite)        -- 3-4 jours
@@ -473,10 +679,10 @@ Phase 7 (comptabilite)        -- 3-4 jours
 Phase 8 (polissage)           -- continu
 ```
 
-**Estimation totale restante : ~6-9 jours de developpement (Phases 4 a 8)**
-La Phase H ayant aplani le schema, les Phases 3 a 5 beneficient deja des tables et des
-seeders. L'essentiel du travail restant est frontend (pages `/stocks`, `/drogues`, flux
-d'attribution / reconciliation) et flux metier (comptabilite, cotisations).
+**Estimation totale restante : ~8-12 jours de developpement (Phases 3B a 8)**
+La Phase 3B est la priorite immediate. Elle ameliore directement l'experience
+quotidienne des motards du MC : mouvements de stock simplifies, attributions
+pratiques, vente express ultra-rapide, et classements pour la motivation.
 
 ---
 

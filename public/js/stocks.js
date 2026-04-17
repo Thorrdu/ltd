@@ -27,6 +27,7 @@
 
     var itemTs = null;
     var memberTs = null;
+    var mvItemTs = null;
 
     // ── GATE ───────────────────────────────────────────────
 
@@ -64,6 +65,7 @@
             renderTotals();
             renderList();
             populateAttributionForm();
+            populateMovementForm();
 
             toggleTreasurerTabs();
             refreshAttributions();
@@ -191,7 +193,11 @@
                     '<div class="s-out ' + outClass + '">' + (it.out_attributed ? num(it.out_attributed) : '-') + '</div>' +
                     '<div class="s-price">' + (it.default_sell_price ? money(it.default_sell_price) : '-') + '</div>' +
                     '<div class="s-weight">' + (it.unit_weight_g ? num(it.unit_weight_g) + ' g' : '-') + '</div>' +
-                    '<div class="s-actions"><a href="/stocks/' + esc(it.slug) + '">Detail</a></div>' +
+                    '<div class="s-actions">' +
+                        (it.is_sellable ? '<a class="btn-xs sell" href="/ventes?stock_item_id=' + it.id + '">Vendre</a>' : '') +
+                        '<button class="btn-xs return s-attr-btn" data-id="' + it.id + '" data-name="' + esc(it.name) + '">Attribuer</button>' +
+                        '<a class="btn-xs" href="/stocks/' + esc(it.slug) + '">Detail</a>' +
+                    '</div>' +
                     '</div>';
             });
         });
@@ -335,6 +341,7 @@
         var el = $('attList');
         if (!state.attributions.length) {
             el.innerHTML = '<div class="empty-msg">Aucune attribution dans ce scope.</div>';
+            toggleBulkBar();
             return;
         }
         el.innerHTML = state.attributions.map(renderAttributionRow).join('');
@@ -347,6 +354,28 @@
                 handleReconcile(id, action, maxQ);
             });
         });
+
+        // Checkbox events
+        el.querySelectorAll('.att-check').forEach(function (cb) {
+            cb.addEventListener('change', toggleBulkBar);
+        });
+        var checkAll = $('attCheckAll');
+        if (checkAll) {
+            checkAll.addEventListener('change', function () {
+                el.querySelectorAll('.att-check').forEach(function (cb) { cb.checked = checkAll.checked; });
+                toggleBulkBar();
+            });
+        }
+        toggleBulkBar();
+    }
+
+    function toggleBulkBar() {
+        var bar = $('attBulkBar');
+        if (!bar) return;
+        var checked = document.querySelectorAll('.att-check:checked');
+        bar.style.display = checked.length > 0 ? 'flex' : 'none';
+        var countEl = $('attBulkCount');
+        if (countEl) countEl.textContent = checked.length + ' selectionnee(s)';
     }
 
     function renderAttributionRow(a) {
@@ -358,12 +387,17 @@
             rejected: 'Rejetee'
         }[statusClass] || statusClass;
 
+        var isOpen = a.status === 'open' || a.status === 'pending';
+        var checkbox = isOpen ? '<input type="checkbox" class="att-check" data-id="' + a.id + '" data-max="' + a.quantity_abs + '">' : '';
+
         var actions = '';
-        if (a.status === 'open' || a.status === 'pending') {
+        if (isOpen) {
             var qs = '?stock_item_id=' + a.stock_item_id + '&quantity=' + a.quantity_abs + '&attribution_id=' + a.id;
             actions =
                 '<a class="btn-xs sell" href="/ventes' + qs + '">Vendu</a>' +
                 '<button class="btn-xs return" data-action="return" data-id="' + a.id + '" data-max="' + a.quantity_abs + '">Retour</button>' +
+                '<button class="btn-xs" style="background:rgba(255,165,0,0.12);color:#ffa500;" data-action="cancel" data-id="' + a.id + '" data-max="' + a.quantity_abs + '">Annuler</button>' +
+                '<button class="btn-xs" style="background:rgba(100,200,100,0.12);color:#6c6;" data-action="already" data-id="' + a.id + '" data-max="' + a.quantity_abs + '">Deja en stock</button>' +
                 '<button class="btn-xs loss" data-action="loss" data-id="' + a.id + '" data-max="' + a.quantity_abs + '">Perte</button>' +
                 '<button class="btn-xs gift" data-action="gift" data-id="' + a.id + '" data-max="' + a.quantity_abs + '">Don</button>';
         }
@@ -371,6 +405,7 @@
         var extBadge = a.from_external ? ' <span class="a-status pending">Hors stock</span>' : '';
 
         return '<div class="att-row">' +
+            '<div class="a-check">' + checkbox + '</div>' +
             '<div class="a-item">' + esc(a.item_name) +
                 ' <span class="ts-role-badge role-' + esc(a.category || 'misc') + '">' + esc(CATEGORIES[a.category] || a.category) + '</span>' +
                 extBadge +
@@ -386,6 +421,38 @@
     }
 
     function handleReconcile(id, action, maxQty) {
+        // "cancel" = return with auto-notes "Annulation"
+        // "already" = zero-stock-change reconcile with auto-notes "Deja en stock"
+        if (action === 'cancel') {
+            var notes = prompt('Motif d\'annulation (optionnel) :', '') || 'Annulation';
+            auth.apiPost('/stocks/api/reconcile/' + id, {
+                action: 'return',
+                notes: notes,
+                quantity: maxQty
+            }, function (err, data) {
+                if (err || !data || data.error) { auth.showToast((data && data.error) || 'Erreur', 'error'); return; }
+                auth.showToast(data.message || 'Annulee', 'success');
+                refreshAttributions();
+                tryLoad();
+            });
+            return;
+        }
+
+        if (action === 'already') {
+            var notes2 = prompt('Notes (optionnel) :', '') || 'Deja de retour en stock (reconciliation administrative)';
+            auth.apiPost('/stocks/api/reconcile/' + id, {
+                action: 'loss',
+                notes: notes2,
+                quantity: maxQty
+            }, function (err, data) {
+                if (err || !data || data.error) { auth.showToast((data && data.error) || 'Erreur', 'error'); return; }
+                auth.showToast('Attribution marquee comme deja en stock', 'success');
+                refreshAttributions();
+                tryLoad();
+            });
+            return;
+        }
+
         var qPrompt = 'Quantite concernee (max ' + maxQty + ') :';
         var qtyStr = prompt(qPrompt, String(maxQty));
         if (qtyStr === null) return;
@@ -553,6 +620,192 @@
         });
     }
 
+    // ── MOVEMENT FORM (Phase 3B.1) ────────────────────────
+
+    function populateMovementForm() {
+        var sel = $('mItem');
+        if (!sel) return;
+        if (mvItemTs) { try { mvItemTs.destroy(); } catch (e) {} mvItemTs = null; }
+        sel.innerHTML = '<option value="">-- Choisir un article --</option>';
+        var grouped = {};
+        state.catalog.forEach(function (it) {
+            if (!grouped[it.category]) grouped[it.category] = [];
+            grouped[it.category].push(it);
+        });
+        Object.keys(grouped).forEach(function (cat) {
+            var og = document.createElement('optgroup');
+            og.label = CATEGORIES[cat] || cat;
+            grouped[cat].forEach(function (it) {
+                var opt = document.createElement('option');
+                opt.value = it.id;
+                opt.textContent = it.name + ' (stock: ' + it.quantity + ')';
+                og.appendChild(opt);
+            });
+            sel.appendChild(og);
+        });
+        if (typeof TomSelect !== 'undefined') {
+            mvItemTs = new TomSelect(sel, {
+                placeholder: 'Rechercher un article...',
+                searchField: ['text'],
+                maxOptions: 500,
+                plugins: ['dropdown_input']
+            });
+        }
+    }
+
+    function initMovementForm() {
+        var dirIn = $('mDirIn');
+        var dirOut = $('mDirOut');
+        var reasonEl = $('mReason');
+        var costRow = $('mCostRow');
+
+        if (dirIn) dirIn.addEventListener('click', function () {
+            dirIn.classList.add('active'); dirOut.classList.remove('active');
+        });
+        if (dirOut) dirOut.addEventListener('click', function () {
+            dirOut.classList.add('active'); dirIn.classList.remove('active');
+        });
+        if (reasonEl) reasonEl.addEventListener('change', function () {
+            costRow.style.display = this.value === 'purchase' ? '' : 'none';
+        });
+
+        var costEl = $('mUnitCost');
+        var qtyEl = $('mQty');
+        var preview = $('mCostPreview');
+        function updateCostPreview() {
+            if (!preview) return;
+            var uc = parseInt(costEl.value, 10) || 0;
+            var q = parseInt(qtyEl.value, 10) || 0;
+            preview.innerHTML = uc && q ? 'Total : ' + money(uc * q) : '';
+        }
+        if (costEl) costEl.addEventListener('input', updateCostPreview);
+        if (qtyEl) qtyEl.addEventListener('input', updateCostPreview);
+
+        var btn = $('mBtnSave');
+        if (btn) btn.addEventListener('click', function () {
+            var itemId = parseInt($('mItem').value, 10);
+            var qty = parseInt($('mQty').value, 10);
+            var direction = $('mDirIn').classList.contains('active') ? 'in' : 'out';
+            var reason = $('mReason').value;
+            var unitCost = parseInt($('mUnitCost').value, 10) || 0;
+            var notes = ($('mNotes').value || '').trim();
+
+            if (!itemId) { auth.showToast('Choisissez un article', 'error'); return; }
+            if (!qty || qty < 1) { auth.showToast('Quantite invalide', 'error'); return; }
+
+            btn.disabled = true;
+            btn.textContent = 'Enregistrement...';
+
+            auth.apiPost('/stocks/api/movement', {
+                stock_item_id: itemId,
+                quantity: qty,
+                direction: direction,
+                reason: reason,
+                unit_cost: reason === 'purchase' ? unitCost : null,
+                notes: notes || null
+            }, function (err, data) {
+                btn.disabled = false;
+                btn.textContent = 'Enregistrer le mouvement';
+                if (err || !data || data.error) {
+                    var msg = (data && data.error) || 'Erreur';
+                    if (data && data.messages) msg = Object.values(data.messages).flat().join(' | ');
+                    auth.showToast(msg, 'error');
+                    return;
+                }
+                auth.showToast(data.message || 'Mouvement enregistre', 'success');
+                if (data.warning) setTimeout(function () { auth.showToast(data.warning, 'error'); }, 900);
+                // Reset form
+                $('mQty').value = '1';
+                $('mNotes').value = '';
+                $('mUnitCost').value = '0';
+                if (mvItemTs) mvItemTs.clear();
+                if (preview) preview.innerHTML = '';
+                tryLoad();
+            });
+        });
+    }
+
+    // ── CREATE ITEM (Phase 3B.1) ───────────────────────────
+
+    function initCreateItem() {
+        var formEl = $('newItemForm');
+        var btnNew = $('btnNewItem');
+        var btnCancel = $('niBtnCancel');
+        var btnSave = $('niBtnSave');
+        if (!formEl || !btnNew) return;
+
+        btnNew.addEventListener('click', function () {
+            formEl.style.display = formEl.style.display === 'none' ? '' : 'none';
+        });
+        if (btnCancel) btnCancel.addEventListener('click', function () {
+            formEl.style.display = 'none';
+        });
+        if (btnSave) btnSave.addEventListener('click', function () {
+            var name = ($('niName').value || '').trim();
+            var category = $('niCategory').value;
+            var qty = parseInt($('niQty').value, 10) || 0;
+            var sell = parseInt($('niSellPrice').value, 10) || null;
+            var purch = parseInt($('niPurchPrice').value, 10) || null;
+            var weight = parseInt($('niWeight').value, 10) || null;
+            var notes = ($('niNotes').value || '').trim();
+
+            if (!name) { auth.showToast('Nom requis', 'error'); return; }
+
+            btnSave.disabled = true;
+            btnSave.textContent = 'Creation...';
+
+            auth.apiPost('/stocks/api/create-item', {
+                name: name,
+                category: category,
+                quantity: qty > 0 ? qty : 0,
+                default_sell_price: sell,
+                default_purchase_price: purch,
+                unit_weight_g: weight,
+                notes: notes || null
+            }, function (err, data) {
+                btnSave.disabled = false;
+                btnSave.textContent = 'Creer l\'article';
+                if (err || !data || data.error) {
+                    var msg = (data && data.error) || 'Erreur';
+                    if (data && data.messages) msg = Object.values(data.messages).flat().join(' | ');
+                    auth.showToast(msg, 'error');
+                    return;
+                }
+                auth.showToast(data.message || 'Article cree', 'success');
+                formEl.style.display = 'none';
+                $('niName').value = ''; $('niQty').value = '0';
+                $('niSellPrice').value = '0'; $('niPurchPrice').value = '0';
+                $('niWeight').value = '0'; $('niNotes').value = '';
+                tryLoad();
+            });
+        });
+    }
+
+    // ── QUICK ATTRIBUTE FROM OVERVIEW ROW ──────────────────
+
+    function initQuickAttribute() {
+        var listHost = $('stocksList');
+        if (!listHost) return;
+        listHost.addEventListener('click', function (e) {
+            var btn = e.target.closest('.s-attr-btn');
+            if (!btn) return;
+            var itemId = parseInt(btn.getAttribute('data-id'), 10);
+            var itemName = btn.getAttribute('data-name') || '?';
+            // Switch to the Attribuer tab and pre-select the item
+            document.querySelectorAll('.sub-tab').forEach(function (b) { b.classList.remove('active'); });
+            document.querySelectorAll('.sub-content').forEach(function (c) { c.classList.remove('active'); });
+            var tabBtn = document.querySelector('.sub-tab[data-subtab="attribute"]');
+            if (tabBtn) tabBtn.classList.add('active');
+            var tabContent = $('sub-attribute');
+            if (tabContent) tabContent.classList.add('active');
+            // Pre-select item in the attribution Tom Select
+            if (itemTs) {
+                itemTs.setValue(String(itemId), true);
+            }
+            updateValueHint();
+        });
+    }
+
     // ── SUB-TABS ───────────────────────────────────────────
 
     function initSubTabs() {
@@ -566,6 +819,7 @@
                 if (el) el.classList.add('active');
                 if (target === 'attributions') refreshAttributions();
                 if (target === 'validations') refreshValidations();
+                if (target === 'movement') populateMovementForm();
             });
         });
     }
@@ -591,6 +845,56 @@
 
         $('attScope').addEventListener('change', function () { state.attScope = this.value; refreshAttributions(); });
         $('attStatus').addEventListener('change', function () { state.attStatus = this.value; refreshAttributions(); });
+
+        // Bulk actions
+        function bulkReconcile(action) {
+            var checked = document.querySelectorAll('.att-check:checked');
+            if (!checked.length) { auth.showToast('Selectionnez au moins une attribution', 'error'); return; }
+            var motif = ($('attBulkMotif').value || '').trim();
+            if (action === 'loss' && !motif) { auth.showToast('Motif obligatoire pour une perte', 'error'); return; }
+
+            var defaultNotes = {
+                'return': motif || 'Retour groupé',
+                'cancel': motif || 'Annulation groupée',
+                'loss': motif,
+                'already': motif || 'Deja en stock (reconciliation groupée)'
+            };
+
+            var ids = [];
+            checked.forEach(function (cb) {
+                ids.push({ id: parseInt(cb.getAttribute('data-id'), 10), max: parseInt(cb.getAttribute('data-max'), 10) });
+            });
+
+            var remaining = ids.length;
+            var errors = 0;
+            ids.forEach(function (item) {
+                var apiAction = (action === 'cancel') ? 'return' : (action === 'already' ? 'loss' : action);
+                auth.apiPost('/stocks/api/reconcile/' + item.id, {
+                    action: apiAction,
+                    notes: defaultNotes[action] || motif || null,
+                    quantity: item.max
+                }, function (err, data) {
+                    remaining--;
+                    if (err || !data || data.error) errors++;
+                    if (remaining <= 0) {
+                        var msg = (ids.length - errors) + '/' + ids.length + ' attribution(s) traitee(s)';
+                        auth.showToast(msg, errors > 0 ? 'error' : 'success');
+                        $('attBulkMotif').value = '';
+                        refreshAttributions();
+                        tryLoad();
+                    }
+                });
+            });
+        }
+
+        var bulkReturn = $('attBulkReturn');
+        var bulkCancel = $('attBulkCancel');
+        var bulkLoss = $('attBulkLoss');
+        var bulkAlready = $('attBulkAlready');
+        if (bulkReturn) bulkReturn.addEventListener('click', function () { bulkReconcile('return'); });
+        if (bulkCancel) bulkCancel.addEventListener('click', function () { bulkReconcile('cancel'); });
+        if (bulkLoss) bulkLoss.addEventListener('click', function () { bulkReconcile('loss'); });
+        if (bulkAlready) bulkAlready.addEventListener('click', function () { bulkReconcile('already'); });
 
         $('impBtnPreview').addEventListener('click', previewImport);
         $('impBtnCommit').addEventListener('click', commitImport);
@@ -628,6 +932,9 @@
 
     initSubTabs();
     bindEvents();
+    initMovementForm();
+    initCreateItem();
+    initQuickAttribute();
     updateGate();
     auth.onLogin(updateGate);
     auth.onLogout(updateGate);

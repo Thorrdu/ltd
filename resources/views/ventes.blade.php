@@ -27,12 +27,55 @@
         <div id="ventesContent" style="display:none;">
 
             <div class="sub-tab-bar">
-                <button class="sub-tab active" data-subtab="new">Nouvelle vente</button>
+                <button class="sub-tab active" data-subtab="express">Vente Express</button>
+                <button class="sub-tab" data-subtab="new">Vente classique</button>
                 <button class="sub-tab" data-subtab="history">Historique</button>
             </div>
 
-            {{-- Sous-onglet : nouvelle vente --}}
-            <div class="sub-content active" id="sub-new">
+            {{-- Sous-onglet : vente express --}}
+            <div class="sub-content active" id="sub-express">
+                <div class="ve-accordions" id="veAccordions">
+                    {{-- Accordion panels rendered by JS, grouped by category --}}
+                    <div class="empty-msg">Chargement du catalogue...</div>
+                </div>
+
+                {{-- Fixed recap bar --}}
+                <div class="ve-recap" id="veRecap" style="display:none;">
+                    <div class="ve-recap-items" id="veRecapItems"></div>
+                    <div class="ve-recap-footer">
+                        <div class="ve-recap-total">
+                            <span>Total theorique :</span>
+                            <strong id="veRecapTotal">$0</strong>
+                        </div>
+                        <div class="form-row" style="margin:8px 0 0;">
+                            <div class="form-group sm">
+                                <label>Argent rapportE ($)</label>
+                                <input type="number" id="veActual" class="fm-input" placeholder="Encaisse" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label>Acheteur</label>
+                                <input type="text" id="veBuyer" class="fm-input" placeholder="Nom, pseudo ou organisation">
+                            </div>
+                            <div class="form-group">
+                                <label>Notes <span class="optional">(opt.)</span></label>
+                                <input type="text" id="veNotes" class="fm-input" placeholder="Contexte...">
+                            </div>
+                        </div>
+                        <button class="action-btn sale-btn" id="veBtnSave" style="margin-top:8px;">Valider la vente</button>
+                    </div>
+                </div>
+
+                <div class="action-card" style="margin-top:14px;">
+                    <div class="action-card-title">Mes ventes du jour</div>
+                    <div class="members-stats" id="veTodayStats"></div>
+                    <div class="members-table" id="veTodayList">
+                        <div class="empty-msg">Aucune vente enregistree aujourd'hui.</div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Sous-onglet : vente classique (ancien formulaire) --}}
+            <div class="sub-content" id="sub-new">
                 <div class="action-card">
                     <div class="action-card-title">Enregistrer une vente</div>
                     <p class="action-hint">
