@@ -568,21 +568,22 @@ avec un "Aigle de la semaine" et des stats de performance.
 **Priorite : basse -- complexe mais necessaire a terme**
 
 ### 7.1 Suivi des comptes
-- [ ] Creer une table `mc_accounts` :
-  - `type` : argent_sale, argent_propre
-  - `balance` : solde actuel
+> **Note** : pas besoin d'une table `mc_accounts` avec balance. Les objets "argent sale" et "argent propre" sont des `stock_items` normaux. Toute vente se fait en argent sale. Le blanchiment convertit argent sale → argent propre.
 - [ ] Creer une table `mc_transactions` :
-  - `account_type`, `amount`, `reason`, `category` (vente, achat, amende, entretien, cotisation, autre)
+  - `amount`, `reason`, `category` (vente, achat, amende, entretien, cotisation, autre)
+  - `currency_type` : argent_sale ou argent_propre (ref stock_items)
   - `created_by_user_id`, `validated_by_user_id`
   - `requires_validation`, `validated_at`
   - `notes`, `created_at`
-- [ ] Page `/comptabilite` accessible tresorier/president : vue des soldes, historique transactions
+- [ ] Page `/comptabilite` accessible tresorier/president : vue des soldes (= quantite stock argent_sale + argent_propre), historique transactions
 
-### 7.2 Systeme de demandes
-- [ ] Les membres peuvent soumettre des demandes de remboursement (amende, entretien moto, etc.)
-- [ ] Le tresorier/president valide ou refuse
-- [ ] Le tresorier peut encoder directement des transactions sans demande
-- [ ] Historique complet avec filtres par type, periode, membre
+### 7.2 Systeme de demandes -- FAIT
+- [x] Table `mc_requests` : user_id, category (amende/entretien_moto/equipement/medical/autre), amount, description, photo_path, status (pending/approved/rejected), handled_by_user_id, handled_at, handler_notes
+- [x] Les membres peuvent soumettre des demandes de remboursement avec photo justificative
+- [x] Le tresorier/president valide ou refuse avec notes
+- [ ] Le tresorier peut encoder directement des transactions sans demande (→ 7.1)
+- [x] Historique complet avec onglets (nouvelle demande / mes demandes / toutes les demandes)
+- [x] Upload photo vers `public/img/demandes/` (pas de symlink storage, ISPConfig)
 
 ### 7.3 Cotisations
 - [ ] Table `cotisations` :
@@ -631,11 +632,11 @@ avec un "Aigle de la semaine" et des stats de performance.
 | H | `stock_items`, `stock_movements` (taxonomie 12 categories) | CREEES |
 | H | Suppression de `weapon_stocks`, `weapon_stock_movements`, `weapon_sales` | FAIT |
 | 3 | Colonnes `requires_approval`, `reconciled_at` etc. sur `stock_movements` | FAIT |
-| 3B | -- (utilise tables existantes + settings `rankings.*`) | A FAIRE |
+| 3B | -- (utilise tables existantes + settings `rankings.*`) | FAIT |
 | 4 | Extension `stock_items` via categorie (`drug_raw`, `farm_consumable` a seeder) | SEEDER A ETENDRE |
 | 5 | Extension `stock_items` categorie `melee` | SEEDE |
 | 6 | -- (utilise les tables existantes) | -- |
-| 7 | `mc_accounts`, `mc_transactions`, `cotisations` | A FAIRE |
+| 7 | `mc_requests` (FAIT), `mc_transactions`, `cotisations` | EN COURS |
 | 8 | `notifications` | A FAIRE |
 
 ---
@@ -658,12 +659,14 @@ Phase H (harmonisation)       -- TERMINEE (tables unifiees)
 Phase 3 (UI stocks + attrib.) -- TERMINEE
   |
   v
-Phase 3B (UX pratique MC)     -- PROCHAINE ETAPE
-  |  3B.0 Nettoyage (bouton Admin)
-  |  3B.1 Stocks complets
-  |  3B.2 Attributions en masse
-  |  3B.3 Vente Express
-  |  3B.4 Classements configurables
+Phase 3B (UX pratique MC)     -- TERMINEE
+  |  3B.0 Nettoyage (bouton Admin)     ✓
+  |  3B.1 Stocks complets              ✓
+  |  3B.2 Attributions en masse        ✓
+  |  3B.3 Vente Express                ✓
+  |  3B.4 Classements configurables    ✓
+  |
+  +---> Phase 7.2 (demandes)  -- TERMINEE (mc_requests + photo upload)
   |
   +---> Phase 4 (drogues flux) -- 1-2 jours (items seedes, flux a brancher)
   |
@@ -673,7 +676,7 @@ Phase 3B (UX pratique MC)     -- PROCHAINE ETAPE
 Phase 6 (fiches membres)      -- 1-2 jours
   |
   v
-Phase 7 (comptabilite)        -- 3-4 jours
+Phase 7.1/7.3 (compta+cotis.) -- 2-3 jours
   |
   v
 Phase 8 (polissage)           -- continu
