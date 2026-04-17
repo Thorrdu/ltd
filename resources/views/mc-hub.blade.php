@@ -40,6 +40,10 @@
                 <span class="mc-hub-btn-label">Espace membres</span>
                 <span class="mc-hub-btn-desc">Stocks, contrats, historique</span>
             </a>
+            <a href="/demandes" class="mc-hub-btn mc-hub-btn-wide">
+                <span class="mc-hub-btn-label">Demandes</span>
+                <span class="mc-hub-btn-desc">Remboursements, amendes, frais</span>
+            </a>
             <a href="/stocks" class="mc-hub-btn mc-hub-btn-officer" style="display:none;">
                 <span class="mc-hub-btn-label">Stocks generiques</span>
                 <span class="mc-hub-btn-desc">Vue globale, attributions, import (Officier+)</span>

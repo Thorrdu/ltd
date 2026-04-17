@@ -22,6 +22,7 @@
             ['route' => 'simulateur-munitions','url' => '/simulateur-munitions', 'label' => 'Munitions',  'gate' => 'any'],
             ['route' => 'ventes',              'url' => '/ventes',               'label' => 'Ventes',     'gate' => 'logged'],
             ['route' => 'classements',         'url' => '/classements',          'label' => 'Classements','gate' => 'logged'],
+            ['route' => 'demandes',            'url' => '/demandes',             'label' => 'Demandes',   'gate' => 'logged'],
             ['route' => 'espace-membres',      'url' => '/espace-membres',       'label' => 'Espace',     'gate' => 'logged'],
             ['route' => 'stocks',              'url' => '/stocks',               'label' => 'Stocks',     'gate' => 'officer'],
             ['route' => 'membres',             'url' => '/membres',              'label' => 'Gestion',    'gate' => 'vice_president'],

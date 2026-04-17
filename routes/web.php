@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\McRequestController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\RankingController;
@@ -82,3 +83,10 @@ Route::get('/classements/api/rankings', [RankingController::class, 'apiRankings'
 Route::get('/classements/api/config', [RankingController::class, 'apiConfig']);
 Route::post('/classements/api/config', [RankingController::class, 'apiUpdateConfig']);
 Route::get('/classements/api/eagle-history', [RankingController::class, 'apiEagleHistory']);
+
+// Demandes de remboursement (Phase 7.2)
+Route::get('/demandes', [McRequestController::class, 'index'])->name('demandes');
+Route::get('/demandes/api/list', [McRequestController::class, 'apiList']);
+Route::post('/demandes/api/create', [McRequestController::class, 'apiCreate']);
+Route::post('/demandes/api/{id}/handle', [McRequestController::class, 'apiHandle'])
+    ->where('id', '[0-9]+');

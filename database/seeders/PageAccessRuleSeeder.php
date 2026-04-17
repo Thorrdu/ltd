@@ -24,6 +24,7 @@ class PageAccessRuleSeeder extends Seeder
             ['page_key' => 'stocks_import',    'label' => 'Import CSV/Excel stock',     'min_role' => 'treasurer',      'description' => 'Import de l\'inventaire physique (tresorier+).',   'sort_order' => 102, 'is_system' => false],
             ['page_key' => 'comptabilite',     'label' => 'Comptabilite MC',            'min_role' => 'treasurer',      'description' => 'Vue des comptes et transactions (a venir).',      'sort_order' => 110, 'is_system' => false],
             ['page_key' => 'classements',      'label' => 'Classements membres',        'min_role' => 'member',         'description' => 'Classements de productivite (a venir).',          'sort_order' => 120, 'is_system' => false],
+            ['page_key' => 'demandes',         'label' => 'Demandes de remboursement',  'min_role' => 'member',         'description' => 'Soumission de demandes de remboursement.',        'sort_order' => 125, 'is_system' => false],
             ['page_key' => 'fiches_membres',   'label' => 'Fiches membres',             'min_role' => 'officer',        'description' => 'Fiche detaillee par membre (a venir).',           'sort_order' => 130, 'is_system' => false],
         ];
 

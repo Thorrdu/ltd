@@ -30,7 +30,7 @@
         quantity: 'Quantite vendue'
     };
 
-    var ALL_CATEGORIES = window.MC_RANK_CATEGORIES || [];
+    var ALL_CATEGORIES = window.MC_RANK_CATEGORIES || {};
 
     var state = {
         period: 'week',
@@ -203,11 +203,11 @@
         // Categories grid
         var grid = $('rankCatGrid');
         var html = '';
-        ALL_CATEGORIES.forEach(function (cat) {
+        Object.keys(ALL_CATEGORIES).forEach(function (cat) {
             var checked = state.configCategories.indexOf(cat) !== -1 ? ' checked' : '';
             html += '<label class="rank-cat-checkbox">' +
                 '<input type="checkbox" value="' + esc(cat) + '"' + checked + '> ' +
-                esc(CATEGORY_LABELS[cat] || cat) +
+                esc(ALL_CATEGORIES[cat] || CATEGORY_LABELS[cat] || cat) +
                 '</label>';
         });
         grid.innerHTML = html;
