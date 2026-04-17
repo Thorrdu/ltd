@@ -75,7 +75,7 @@ class McRequestController extends Controller
                 'category_label' => McRequest::CATEGORIES[$r->category] ?? $r->category,
                 'amount'        => $r->amount,
                 'description'   => $r->description,
-                'photo_url'     => $r->photo_path ? asset('storage/' . $r->photo_path) : null,
+                'photo_url'     => $r->photo_path ? asset($r->photo_path) : null,
                 'status'        => $r->status,
                 'status_label'  => McRequest::STATUSES[$r->status] ?? $r->status,
                 'handler_name'  => $r->handledBy?->name,
@@ -121,7 +121,14 @@ class McRequestController extends Controller
 
         $photoPath = null;
         if ($request->hasFile('photo')) {
-            $photoPath = $request->file('photo')->store('demandes', 'public');
+            $file = $request->file('photo');
+            $filename = time() . '_' . $file->hashName();
+            $destDir = public_path('img/demandes');
+            if (! is_dir($destDir)) {
+                mkdir($destDir, 0755, true);
+            }
+            $file->move($destDir, $filename);
+            $photoPath = 'img/demandes/' . $filename;
         }
 
         $mcRequest = McRequest::create([
