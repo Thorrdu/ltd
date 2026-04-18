@@ -11,7 +11,8 @@ class Weapon extends Model
         'name', 'slug', 'craft_time_seconds', 'sell_price',
         'reference_purchase_price', 'price_min', 'price_max',
         'recipe_plans', 'recipe_ressort', 'recipe_canon', 'recipe_poignee',
-        'recipe_corp', 'recipe_metal', 'recipe_polymere',
+        'recipe_corp', 'recipe_crosse', 'recipe_corp_smg', 'recipe_corp_rifle',
+        'recipe_metal', 'recipe_polymere',
         'is_active', 'sort_order',
     ];
 
@@ -37,19 +38,25 @@ class Weapon extends Model
     public function getRecipeAttribute(): array
     {
         return [
-            'plans'    => $this->recipe_plans,
-            'ressort'  => $this->recipe_ressort,
-            'canon'    => $this->recipe_canon,
-            'poignee'  => $this->recipe_poignee,
-            'corp'     => $this->recipe_corp,
-            'metal'    => $this->recipe_metal,
-            'polymere' => $this->recipe_polymere,
+            'plans'      => $this->recipe_plans,
+            'ressort'    => $this->recipe_ressort,
+            'canon'      => $this->recipe_canon,
+            'poignee'    => $this->recipe_poignee,
+            'corp'       => $this->recipe_corp,
+            'crosse'     => $this->recipe_crosse,
+            'corp_smg'   => $this->recipe_corp_smg,
+            'corp_rifle' => $this->recipe_corp_rifle,
+            'metal'      => $this->recipe_metal,
+            'polymere'   => $this->recipe_polymere,
         ];
     }
 
     public function planStockItem(): ?StockItem
     {
-        return StockItem::where('slug', 'plan_' . $this->slug)->first();
+        return StockItem::where('weapon_id', $this->id)
+                ->where('category', 'weapon_plan')
+                ->first()
+            ?? StockItem::where('slug', 'plan_' . $this->slug)->first();
     }
 
     public function finishedStockItem(): ?StockItem

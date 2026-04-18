@@ -4,10 +4,11 @@
     var weaponList = window.WEAPONS || [];
     var memberList = window.MEMBERS || [];
     var weapons = {};
-    var pieceKeys = ['plans', 'ressort', 'canon', 'poignee', 'corp', 'metal', 'polymere'];
+    var pieceKeys = ['plans', 'ressort', 'canon', 'poignee', 'corp', 'crosse', 'corp_smg', 'corp_rifle', 'metal', 'polymere'];
     var pieceNames = {
         plans: 'Plans', ressort: 'Ressort', canon: 'Canon',
         poignee: 'Poign\u00e9e', corp: 'Corp de pistolet',
+        crosse: 'Crosse', corp_smg: 'Corps de SMG', corp_rifle: 'Corps de fusil',
         metal: 'Pi\u00e8ce de m\u00e9tal', polymere: 'Polym\u00e8re'
     };
 
@@ -26,7 +27,9 @@
             pieces: {
                 plans: w.recipe_plans, ressort: w.recipe_ressort,
                 canon: w.recipe_canon, poignee: w.recipe_poignee,
-                corp: w.recipe_corp, metal: w.recipe_metal, polymere: w.recipe_polymere
+                corp: w.recipe_corp, crosse: w.recipe_crosse,
+                corp_smg: w.recipe_corp_smg, corp_rifle: w.recipe_corp_rifle,
+                metal: w.recipe_metal, polymere: w.recipe_polymere
             }
         };
     });
@@ -37,6 +40,8 @@
     var POLYMERE_PETROLE_RATE = 5;
     var POLYMERE_COST = 4500;
     var WEAPON_CRAFT_CORP_EUR = 15000;
+    var WEAPON_CRAFT_CORP_SMG_EUR = 25000;
+    var WEAPON_CRAFT_CORP_RIFLE_EUR = 40000;
     var WEAPON_CRAFT_WEAPON_PIECE_EUR = 5000;
     var METAL_MINERAI_RATE = 5;
     var RESSORT_METAL_RATE = 1;
@@ -365,7 +370,9 @@
     function weaponCraftCompCostOne(w) {
         var p = w.pieces;
         return (p.corp || 0) * WEAPON_CRAFT_CORP_EUR
-             + ((p.canon || 0) + (p.poignee || 0)) * WEAPON_CRAFT_WEAPON_PIECE_EUR;
+             + (p.corp_smg || 0) * WEAPON_CRAFT_CORP_SMG_EUR
+             + (p.corp_rifle || 0) * WEAPON_CRAFT_CORP_RIFLE_EUR
+             + ((p.canon || 0) + (p.poignee || 0) + (p.crosse || 0)) * WEAPON_CRAFT_WEAPON_PIECE_EUR;
     }
 
     function weaponCraftMatCostOne(w, ferPrice) {
@@ -403,8 +410,11 @@
         var costComp = 0;
         if (!compsInStock) {
             costComp = u(Q * (p.corp || 0), st.corp) * WEAPON_CRAFT_CORP_EUR
+                     + u(Q * (p.corp_smg || 0), st.corp_smg || 0) * WEAPON_CRAFT_CORP_SMG_EUR
+                     + u(Q * (p.corp_rifle || 0), st.corp_rifle || 0) * WEAPON_CRAFT_CORP_RIFLE_EUR
                      + u(Q * (p.canon || 0), st.canon) * WEAPON_CRAFT_WEAPON_PIECE_EUR
-                     + u(Q * (p.poignee || 0), st.poignee) * WEAPON_CRAFT_WEAPON_PIECE_EUR;
+                     + u(Q * (p.poignee || 0), st.poignee) * WEAPON_CRAFT_WEAPON_PIECE_EUR
+                     + u(Q * (p.crosse || 0), st.crosse || 0) * WEAPON_CRAFT_WEAPON_PIECE_EUR;
         }
         var metalNeeded = u(Q * (p.metal || 0), st.metal);
         var ressortNeeded = u(Q * (p.ressort || 0), st.ressort);
@@ -424,6 +434,8 @@
         }
         return {
             plans: iv('weaponStockPlans'), corp: iv('weaponStockCorp'),
+            crosse: iv('weaponStockCrosse'), corp_smg: iv('weaponStockCorpSmg'),
+            corp_rifle: iv('weaponStockCorpRifle'),
             ressort: iv('weaponStockRessort'), canon: iv('weaponStockCanon'),
             poignee: iv('weaponStockPoignee'), metal: iv('weaponStockMetal'),
             polymere: iv('weaponStockPolymere'), sns: iv('weaponStockSns')
@@ -558,7 +570,7 @@
         var ecoAch = (!bought && costNoStockAch > costTotAch) ? costNoStockAch - costTotAch : 0;
         var ecoRec = (!bought && costNoStockRec > costTotRec) ? costNoStockRec - costTotRec : 0;
         var ecoSnsAcq = (bought && refBuyOne > 0 && st.sns > 0) ? Math.min(st.sns, Q) * refBuyOne : 0;
-        var stockUsedCraft = !bought && (st.plans + st.corp + st.ressort + st.canon + st.poignee + st.metal + st.polymere) > 0;
+        var stockUsedCraft = !bought && (st.plans + st.corp + st.crosse + st.corp_smg + st.corp_rifle + st.ressort + st.canon + st.poignee + st.metal + st.polymere) > 0;
         var stockUsedSns = bought && st.sns > 0;
 
         var html = '';
@@ -671,7 +683,7 @@
         weaponTargetSellEl.addEventListener('input', updateWeaponTargetSim);
         weaponTargetSellEl.addEventListener('change', updateWeaponTargetSim);
     }
-    ['weaponStockPlans', 'weaponStockCorp', 'weaponStockRessort', 'weaponStockCanon', 'weaponStockPoignee', 'weaponStockMetal', 'weaponStockPolymere', 'weaponStockSns'].forEach(function (sid) {
+    ['weaponStockPlans', 'weaponStockCorp', 'weaponStockCrosse', 'weaponStockCorpSmg', 'weaponStockCorpRifle', 'weaponStockRessort', 'weaponStockCanon', 'weaponStockPoignee', 'weaponStockMetal', 'weaponStockPolymere', 'weaponStockSns'].forEach(function (sid) {
         var el = $(sid);
         if (el) {
             el.addEventListener('input', updateWeaponTargetSim);

@@ -100,8 +100,14 @@
                     <div class="ammo-sim-params weapon-stock-grid">
                         <label class="ammo-sim-label" for="weaponStockPlans">Plans (util.)</label>
                         <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPlans" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockCorp">Corp</label>
+                        <label class="ammo-sim-label" for="weaponStockCorp">Corp pistolet</label>
                         <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCorp" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                        <label class="ammo-sim-label" for="weaponStockCrosse">Crosse</label>
+                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCrosse" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                        <label class="ammo-sim-label" for="weaponStockCorpSmg">Corps SMG</label>
+                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCorpSmg" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                        <label class="ammo-sim-label" for="weaponStockCorpRifle">Corps fusil</label>
+                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCorpRifle" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
                         <label class="ammo-sim-label" for="weaponStockRessort">Ressort</label>
                         <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockRessort" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
                         <label class="ammo-sim-label" for="weaponStockCanon">Canon</label>
