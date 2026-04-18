@@ -558,6 +558,7 @@ avec un "Aigle de la semaine" et des stats de performance.
   - Items actuellement en sa possession (pris du stock, non reconcilies)
   - Historique des ventes (montant total, nombre, dernieres ventes)
   - Historique des mouvements de stock (prises, retours, pertes)
+  - Historique des attributions
   - Argent rapporte au MC (total, ce mois, cette semaine)
   - Cotisations : etat des paiements
 - [ ] Liste des membres : `/membres` avec filtres par role, tri par activite
@@ -569,13 +570,8 @@ avec un "Aigle de la semaine" et des stats de performance.
 
 ### 7.1 Suivi des comptes
 > **Note** : pas besoin d'une table `mc_accounts` avec balance. Les objets "argent sale" et "argent propre" sont des `stock_items` normaux. Toute vente se fait en argent sale. Le blanchiment convertit argent sale → argent propre.
-- [ ] Creer une table `mc_transactions` :
-  - `amount`, `reason`, `category` (vente, achat, amende, entretien, cotisation, autre)
-  - `currency_type` : argent_sale ou argent_propre (ref stock_items)
-  - `created_by_user_id`, `validated_by_user_id`
-  - `requires_validation`, `validated_at`
-  - `notes`, `created_at`
-- [ ] Page `/comptabilite` accessible tresorier/president : vue des soldes (= quantite stock argent_sale + argent_propre), historique transactions
+- [ ] Utiliser les tables de vente ou les adapter
+- [ ] Page `/comptabilite` accessible officier+ : vue des soldes (= quantite stock argent_sale + argent_propre), historique transactions, etat des soldes/valeur stock, semaine par semaine
 
 ### 7.2 Systeme de demandes -- FAIT
 - [x] Table `mc_requests` : user_id, category (amende/entretien_moto/equipement/medical/autre), amount, description, photo_path, status (pending/approved/rejected), handled_by_user_id, handled_at, handler_notes
@@ -591,13 +587,14 @@ avec un "Aigle de la semaine" et des stats de performance.
   - `amount_due`, `amount_paid`, `paid_at`
   - `notes`
 - [ ] Montants par defaut selon le role (configurable dans les parametres) :
-  - Prospect : 2 000 / semaine
+  - Prospect : 3 000 / semaine
   - Membre : 5 000 / semaine
-  - Officier : 10 000 / semaine
+  - Officier : 7 000 / semaine
 - [ ] Page de suivi des cotisations :
-  - Indiquer le jour de cotisation qui a paye, combien (possibilite de payer plus)
-  - Vue tresorier : qui est a jour, qui doit encore
-- [ ] Alertes pour les retards de paiement
+  - Indiquer le jour de cotisation (chaque dimanche) qui a paye, combien (possibilite de payer plus)
+  - Vue officier+ : qui est a jour, qui doit encore, mettre en ordre de cotisation par officier+
+  - Vue membre: statut de la cotisation
+- [ ] Alertes d'indication du jour de paiement et pour les retards de paiement si la perrsonne n'a pas encore payé les jours suivants
 
 ---
 
@@ -687,6 +684,21 @@ La Phase 3B est la priorite immediate. Elle ameliore directement l'experience
 quotidienne des motards du MC : mouvements de stock simplifies, attributions
 pratiques, vente express ultra-rapide, et classements pour la motivation.
 
+### Regles de visibilite (mises a jour le 18 avril 2026)
+
+| Page | Role minimum | Notes |
+|------|-------------|-------|
+| `/mc` (hub) | prospect | |
+| `/simulateur-armes` | **membre** | Etait prospect, change le 18/04 |
+| `/simulateur-munitions` | **membre** | Etait prospect, change le 18/04 |
+| `/espace-membres` | prospect | |
+| `/ventes` | membre | Prospect/membre : articles attribues uniquement |
+| `/stocks` | officier | |
+| `/classements` | membre | |
+| `/demandes` | membre | |
+| `/membres` (gestion) | vice-president | |
+| Panel Filament | tresorier | |
+
 ---
 
 ## Notes importantes
@@ -706,6 +718,46 @@ pratiques, vente express ultra-rapide, et classements pour la motivation.
    pour toute vente. Toute nouvelle verticale (drogues, armes blanches, consommables, outils,
    electronique) passe par `stock_items.category` sans creer de table dediee. Toute ecriture
    de mouvement passe par `stock_movements`, toute vente par `sales`.
+
+7. **Ventes hors stock** : la table `sales` accepte `stock_item_id = NULL` avec un champ
+   `ad_hoc_label` pour les ventes de services, informations ou articles non stockes.
+   Ces ventes sont comptabilisees dans les transactions et la comptabilite (Phases 6 et 7.1)
+   mais ne generent aucun mouvement de stock.
+
+8. **Vente et stock insuffisant** : une vente est toujours autorisee meme si le stock est
+   insuffisant (l'article peut etre stocke ailleurs). Le stock passe en negatif avec un
+   avertissement. Idem pour les attributions.
+
+9. **Deduction automatique des attributions** : quand un membre vend un article pour lequel
+   il a une attribution ouverte, la vente reconcilie automatiquement l'attribution (pas de
+   double deduction du stock central). Si la quantite vendue depasse l'attribution, le
+   complement est deduit du stock central.
+
+10. **Visibilite par role (ventes)** : les prospects et membres ne voient que les articles
+    qui leur sont attribues dans l'interface de vente. Les officiers et au-dessus voient le
+    catalogue complet.
+
+11. **Acces aux simulateurs** : les pages `/simulateur-armes` et `/simulateur-munitions`
+    sont accessibles a partir du role **membre** (pas prospect).
+
+---
+
+## Phase 9 - Documentation par role [A FAIRE]
+**Priorite : moyenne -- necessaire pour l'onboarding des nouveaux membres**
+
+### 9.1 Documentation des acces par role
+- [ ] Creer une page de documentation (ou section dans `/mc`) decrivant pour
+      chaque role ce a quoi il a acces :
+  - **Prospect** : hub MC, espace membres (consultation)
+  - **Membre** : + simulateurs armes/munitions, ventes rapides (articles attribues
+    uniquement), classements, demandes de remboursement
+  - **Officier** : + catalogue complet de vente, stocks, attributions, fiches membres
+  - **Vice-President** : + gestion des membres
+  - **President** : + tout sauf config systeme
+  - **Tresorier (superadmin)** : acces total (matrice d'acces, parametres, validations,
+    import CSV, comptabilite, panel admin Filament)
+- [ ] Inclure un schema ou tableau synthetique des pages et du role minimum requis
+- [ ] Accessible depuis le hub MC ou la barre de navigation
 
 ---
 

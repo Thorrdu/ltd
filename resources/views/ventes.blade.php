@@ -34,6 +34,19 @@
 
             {{-- Sous-onglet : vente express --}}
             <div class="sub-content active" id="sub-express">
+
+                {{-- Mes articles attribues (sur moi) --}}
+                <div class="action-card" style="margin-bottom:14px;">
+                    <div class="action-card-title">Mes articles (attribues sur moi)</div>
+                    <p class="action-hint">Articles que vous avez en votre possession. La vente reconcilie automatiquement l'attribution.</p>
+                    <div id="veMyAttributions">
+                        <div class="empty-msg">Chargement...</div>
+                    </div>
+                </div>
+
+                <div class="action-card" style="margin-bottom:14px;">
+                    <div class="action-card-title">Catalogue vente rapide</div>
+                </div>
                 <div class="ve-accordions" id="veAccordions">
                     {{-- Accordion panels rendered by JS, grouped by category --}}
                     <div class="empty-msg">Chargement du catalogue...</div>
@@ -89,35 +102,19 @@
                                     <span>Article</span>
                                     <label class="tiny-toggle" style="font-weight:normal; font-size:11px; color:#9ca3af; cursor:pointer;">
                                         <input type="checkbox" id="vAdHocToggle" style="vertical-align:middle; margin-right:4px;">
-                                        Article hors catalogue
+                                        Vente hors stock (service, info...)
                                     </label>
                                 </label>
                                 <select id="vItem" class="fm-input"></select>
 
                                 <div id="vAdHocFields" style="display:none; margin-top:6px;">
                                     <div class="form-row" style="margin:0;">
-                                        <div class="form-group" style="flex:2;">
-                                            <input type="text" id="vAdHocName" class="fm-input" placeholder="Nom de l'article (non encode)" maxlength="120">
-                                        </div>
-                                        <div class="form-group" style="flex:1;">
-                                            <select id="vAdHocCategory" class="fm-input">
-                                                <option value="misc">Divers</option>
-                                                <option value="weapon_finished">Arme</option>
-                                                <option value="weapon_plan">Plan</option>
-                                                <option value="weapon_piece">Piece armurerie</option>
-                                                <option value="ammo">Munition</option>
-                                                <option value="melee">Arme blanche</option>
-                                                <option value="drug">Drogue</option>
-                                                <option value="drug_raw">Drogue (matiere)</option>
-                                                <option value="farm_consumable">Consommable agricole</option>
-                                                <option value="tool">Outil</option>
-                                                <option value="electronic">Electronique</option>
-                                                <option value="raw_material">Matiere premiere</option>
-                                            </select>
+                                        <div class="form-group full">
+                                            <input type="text" id="vAdHocName" class="fm-input" placeholder="Description (service, information, etc.)" maxlength="150">
                                         </div>
                                     </div>
                                     <div style="font-size:11px; color:#9ca3af; margin-top:2px;">
-                                        Cet article sera cree automatiquement dans le catalogue avec un stock initial de 0. Le stock passera en negatif apres la vente (a regulariser via /stocks).
+                                        Vente enregistree pour la comptabilite sans impact sur le stock.
                                     </div>
                                 </div>
                             </div>

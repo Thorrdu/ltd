@@ -131,6 +131,7 @@ class StockController extends Controller
                 'default_sell_price' => $i->default_sell_price,
                 'default_purchase_price' => $i->default_purchase_price,
                 'is_sellable'        => (bool) $i->is_sellable,
+                'is_quick_sale'      => (bool) $i->is_quick_sale,
                 'notes'              => $i->notes,
             ];
         });
@@ -209,6 +210,7 @@ class StockController extends Controller
                 'default_sell_price' => $item->default_sell_price,
                 'default_purchase_price' => $item->default_purchase_price,
                 'is_sellable'        => (bool) $item->is_sellable,
+                'is_quick_sale'      => (bool) $item->is_quick_sale,
                 'notes'              => $item->notes,
             ],
             'open_attributions' => $openAttr,
@@ -246,6 +248,7 @@ class StockController extends Controller
             'default_purchase_price' => 'sometimes|nullable|integer|min:0|max:999999999',
             'unit_weight_g'          => 'sometimes|nullable|integer|min:0|max:9999999',
             'is_sellable'            => 'sometimes|boolean',
+            'is_quick_sale'          => 'sometimes|boolean',
             'is_active'              => 'sometimes|boolean',
             'notes'                  => 'sometimes|nullable|string|max:1000',
         ]);
@@ -373,6 +376,7 @@ class StockController extends Controller
             'default_sell_price'     => $i->default_sell_price,
             'default_purchase_price' => $i->default_purchase_price,
             'is_sellable'            => (bool) $i->is_sellable,
+            'is_quick_sale'          => (bool) $i->is_quick_sale,
             'is_active'              => (bool) $i->is_active,
             'notes'                  => $i->notes,
         ];
@@ -494,7 +498,6 @@ class StockController extends Controller
                 'quantity_change'            => -$qty,
                 'attribution_original_abs'   => $qty,
                 'reason'                     => 'attribution',
-                'unit_cost'                  => $item->default_purchase_price,
                 'user_id'                    => $user->id,
                 'attributed_to_user_id'      => $target->id,
                 'notes'                      => $notes !== '' ? $notes : null,
@@ -815,6 +818,7 @@ class StockController extends Controller
             'default_sell_price'     => 'nullable|integer|min:0|max:999999999',
             'default_purchase_price' => 'nullable|integer|min:0|max:999999999',
             'unit_weight_g'          => 'nullable|integer|min:0|max:9999999',
+            'is_quick_sale'          => 'sometimes|boolean',
             'notes'                  => 'nullable|string|max:1000',
         ]);
         if ($v->fails()) {
@@ -846,6 +850,7 @@ class StockController extends Controller
                 'default_purchase_price' => $request->input('default_purchase_price'),
                 'unit_weight_g'          => $request->input('unit_weight_g'),
                 'is_sellable'            => true,
+                'is_quick_sale'          => $request->boolean('is_quick_sale'),
                 'is_active'              => true,
                 'sort_order'             => 5000,
                 'notes'                  => $request->input('notes'),

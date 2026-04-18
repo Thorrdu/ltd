@@ -21,7 +21,8 @@
         raw_material:    'Matieres premieres',
         weapon_piece:    'Pieces d\'armes',
         weapon_plan:     'Plans d\'armes',
-        misc:            'Divers'
+        misc:            'Divers',
+        service:         'Hors stock'
     };
 
     // Ordre d'affichage des categories dans l'accordeon express.
@@ -37,7 +38,9 @@
         attributionId: null,
         attributionLocked: false,
         attributionMaxQty: null,
-        adHoc: false
+        adHoc: false,
+        myAttributions: [],
+        userRole: null
     };
 
     state.catalog.forEach(function (it) { state.catalogById[it.id] = it; });
@@ -70,13 +73,77 @@
             }
             $('ventesNoAccess').style.display = 'none';
             $('ventesContent').style.display = '';
+            state.userRole = data.user_role || auth.userRole;
             state.todaySales = data.sales || [];
             renderToday(data.totals || {});
-            populateItemSelect();
-            buildExpressAccordions();
+            refreshMyAttributions();
+            var isOfficer = auth.isAtLeast('officer');
+            // Prospect/member: only see attributed items, not the full catalog.
+            if (isOfficer) {
+                populateItemSelect();
+                buildExpressAccordions();
+                showCatalogSections(true);
+            } else {
+                hideCatalogSections();
+            }
             applyPrefill();
             refreshHistory();
         });
+    }
+
+    function showCatalogSections(show) {
+        var catalogCard = document.querySelector('#sub-express .ve-accordions');
+        var catalogTitle = catalogCard ? catalogCard.previousElementSibling : null;
+        if (catalogCard) catalogCard.style.display = show ? '' : 'none';
+        if (catalogTitle) catalogTitle.style.display = show ? '' : 'none';
+        // Ad-hoc toggle: only officers+ can use it (they have access to full catalog)
+        var adHocToggle = $('vAdHocToggle');
+        if (adHocToggle) {
+            adHocToggle.closest('label').style.display = show ? '' : 'none';
+        }
+    }
+
+    function hideCatalogSections() {
+        showCatalogSections(false);
+        // In classic sale, only show attributed items in the select.
+        populateItemSelectFromAttributions();
+    }
+
+    function populateItemSelectFromAttributions() {
+        var sel = $('vItem');
+        if (!sel) return;
+        if (itemTs) { try { itemTs.destroy(); } catch (e) {} itemTs = null; }
+        sel.innerHTML = '<option value="">-- Mes articles attribues --</option>';
+        if (!state.myAttributions.length) {
+            sel.innerHTML = '<option value="">Aucun article attribue</option>';
+            return;
+        }
+        var grouped = {};
+        state.myAttributions.forEach(function (a) {
+            if (!grouped[a.category]) grouped[a.category] = [];
+            grouped[a.category].push(a);
+        });
+        Object.keys(grouped).forEach(function (cat) {
+            var og = document.createElement('optgroup');
+            og.label = CATEGORY_LABELS[cat] || cat;
+            grouped[cat].forEach(function (a) {
+                var opt = document.createElement('option');
+                opt.value = a.stock_item_id;
+                opt.textContent = a.name + ' (x' + a.quantity + ')' + (a.default_sell_price ? '  (' + money(a.default_sell_price) + ')' : '');
+                opt.setAttribute('data-max-qty', a.quantity);
+                opt.setAttribute('data-price', a.default_sell_price || 0);
+                og.appendChild(opt);
+            });
+            sel.appendChild(og);
+        });
+        if (typeof TomSelect !== 'undefined') {
+            itemTs = new TomSelect(sel, {
+                placeholder: 'Rechercher parmi mes articles...',
+                searchField: ['text'],
+                maxOptions: 500,
+                plugins: ['dropdown_input']
+            });
+        }
     }
 
     function applyPrefill() {
@@ -227,11 +294,9 @@
         var notes = ($('vNotes').value || '').trim();
 
         var adHocName = '';
-        var adHocCategory = '';
         if (state.adHoc) {
             adHocName = ($('vAdHocName').value || '').trim();
-            adHocCategory = $('vAdHocCategory').value || 'misc';
-            if (!adHocName) { auth.showToast('Nom de l\'article requis', 'error'); return; }
+            if (!adHocName) { auth.showToast('Description de la vente requise', 'error'); return; }
         } else {
             if (!stockItemId) { auth.showToast('Selectionnez un article', 'error'); return; }
         }
@@ -257,7 +322,6 @@
         };
         if (state.adHoc) {
             payload.ad_hoc_name = adHocName;
-            payload.ad_hoc_category = adHocCategory;
         } else {
             payload.stock_item_id = stockItemId;
         }
@@ -328,7 +392,6 @@
         if (itemTs) itemTs.clear();
         if (state.adHoc) {
             $('vAdHocName').value = '';
-            $('vAdHocCategory').value = 'misc';
         }
     }
 
@@ -435,8 +498,11 @@
         var el = $('veAccordions');
         if (!el) return;
 
+        // Only show items flagged for quick sale
+        var quickItems = state.catalog.filter(function (it) { return it.is_quick_sale; });
+
         var grouped = {};
-        state.catalog.forEach(function (it) {
+        quickItems.forEach(function (it) {
             if (!grouped[it.category]) grouped[it.category] = [];
             grouped[it.category].push(it);
         });
@@ -555,19 +621,36 @@
 
         var total = 0;
         var html = '';
-        keys.forEach(function (idStr) {
-            var id = parseInt(idStr, 10);
-            var qty = expressCart[id];
+        keys.forEach(function (keyStr) {
+            var qty = expressCart[keyStr];
             if (!qty) return;
-            var it = state.catalogById[id];
-            if (!it) return;
-            var lineTotal = (it.default_sell_price || 0) * qty;
+
+            var isAttr = keyStr.indexOf('attr_item_') === 0;
+            var itemName, price, removeKey;
+
+            if (isAttr) {
+                var itemId = parseInt(keyStr.replace('attr_item_', ''), 10);
+                var a = state.myAttributions.find(function (x) { return x.stock_item_id === itemId; });
+                if (!a) return;
+                itemName = a.name + ' (attrib.)';
+                price = a.default_sell_price || 0;
+                removeKey = keyStr;
+            } else {
+                var id = parseInt(keyStr, 10);
+                var it = state.catalogById[id];
+                if (!it) return;
+                itemName = it.name;
+                price = it.default_sell_price || 0;
+                removeKey = keyStr;
+            }
+
+            var lineTotal = price * qty;
             total += lineTotal;
             html += '<div class="ve-recap-item">' +
-                '<span class="ri-name">' + esc(it.name) + '</span>' +
+                '<span class="ri-name">' + esc(itemName) + '</span>' +
                 '<span class="ri-qty">x' + qty + '</span>' +
                 '<span class="ri-total">' + money(lineTotal) + '</span>' +
-                '<span class="ri-remove" data-id="' + id + '" title="Retirer">✕</span>' +
+                '<span class="ri-remove" data-key="' + removeKey + '" title="Retirer">✕</span>' +
                 '</div>';
         });
         itemsEl.innerHTML = html;
@@ -580,9 +663,13 @@
         // Remove item
         itemsEl.querySelectorAll('.ri-remove').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                var id = parseInt(btn.getAttribute('data-id'), 10);
-                delete expressCart[id];
-                updateExpressItem(id);
+                var key = btn.getAttribute('data-key');
+                delete expressCart[key];
+                if (key.indexOf('attr_item_') === 0) {
+                    updateExpressAttrItem(key);
+                } else {
+                    updateExpressItem(parseInt(key, 10));
+                }
             });
         });
     }
@@ -594,13 +681,22 @@
         var buyer = ($('veBuyer').value || '').trim();
         if (!buyer) { auth.showToast('Indiquez l\'acheteur', 'error'); return; }
 
-        var items = [];
-        keys.forEach(function (idStr) {
-            var id = parseInt(idStr, 10);
-            var qty = expressCart[id];
-            if (qty > 0) items.push({ stock_item_id: id, quantity: qty });
+        // All items (attributed or catalog) go through the batch endpoint.
+        // The backend auto-reconciles attributions FIFO.
+        var stockItems = [];
+        keys.forEach(function (keyStr) {
+            var qty = expressCart[keyStr];
+            if (!qty || qty <= 0) return;
+            if (keyStr.indexOf('attr_item_') === 0) {
+                var itemId = parseInt(keyStr.replace('attr_item_', ''), 10);
+                if (itemId > 0) stockItems.push({ stock_item_id: itemId, quantity: qty });
+            } else {
+                var id = parseInt(keyStr, 10);
+                if (id > 0) stockItems.push({ stock_item_id: id, quantity: qty });
+            }
         });
-        if (!items.length) { auth.showToast('Aucun article avec quantite > 0', 'error'); return; }
+
+        if (!stockItems.length) { auth.showToast('Aucun article avec quantite > 0', 'error'); return; }
 
         var actual = parseInt($('veActual').value, 10);
         var notes = ($('veNotes').value || '').trim();
@@ -610,7 +706,7 @@
         btn.textContent = 'Enregistrement...';
 
         auth.apiPost('/ventes/api/batch', {
-            items: items,
+            items: stockItems,
             actual_amount: actual || null,
             buyer_name: buyer,
             notes: notes || null
@@ -635,9 +731,111 @@
             $('veNotes').value = '';
             $('veActual').value = '';
             buildExpressAccordions();
-            // Refresh today's sales
             tryLoad();
         });
+    }
+
+    // ── MES ATTRIBUTIONS (items sur moi) ──────────────────
+
+    function refreshMyAttributions() {
+        auth.apiGet('/ventes/api/my-attributions', function (err, data) {
+            if (err || !data) return;
+            state.myAttributions = data.attributions || [];
+            renderMyAttributions();
+        });
+    }
+
+    function renderMyAttributions() {
+        var el = $('veMyAttributions');
+        if (!el) return;
+        if (!state.myAttributions.length) {
+            el.innerHTML = '<div class="empty-msg">Aucun article attribue actuellement.</div>';
+            return;
+        }
+        var html = '<div class="ve-items-grid">';
+        state.myAttributions.forEach(function (a) {
+            var key = 'attr_item_' + a.stock_item_id;
+            var selClass = expressCart[key] ? ' selected' : '';
+            var qtyVal = expressCart[key] || 0;
+            html += '<div class="ve-item ve-item-attr' + selClass + '" data-item-id="' + a.stock_item_id + '">';
+            html += '<div class="ve-item-name">' + esc(a.name) + '</div>';
+            html += '<div class="ve-item-price">' + (a.default_sell_price ? money(a.default_sell_price) : '-') + '</div>';
+            html += '<div class="ve-item-stock">Sur moi: ' + a.quantity + '</div>';
+            html += '<div class="ve-item-qty">';
+            html += '<button class="qty-btn ve-attr-minus" data-key="' + key + '" data-max="' + a.quantity + '">−</button>';
+            html += '<input type="number" class="qty-input ve-attr-qty-input" data-key="' + key + '" data-max="' + a.quantity + '" value="' + qtyVal + '" min="0" max="' + a.quantity + '">';
+            html += '<button class="qty-btn ve-attr-plus" data-key="' + key + '" data-max="' + a.quantity + '">+</button>';
+            html += '</div>';
+            html += '</div>';
+        });
+        html += '</div>';
+        el.innerHTML = html;
+
+        // Bind attribution item events
+        el.querySelectorAll('.ve-attr-plus').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var key = btn.getAttribute('data-key');
+                var max = parseInt(btn.getAttribute('data-max'), 10);
+                var cur = expressCart[key] || 0;
+                if (cur < max) {
+                    expressCart[key] = cur + 1;
+                    updateExpressAttrItem(key);
+                }
+            });
+        });
+        el.querySelectorAll('.ve-attr-minus').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var key = btn.getAttribute('data-key');
+                var cur = expressCart[key] || 0;
+                if (cur > 0) {
+                    expressCart[key] = cur - 1;
+                    if (expressCart[key] <= 0) delete expressCart[key];
+                }
+                updateExpressAttrItem(key);
+            });
+        });
+        el.querySelectorAll('.ve-attr-qty-input').forEach(function (inp) {
+            inp.addEventListener('change', function () {
+                var key = inp.getAttribute('data-key');
+                var max = parseInt(inp.getAttribute('data-max'), 10);
+                var val = Math.min(parseInt(inp.value, 10) || 0, max);
+                if (val > 0) {
+                    expressCart[key] = val;
+                } else {
+                    delete expressCart[key];
+                }
+                inp.value = val;
+                updateExpressAttrItem(key);
+            });
+        });
+        el.querySelectorAll('.ve-item-attr').forEach(function (card) {
+            card.addEventListener('click', function (e) {
+                if (e.target.closest('.qty-btn') || e.target.closest('.qty-input')) return;
+                var itemId = card.getAttribute('data-item-id');
+                var key = 'attr_item_' + itemId;
+                var max = 1;
+                var a = state.myAttributions.find(function (x) { return String(x.stock_item_id) === itemId; });
+                if (a) max = a.quantity;
+                var cur = expressCart[key] || 0;
+                if (cur < max) expressCart[key] = cur + 1;
+                updateExpressAttrItem(key);
+            });
+        });
+    }
+
+    function updateExpressAttrItem(key) {
+        var qty = expressCart[key] || 0;
+        var inp = document.querySelector('.ve-attr-qty-input[data-key="' + key + '"]');
+        if (inp) inp.value = qty;
+        var itemId = key.replace('attr_item_', '');
+        var card = document.querySelector('.ve-item-attr[data-item-id="' + itemId + '"]');
+        if (card) {
+            if (qty > 0) card.classList.add('selected');
+            else card.classList.remove('selected');
+        }
+        updateExpressRecap();
     }
 
     // ── SUB-TABS ───────────────────────────────────────────

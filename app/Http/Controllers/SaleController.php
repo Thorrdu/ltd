@@ -8,8 +8,8 @@ use App\Models\StockMovement;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 
 class SaleController extends Controller
 {
@@ -109,10 +109,11 @@ class SaleController extends Controller
         ];
 
         return response()->json([
-            'sales'  => $sales,
-            'totals' => $totals,
-            'scope'  => $scope,
-            'period' => $period,
+            'sales'     => $sales,
+            'totals'    => $totals,
+            'scope'     => $scope,
+            'period'    => $period,
+            'user_role' => $user->role,
         ]);
     }
 
@@ -122,9 +123,12 @@ class SaleController extends Controller
             return $denied;
         }
 
+        $user = $this->authUser($request);
+
         return response()->json([
-            'catalog'    => $this->loadCatalog(),
+            'catalog'    => $user->isOfficer() ? $this->loadCatalog() : collect([]),
             'categories' => StockItem::CATEGORIES,
+            'user_role'  => $user->role,
         ]);
     }
 
@@ -155,6 +159,8 @@ class SaleController extends Controller
 
         $warning = null;
         $attributionId = $request->input('attribution_id');
+        $item = null;
+        $adHocLabel = null;
 
         if ($request->filled('stock_item_id')) {
             $item = StockItem::find($request->input('stock_item_id'));
@@ -165,57 +171,100 @@ class SaleController extends Controller
                 return response()->json(['error' => 'Cet article n\'est pas vendable depuis /ventes'], 422);
             }
         } else {
-            // Mode ad-hoc : l'article n'est pas dans le catalogue. On le cree
-            // a la volee (stock initial 0, sera decremente par la vente et
-            // passera en negatif), puis on procede comme d'habitude. Le tresorier
-            // pourra ensuite ajuster / regulariser via /stocks.
+            // Mode vente libre (service, information, etc.) : pas de stock_item,
+            // juste un libelle sur la sale pour la comptabilite.
             if ($attributionId) {
-                return response()->json(['error' => 'Impossible de reconcilier une attribution avec un article ad-hoc'], 422);
+                return response()->json(['error' => 'Impossible de reconcilier une attribution avec un article hors stock'], 422);
             }
-            $name = trim((string) $request->input('ad_hoc_name'));
-            $category = (string) $request->input('ad_hoc_category', 'misc');
-            if ($name === '') {
-                return response()->json(['error' => 'Nom de l\'article requis (mode hors catalogue)'], 422);
+            $adHocLabel = trim((string) $request->input('ad_hoc_name'));
+            if ($adHocLabel === '') {
+                return response()->json(['error' => 'Nom de l\'article ou du service requis (mode hors stock)'], 422);
             }
-            if (! in_array($category, self::SELLABLE_CATEGORIES, true)) {
-                $category = 'misc';
-            }
-            $item = $this->createAdHocStockItem($name, $category);
-            $warning = 'Article hors catalogue cree (' . $item->slug . '). Stock initial 0 : passera en negatif apres la vente.';
         }
 
         $qty   = (int) $request->input('quantity');
         $total = (int) $request->input('total_price');
         $unit  = (int) round($total / max($qty, 1));
 
-        // If this sale reconciles an attribution, validate it and skip stock decrement
-        // (the stock was already decremented when the attribution was created).
-        $attribution = null;
-        if ($attributionId) {
-            $attribution = StockMovement::where('id', $attributionId)
+        // Attribution resolution: explicit attribution_id, OR auto-detect all for this item.
+        $hasAttribution = false;
+        $totalAttribAvailable = 0;
+
+        if ($attributionId && $item) {
+            // Explicit attribution: validate it.
+            $explicit = StockMovement::where('id', $attributionId)
                 ->where('reason', 'attribution')
                 ->whereNull('reconciled_at')
                 ->whereNull('rejected_at')
                 ->first();
-            if (! $attribution) {
+            if (! $explicit) {
                 return response()->json(['error' => 'Attribution invalide ou deja reconciliee'], 422);
             }
-            if ($attribution->attributed_to_user_id !== $user->id) {
+            if ($explicit->attributed_to_user_id !== $user->id) {
                 return response()->json(['error' => 'Cette attribution n\'est pas la votre'], 403);
             }
-            if ($attribution->stock_item_id !== $item->id) {
+            if ($explicit->stock_item_id !== $item->id) {
                 return response()->json(['error' => 'Article incoherent avec l\'attribution'], 422);
             }
-            $attribRemaining = abs((int) $attribution->quantity_change);
-            if ($qty < 1 || $qty > $attribRemaining) {
-                return response()->json(['error' => 'Quantite entre 1 et ' . $attribRemaining . ' (reste attribution)'], 422);
-            }
+            $hasAttribution = true;
+        } elseif ($item) {
+            // Auto-detect: check if the user has any open attributions for this item.
+            $anyAttrib = StockMovement::openAttribution()
+                ->where('attributed_to_user_id', $user->id)
+                ->where('stock_item_id', $item->id)
+                ->exists();
+            $hasAttribution = $anyAttrib;
         }
 
-        // Toute vente décremente le stock du stock_item + crée un mouvement sale.
-        // Si la vente reconcilie une attribution, le stock a deja ete decremente a l'attribution.
+        // ── Vente hors stock (service, info) : pas de mouvement, juste la sale ──
+        if (! $item) {
+            $sale = Sale::create([
+                'stock_item_id'   => null,
+                'ad_hoc_label'    => $adHocLabel,
+                'quantity'        => $qty,
+                'unit_price'      => $unit,
+                'total_price'     => $total,
+                'buyer_name'      => $request->input('buyer_name'),
+                'sold_by_user_id' => $user->id,
+                'notes'           => $request->input('notes'),
+            ]);
+
+            return response()->json([
+                'ok'      => true,
+                'message' => $qty . '× ' . $adHocLabel . ' vendu(s) à ' . $request->input('buyer_name') . ' (hors stock)',
+                'warning' => null,
+                'sale'    => $this->mapSale($sale->fresh(['soldBy', 'stockItem'])),
+                'attribution_remaining' => null,
+            ]);
+        }
+
+        // ── Vente standard (article en stock) ──
         $saleMovement = null;
-        if (! $attribution) {
+        $attributionRemaining = null;
+        $itemLabel = $item->name;
+
+        if ($hasAttribution) {
+            // Consume from open attributions (FIFO), then deduct remainder from central stock.
+            $result = $this->reconcileAttributions($user, $item, $qty, $request->input('buyer_name'));
+            $fromStock = $result['from_stock'];
+            $attributionRemaining = $result['attribution_remaining'];
+
+            if ($fromStock > 0) {
+                if ($item->quantity < $fromStock && $warning === null) {
+                    $warning = 'Stock insuffisant (' . $item->quantity . ' en stock). Le stock passe en négatif.';
+                }
+                $item->decrement('quantity', $fromStock);
+                StockMovement::create([
+                    'stock_item_id'   => $item->id,
+                    'quantity_change' => -$fromStock,
+                    'reason'          => 'sale',
+                    'user_id'         => $user->id,
+                    'notes'           => 'Complement stock (au-dela attributions): ' . $fromStock . '× ' . $item->name . ' → ' . $request->buyer_name,
+                    'created_at'      => now(),
+                ]);
+            }
+        } else {
+            // No attribution: deduct entirely from central stock.
             if ($item->quantity < $qty && $warning === null) {
                 $warning = 'Stock insuffisant (' . $item->quantity . ' en stock). Le stock passe en négatif.';
             }
@@ -227,19 +276,6 @@ class SaleController extends Controller
                 'user_id'         => $user->id,
                 'notes'           => 'Vente rapide: ' . $qty . '× ' . $item->name . ' → ' . $request->buyer_name,
                 'created_at'      => now(),
-            ]);
-        } else {
-            // Document the reconciliation with a zero-qty sale movement for traceability.
-            $saleMovement = StockMovement::create([
-                'stock_item_id'         => $item->id,
-                'quantity_change'       => 0,
-                'reason'                => 'sale',
-                'user_id'               => $user->id,
-                'attributed_to_user_id' => $user->id,
-                'notes'                 => 'Vente sur attribution #' . $attribution->id
-                    . ($qty < $attribRemaining ? ' (partiel)' : '')
-                    . ': ' . $qty . '× ' . $item->name . ' → ' . $request->buyer_name,
-                'created_at'            => now(),
             ]);
         }
 
@@ -253,30 +289,13 @@ class SaleController extends Controller
             'notes'           => $request->input('notes'),
         ]);
 
-        $attributionRemaining = null;
-        if ($attribution) {
-            $newRemainder = $attribRemaining - $qty;
-            if ($newRemainder > 0) {
-                $attribution->update([
-                    'quantity_change' => -$newRemainder,
-                ]);
-                $attributionRemaining = $newRemainder;
-            } else {
-                $attribution->update([
-                    'reconciled_at'             => now(),
-                    'reconciled_by_movement_id' => $saleMovement?->id,
-                ]);
-                $attributionRemaining = 0;
-            }
-        }
-
         return response()->json([
             'ok'      => true,
-            'message' => $qty . '× ' . $item->name . ' vendu(s) à ' . $request->input('buyer_name')
-                . ($attribution
+            'message' => $qty . '× ' . $itemLabel . ' vendu(s) à ' . $request->input('buyer_name')
+                . ($hasAttribution
                     ? ($attributionRemaining > 0
-                        ? ' (il reste ' . $attributionRemaining . ' sur l\'attribution)'
-                        : ' (attribution reconciliée)')
+                        ? ' (il reste ' . $attributionRemaining . ' sur vos attributions)'
+                        : ' (attributions reconciliées)')
                     : ''),
             'warning' => $warning,
             'sale'    => $this->mapSale($sale->fresh(['soldBy', 'stockItem'])),
@@ -287,35 +306,108 @@ class SaleController extends Controller
     // ── Helpers ─────────────────────────────────────────────
 
     /**
-     * Cree un stock_item a la volee pour un article vendu mais pas encore
-     * encode dans le catalogue. Utilise un slug unique derivé du nom.
-     * L'item est cree avec quantity=0 : la vente le fera passer en negatif,
-     * signalant qu'une regularisation est necessaire via /stocks.
+     * Return open attributions for the authenticated user that are quick-sale items.
+     * These are items the member currently has on them and can sell directly.
      */
-    private function createAdHocStockItem(string $name, string $category): StockItem
+    public function apiMyAttributions(Request $request): JsonResponse
     {
-        $base = 'adhoc_' . Str::slug($name, '_');
-        if (strlen($base) > 100) {
-            $base = substr($base, 0, 100);
-        }
-        $slug = $base;
-        $i = 1;
-        while (StockItem::where('slug', $slug)->exists()) {
-            $i++;
-            $slug = $base . '_' . $i;
+        if ($denied = $this->requireAccess($request)) {
+            return $denied;
         }
 
-        return StockItem::create([
-            'category'           => $category,
-            'slug'               => $slug,
-            'name'               => $name,
-            'quantity'           => 0,
-            'default_sell_price' => null,
-            'is_sellable'        => true,
-            'is_active'          => true,
-            'sort_order'         => 9000,
-            'notes'              => 'Cree automatiquement depuis /ventes (article hors catalogue).',
-        ]);
+        $user = $this->authUser($request);
+
+        $raw = StockMovement::openAttribution()
+            ->where('attributed_to_user_id', $user->id)
+            ->with(['stockItem'])
+            ->get()
+            ->filter(fn (StockMovement $m) => $m->stockItem && $m->stockItem->is_active);
+
+        // Group by stock_item_id: cumulate quantities across multiple attributions.
+        $grouped = $raw->groupBy('stock_item_id')->map(function ($movements) {
+            $first = $movements->first();
+            $item  = $first->stockItem;
+            $totalQty = $movements->sum(fn ($m) => abs((int) $m->quantity_change));
+            $ids = $movements->pluck('id')->values()->toArray();
+
+            return [
+                'attribution_ids'    => $ids,
+                'stock_item_id'      => $item->id,
+                'category'           => $item->category,
+                'category_label'     => StockItem::CATEGORIES[$item->category] ?? $item->category,
+                'type_short'         => self::TYPE_SHORT[$item->category] ?? $item->category,
+                'name'               => $item->name,
+                'slug'               => $item->slug,
+                'quantity'           => $totalQty,
+                'default_sell_price' => $item->default_sell_price,
+            ];
+        })->values();
+
+        return response()->json(['attributions' => $grouped]);
+    }
+
+    // ── Helpers (private) ───────────────────────────────────
+
+    /**
+     * Reconcile open attributions for an item FIFO. Returns how many units
+     * remain to be deducted from central stock, and how many units are still
+     * open on the member's attributions.
+     *
+     * @return array{from_stock: int, attribution_remaining: int}
+     */
+    private function reconcileAttributions(User $user, StockItem $item, int $qty, string $buyerName): array
+    {
+        $attributions = StockMovement::openAttribution()
+            ->where('attributed_to_user_id', $user->id)
+            ->where('stock_item_id', $item->id)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $remaining = $qty;
+
+        foreach ($attributions as $attrib) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $attribQty = abs((int) $attrib->quantity_change);
+            $consume = min($remaining, $attribQty);
+            $remaining -= $consume;
+
+            // Traceability movement.
+            $mvt = StockMovement::create([
+                'stock_item_id'         => $item->id,
+                'quantity_change'       => 0,
+                'reason'                => 'sale',
+                'user_id'               => $user->id,
+                'attributed_to_user_id' => $user->id,
+                'notes'                 => 'Vente sur attribution #' . $attrib->id
+                    . ($consume < $attribQty ? ' (partiel ' . $consume . '/' . $attribQty . ')' : '')
+                    . ': ' . $consume . '× ' . $item->name . ' → ' . $buyerName,
+                'created_at'            => now(),
+            ]);
+
+            $newRemainder = $attribQty - $consume;
+            if ($newRemainder > 0) {
+                $attrib->update(['quantity_change' => -$newRemainder]);
+            } else {
+                $attrib->update([
+                    'reconciled_at'             => now(),
+                    'reconciled_by_movement_id' => $mvt->id,
+                ]);
+            }
+        }
+
+        // How many units are still attributed (across all remaining open attributions)?
+        $stillOpen = StockMovement::openAttribution()
+            ->where('attributed_to_user_id', $user->id)
+            ->where('stock_item_id', $item->id)
+            ->sum(DB::raw('ABS(quantity_change)'));
+
+        return [
+            'from_stock'            => $remaining, // units that must come from central stock
+            'attribution_remaining' => (int) $stillOpen,
+        ];
     }
 
     private function loadCatalog()
@@ -336,6 +428,7 @@ class SaleController extends Controller
                 'default_sell_price' => $i->default_sell_price,
                 'unit_weight_g'      => $i->unit_weight_g,
                 'current_stock'      => $i->quantity,
+                'is_quick_sale'      => (bool) $i->is_quick_sale,
                 'notes'              => $i->notes,
             ])
             ->values();
@@ -374,7 +467,7 @@ class SaleController extends Controller
         $warnings = [];
         $totalTheoretical = 0;
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($items, $buyerName, $notes, $user, &$sales, &$warnings, &$totalTheoretical) {
+        DB::transaction(function () use ($items, $buyerName, $notes, $user, &$sales, &$warnings, &$totalTheoretical) {
             foreach ($items as $line) {
                 $item = StockItem::find($line['stock_item_id']);
                 if (! $item || ! $item->is_active) {
@@ -387,20 +480,24 @@ class SaleController extends Controller
                 $lineTotal = $unitPrice * $qty;
                 $totalTheoretical += $lineTotal;
 
-                if ($item->quantity < $qty) {
-                    $warnings[] = $item->name . ' : stock insuffisant (' . $item->quantity . ')';
+                // Auto-deduct from all open attributions (FIFO), then from central stock.
+                $result = $this->reconcileAttributions($user, $item, $qty, $buyerName);
+                $fromStock = $result['from_stock'];
+
+                if ($fromStock > 0) {
+                    if ($item->quantity < $fromStock) {
+                        $warnings[] = $item->name . ' : stock insuffisant (' . $item->quantity . ')';
+                    }
+                    $item->decrement('quantity', $fromStock);
+                    StockMovement::create([
+                        'stock_item_id'   => $item->id,
+                        'quantity_change' => -$fromStock,
+                        'reason'          => 'sale',
+                        'user_id'         => $user->id,
+                        'notes'           => 'Vente express: ' . $fromStock . '× ' . $item->name . ' → ' . $buyerName,
+                        'created_at'      => now(),
+                    ]);
                 }
-
-                $item->decrement('quantity', $qty);
-
-                StockMovement::create([
-                    'stock_item_id'   => $item->id,
-                    'quantity_change' => -$qty,
-                    'reason'          => 'sale',
-                    'user_id'         => $user->id,
-                    'notes'           => 'Vente express: ' . $qty . '× ' . $item->name . ' → ' . $buyerName,
-                    'created_at'      => now(),
-                ]);
 
                 $sale = Sale::create([
                     'stock_item_id'   => $item->id,
@@ -439,13 +536,15 @@ class SaleController extends Controller
     {
         $item = $s->stockItem;
         $cat  = $item?->category ?? 'misc';
+        $isAdHoc = $s->stock_item_id === null;
 
         return [
             'id'            => $s->id,
             'stock_item_id' => $s->stock_item_id,
-            'category'      => $cat,
-            'type_short'    => self::TYPE_SHORT[$cat] ?? $cat,
-            'item_name'     => $item?->name ?? '?',
+            'ad_hoc'        => $isAdHoc,
+            'category'      => $isAdHoc ? 'service' : $cat,
+            'type_short'    => $isAdHoc ? 'Hors stock' : (self::TYPE_SHORT[$cat] ?? $cat),
+            'item_name'     => $isAdHoc ? ($s->ad_hoc_label ?? 'Vente libre') : ($item?->name ?? '?'),
             'quantity'      => $s->quantity,
             'unit_price'    => $s->unit_price,
             'total_price'   => $s->total_price,

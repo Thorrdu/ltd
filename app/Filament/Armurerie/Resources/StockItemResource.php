@@ -53,6 +53,9 @@ class StockItemResource extends Resource
             TextInput::make('unit_weight_g')->label('Poids unité (g)')->numeric()->nullable(),
             TextInput::make('sort_order')->label('Ordre')->numeric()->default(0),
             Toggle::make('is_sellable')->label('Vendable via /ventes')->default(true),
+            Toggle::make('is_quick_sale')->label('Vente rapide (express)')
+                ->helperText('Apparaît dans le catalogue de vente rapide (armes, munitions, drogues, armes blanches)')
+                ->default(false),
             Toggle::make('is_active')->label('Actif')->default(true),
             Textarea::make('notes')->label('Notes')->rows(2),
         ]);
@@ -74,6 +77,8 @@ class StockItemResource extends Resource
                     ->sortable(),
                 TextColumn::make('default_sell_price')->label('PV')->money('usd', divideBy: 1)->placeholder('—'),
                 IconColumn::make('is_sellable')->label('Vendable')->boolean(),
+                IconColumn::make('is_quick_sale')->label('VR')->boolean()
+                    ->tooltip('Vente rapide'),
                 IconColumn::make('is_active')->label('Actif')->boolean(),
             ])
             ->defaultSort('category')

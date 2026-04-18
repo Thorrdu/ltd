@@ -48,6 +48,7 @@ Route::put('/membres/api/matrix/{id}', [MemberController::class, 'apiUpdateMatri
 Route::get('/ventes', [SaleController::class, 'index'])->name('ventes');
 Route::get('/ventes/api/list', [SaleController::class, 'apiList']);
 Route::get('/ventes/api/catalog', [SaleController::class, 'apiCatalog']);
+Route::get('/ventes/api/my-attributions', [SaleController::class, 'apiMyAttributions']);
 Route::post('/ventes/api/create', [SaleController::class, 'apiCreate']);
 Route::post('/ventes/api/batch', [SaleController::class, 'apiBatch']);
 

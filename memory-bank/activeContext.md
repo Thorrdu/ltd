@@ -1,9 +1,83 @@
 # Active Context - Station LTD / Toolbox Lost MC
 
 ## Travail en cours
-Phase 3B **LIVRÉE** le 17 avril 2026 : améliorations UX front-end MC/armes.
+Phase 4bis (ventes hors stock, visibilite par role, deduction attributions) **LIVRÉE** le 18 avril 2026.
 
-Phase 3 livrée le 16 avril 2026 (soir). Phase 3B enchaînée le 17 avril 2026.
+### Phase 4bis livrée (18 avril 2026)
+
+**4bis.1 – Ventes hors stock (services, informations)** :
+- Migration `2026_04_18_100000_add_ad_hoc_label_to_sales` : `stock_item_id` devient
+  nullable, ajout `ad_hoc_label` (varchar 150).
+- `Sale` model : `ad_hoc_label` ajouté aux `$fillable`.
+- `SaleController::apiCreate()` : mode "vente libre" quand `stock_item_id` est absent
+  et `ad_hoc_name` fourni. Crée une sale sans mouvement de stock ni StockItem.
+- `SaleController::mapSale()` : affiche `ad_hoc_label` et catégorie "service" pour
+  les ventes hors stock.
+- Frontend : le toggle "Article hors catalogue" renommé "Vente hors stock (service, info...)"
+  et ne crée plus de StockItem (simplifié : un seul champ description sans catégorie).
+
+**4bis.2 – Déduction automatique des attributions** :
+- `SaleController::apiCreate()` : si le vendeur a une attribution ouverte pour l'article,
+  elle est automatiquement réconciliée (même sans `attribution_id` explicite). Si la qty
+  dépasse le reste de l'attribution, le complément est déduit du stock central.
+- `SaleController::apiBatch()` : même logique de déduction auto par article.
+
+**4bis.3 – Visibilité par rôle (ventes)** :
+- `apiCatalog()` : retourne le catalogue complet uniquement pour officier+.
+  Prospect/membre reçoit un catalogue vide (ne voit que ses attributions).
+- `apiList()` : ajoute `user_role` dans la réponse.
+- Frontend (`ventes.js`) : prospect/membre ne voit que "Mes articles (attribués sur moi)".
+  L'accordéon catalogue et le toggle hors stock sont masqués. Le select classique
+  est peuplé uniquement avec les articles attribués.
+
+**4bis.4 – Simulateurs : accès membre+** :
+- `PageAccessRuleSeeder` et DB : `simulateur_armes` et `simulateur_munitions` passent
+  de `prospect` à `member` comme rôle minimum.
+
+**4bis.5 – Attributions avec stock insuffisant** :
+- Déjà permis (le stock passe en négatif avec avertissement). Le flag `from_external`
+  permet de ne pas décrémenter du tout si l'article est stocké ailleurs.
+
+**4bis.6 – Plan de développement mis à jour** :
+- Notes 7-11 ajoutées (ventes hors stock, stock insuffisant, déduction attributions,
+  visibilité par rôle, accès simulateurs).
+- Phase 9 ajoutée : documentation par rôle (qui a accès à quoi).
+- Tableau de visibilité par page/rôle ajouté.
+
+### Contexte précédent
+Phase 4 (harmonisation simulateur / vente rapide) **LIVRÉE** le 18 avril 2026.
+
+**4.1 – Flag `is_quick_sale` sur `stock_items`** :
+- Migration `2026_04_18_150000_add_is_quick_sale_to_stock_items` : ajout booléen
+  `is_quick_sale`, default `true` pour catégories `weapon_finished`, `ammo`, `drug`, `melee`.
+- `StockItem` : champ ajouté aux `$fillable` + `$casts`, scope `quickSale()`.
+- Filament `StockItemResource` : toggle "Vente rapide (express)" dans le formulaire +
+  colonne icône "VR" dans la table.
+- API `/stocks/api/item/{slug}`, `/stocks/api/list`, `/stocks/api/item/{slug}` (PUT),
+  `/stocks/api/create-item` : `is_quick_sale` ajouté aux réponses et validations.
+- Page `/stocks/{slug}` : checkbox "Vente rapide (express)" dans le formulaire d'édition.
+
+**4.2 – Attribution sans prix** :
+- `StockController::apiAttribute()` : suppression de `unit_cost` dans le `StockMovement::create`.
+- Filament `StockMovementResource` : `unit_cost` masqué quand reason = attribution/adjustment
+  (champ `live()` sur le select reason).
+
+**4.3 – Vente rapide filtrée par `is_quick_sale`** :
+- `SaleController::loadCatalog()` : ajout `is_quick_sale` dans le mapping.
+- `ventes.js` : l'accordéon express ne montre que les items avec `is_quick_sale: true`.
+- Vente classique continue d'afficher tout le catalogue vendable.
+
+**4.4 – Vente rapide depuis attributions** :
+- Nouvel endpoint `GET /ventes/api/my-attributions` : retourne les attributions ouvertes
+  du membre connecté (tous articles, pas seulement quick_sale).
+- Section "Mes articles (attribués sur moi)" en haut de l'onglet Vente Express.
+- Les items attribués peuvent être ajoutés au panier express (clés `attr_XXX`).
+- La soumission sépare items standard (batch) et items attribution (create individuel
+  avec `attribution_id` pour reconciliation automatique).
+- CSS `.ve-item-attr` : style bleu distinctif pour les cartes d'attribution.
+
+### Contexte précédent
+Phase 3B **LIVRÉE** le 17 avril 2026 : améliorations UX front-end MC/armes.
 
 ### Phase 3B livrée (17 avril 2026)
 

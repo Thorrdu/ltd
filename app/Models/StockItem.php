@@ -46,13 +46,14 @@ class StockItem extends Model
         'quantity',
         'unit_weight_g',
         'default_sell_price', 'price_min', 'price_max', 'default_purchase_price',
-        'is_sellable', 'is_active',
+        'is_sellable', 'is_quick_sale', 'is_active',
         'sort_order', 'notes',
     ];
 
     protected $casts = [
-        'is_sellable' => 'boolean',
-        'is_active'   => 'boolean',
+        'is_sellable'   => 'boolean',
+        'is_quick_sale' => 'boolean',
+        'is_active'     => 'boolean',
     ];
 
     public function weapon(): BelongsTo
@@ -78,6 +79,11 @@ class StockItem extends Model
     public function scopeSellable($query)
     {
         return $query->where('is_sellable', true);
+    }
+
+    public function scopeQuickSale($query)
+    {
+        return $query->where('is_quick_sale', true);
     }
 
     public function scopeOfCategory($query, string $cat)

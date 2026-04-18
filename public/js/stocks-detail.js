@@ -74,6 +74,7 @@
         $('sdfWeight').value = currentItem.unit_weight_g != null ? currentItem.unit_weight_g : '';
         $('sdfNotes').value = currentItem.notes || '';
         $('sdfSellable').checked = !!currentItem.is_sellable;
+        $('sdfQuickSale').checked = !!currentItem.is_quick_sale;
         $('sdfActive').checked = !!currentItem.is_active;
         $('sdEditForm').style.display = '';
         $('sdEditToggle').textContent = 'Masquer';
@@ -100,6 +101,7 @@
             default_purchase_price: purchase === '' ? null : parseInt(purchase, 10),
             unit_weight_g: weight === '' ? null : parseInt(weight, 10),
             is_sellable: $('sdfSellable').checked,
+            is_quick_sale: $('sdfQuickSale').checked,
             is_active: $('sdfActive').checked,
             notes: ($('sdfNotes').value || '').trim() || null
         };

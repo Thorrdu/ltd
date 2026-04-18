@@ -84,6 +84,9 @@
                             <label class="cb-inline"><input type="checkbox" id="sdfSellable"> Vendable depuis /ventes</label>
                         </div>
                         <div class="form-group" style="flex:0 0 auto;">
+                            <label class="cb-inline"><input type="checkbox" id="sdfQuickSale"> Vente rapide (express)</label>
+                        </div>
+                        <div class="form-group" style="flex:0 0 auto;">
                             <label class="cb-inline"><input type="checkbox" id="sdfActive"> Article actif</label>
                         </div>
                         <div class="form-group" style="flex:1; text-align:right;">

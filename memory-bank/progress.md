@@ -4,15 +4,13 @@
 Projet Laravel 12 + Filament 5 fonctionnel avec deux domaines operationnels : catalogue LTD et armurerie.
 Toolbox MC en construction : Phases 0 (roles + settings + matrice d'acces + gestion membres),
 1 (refonte UX), 2 (ventes rapides), H (harmonisation du schema), 3 (stocks generiques + attributions
-+ validations + import CSV) et 3B (ameliorations UX front : stocks, attributions en masse, vente express,
-classements) TERMINEES.
-Session du 17 avril 2026 : Phase 3B livree avec 5 sous-phases :
-- 3B.0 : bouton admin retire du hub
-- 3B.1 : stocks ameliores (mouvement direct, creation article, boutons rapides par ligne)
-- 3B.2 : attributions en masse (checkboxes, barre d'actions groupees, annuler/deja en stock)
-- 3B.3 : vente express repensee (accordeon par categorie, batch API, recap fixe)
-- 3B.4 : classements configurables (page `/classements`, aigle de la semaine, config officer+)
-Prochaine etape : Phase 4 (drogues) ou Phase 6 (fiches membres).
++ validations + import CSV), 3B (ameliorations UX front : stocks, attributions en masse, vente express,
+classements) et 4 (harmonisation simulateur / vente rapide) TERMINEES.
+Session du 18 avril 2026 : Phase 4 livree :
+- 4.1 : flag `is_quick_sale` sur stock_items (migration + model + Filament + API + front)
+- 4.2 : attribution sans prix (unit_cost supprime, Filament masque pour attribution)
+- 4.3 : vente rapide filtree par is_quick_sale (accordeon express ne montre que les items flags)
+- 4.4 : vente rapide depuis attributions (section "Mes articles", reconciliation automatique)
 
 ## Ce qui fonctionne
 

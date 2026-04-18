@@ -55,8 +55,10 @@ class StockMovementResource extends Resource
                 ->helperText('Positif = entrée, Négatif = sortie'),
             Select::make('reason')->label('Raison')
                 ->options(StockMovement::REASONS)
-                ->required(),
-            TextInput::make('unit_cost')->label('Coût unitaire ($)')->numeric()->nullable(),
+                ->required()
+                ->live(),
+            TextInput::make('unit_cost')->label('Coût unitaire ($)')->numeric()->nullable()
+                ->visible(fn ($get) => ! in_array($get('reason'), ['attribution', 'adjustment'])),
             Select::make('weapon_contract_id')->label('Contrat lié')
                 ->options(WeaponContract::orderBy('created_at', 'desc')->pluck('name', 'id'))
                 ->searchable()
