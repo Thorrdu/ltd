@@ -51,13 +51,21 @@
             actions = '<div class="req-actions">' +
                 '<button class="btn-sm btn-approve" data-id="' + r.id + '">Approuver</button>' +
                 '<button class="btn-sm btn-reject" data-id="' + r.id + '">Refuser</button>' +
+                '<button class="btn-sm btn-cancel" data-id="' + r.id + '">Annuler</button>' +
+                '</div>';
+        }
+        // Owner can cancel their own pending request
+        var cancelOwn = '';
+        if (!showActions && r.status === 'pending') {
+            cancelOwn = '<div class="req-actions">' +
+                '<button class="btn-sm btn-cancel" data-id="' + r.id + '">Annuler ma demande</button>' +
                 '</div>';
         }
 
         var handlerInfo = '';
         if (r.handler_name) {
             handlerInfo = '<div class="req-handler">' +
-                (r.status === 'approved' ? 'Approuve' : 'Refuse') +
+                (r.status === 'approved' ? 'Approuve' : r.status === 'cancelled' ? 'Annule' : 'Refuse') +
                 ' par <strong>' + esc(r.handler_name) + '</strong>' +
                 (r.handled_at ? ' le ' + esc(r.handled_at) : '') +
                 (r.handler_notes ? ' &mdash; <em>' + esc(r.handler_notes) + '</em>' : '') +
@@ -85,6 +93,7 @@
             photoHtml +
             handlerInfo +
             actions +
+            cancelOwn +
             '</div>';
     }
 
@@ -110,6 +119,7 @@
             return;
         }
         el.innerHTML = state.myRequests.map(function (r) { return renderRow(r, false); }).join('');
+        bindCancelButtons(el, function () { loadMine(); });
     }
 
     // ── LOAD ALL REQUESTS (treasurer+) ──────────────────────
@@ -135,6 +145,7 @@
         }
         el.innerHTML = state.allRequests.map(function (r) { return renderRow(r, true); }).join('');
         bindActions(el);
+        bindCancelButtons(el, function () { loadAll(); });
     }
 
     function bindActions(container) {
@@ -164,6 +175,23 @@
             }
             auth.showToast(data.message || 'OK', 'success');
             loadAll();
+        });
+    }
+
+    function bindCancelButtons(container, onDone) {
+        container.querySelectorAll('.btn-cancel').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = parseInt(this.getAttribute('data-id'));
+                if (!confirm('Voulez-vous vraiment annuler cette demande ?')) return;
+                auth.apiPost('/demandes/api/' + id + '/cancel', {}, function (err, data) {
+                    if (err || !data || data.error) {
+                        auth.showToast(data?.error || 'Erreur', 'error');
+                        return;
+                    }
+                    auth.showToast(data.message || 'Demande annulee', 'success');
+                    if (onDone) onDone();
+                });
+            });
         });
     }
 

@@ -60,7 +60,7 @@ class McRequestController extends Controller
             $query->where('user_id', $user->id);
         }
 
-        if ($status !== 'all' && in_array($status, ['pending', 'approved', 'rejected'])) {
+        if ($status !== 'all' && in_array($status, ['pending', 'approved', 'rejected', 'cancelled'])) {
             $query->where('status', $status);
         }
 
@@ -185,6 +185,41 @@ class McRequestController extends Controller
         return response()->json([
             'ok'      => true,
             'message' => 'Demande ' . $label . '.',
+        ]);
+    }
+
+    // ── API : Cancel (own pending request) ───────────────────
+
+    public function apiCancel(Request $request, int $id): JsonResponse
+    {
+        if ($denied = $this->requireAccess($request)) {
+            return $denied;
+        }
+
+        $user = $this->authUser($request);
+
+        $mcRequest = McRequest::find($id);
+        if (! $mcRequest) {
+            return response()->json(['error' => 'Demande introuvable'], 404);
+        }
+        if (! $mcRequest->isPending()) {
+            return response()->json(['error' => 'Seule une demande en attente peut etre annulee'], 422);
+        }
+        // Only the requester or a treasurer+ can cancel
+        if ($mcRequest->user_id !== $user->id && ! $user->isAtLeast('treasurer')) {
+            return response()->json(['error' => 'Vous ne pouvez annuler que vos propres demandes'], 403);
+        }
+
+        $mcRequest->update([
+            'status'             => 'cancelled',
+            'handled_by_user_id' => $user->id,
+            'handled_at'         => now(),
+            'handler_notes'      => $request->input('notes', ''),
+        ]);
+
+        return response()->json([
+            'ok'      => true,
+            'message' => 'Demande annulee.',
         ]);
     }
 }

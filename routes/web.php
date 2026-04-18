@@ -90,3 +90,5 @@ Route::get('/demandes/api/list', [McRequestController::class, 'apiList']);
 Route::post('/demandes/api/create', [McRequestController::class, 'apiCreate']);
 Route::post('/demandes/api/{id}/handle', [McRequestController::class, 'apiHandle'])
     ->where('id', '[0-9]+');
+Route::post('/demandes/api/{id}/cancel', [McRequestController::class, 'apiCancel'])
+    ->where('id', '[0-9]+');

@@ -1629,6 +1629,7 @@
 .req-row-approved { border-left: 3px solid #4ade80; }
 .req-row-rejected { border-left: 3px solid #f87171; }
 .req-row-pending  { border-left: 3px solid #fbbf24; }
+.req-row-cancelled { border-left: 3px solid #94a3b8; }
 
 .req-row-header {
     display: flex;
@@ -1694,6 +1695,7 @@
 .req-status-pending  { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
 .req-status-approved { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
 .req-status-rejected { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+.req-status-cancelled { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
 
 /* Actions */
 .req-actions {
@@ -1722,6 +1724,12 @@
     border-color: rgba(248, 113, 113, 0.3);
 }
 .btn-reject:hover { background: rgba(248, 113, 113, 0.25); }
+.btn-cancel {
+    background: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+    border-color: rgba(148, 163, 184, 0.3);
+}
+.btn-cancel:hover { background: rgba(148, 163, 184, 0.25); }
 
 /* Upload zone */
 .req-upload-zone {

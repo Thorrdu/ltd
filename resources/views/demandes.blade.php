@@ -79,6 +79,7 @@
                         <option value="pending">En attente</option>
                         <option value="approved">Approuvees</option>
                         <option value="rejected">Refusees</option>
+                        <option value="cancelled">Annulees</option>
                     </select>
                 </div>
                 <div class="members-table" id="reqMyList">
@@ -94,6 +95,7 @@
                         <option value="all">Tous les statuts</option>
                         <option value="approved">Approuvees</option>
                         <option value="rejected">Refusees</option>
+                        <option value="cancelled">Annulees</option>
                     </select>
                 </div>
                 <div class="members-table" id="reqAllList">

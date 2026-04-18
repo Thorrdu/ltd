@@ -16,9 +16,10 @@ class McRequest extends Model
     ];
 
     public const STATUSES = [
-        'pending'  => 'En attente',
-        'approved' => 'Approuvee',
-        'rejected' => 'Refusee',
+        'pending'   => 'En attente',
+        'approved'  => 'Approuvee',
+        'rejected'  => 'Refusee',
+        'cancelled' => 'Annulee',
     ];
 
     protected $fillable = [
