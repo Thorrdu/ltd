@@ -97,11 +97,14 @@
             }
 
             var actions = '';
-            if (state.isOfficer && !c.is_paid) {
-                actions = '<button class="btn-sm btn-approve cot-btn-pay" data-id="' + c.id + '" data-due="' + c.amount_due + '">Payer</button>' +
-                    '<button class="btn-sm cot-btn-partial" data-id="' + c.id + '" data-due="' + c.amount_due + '">Partiel</button>';
-            } else if (state.isOfficer && c.is_paid) {
-                actions = '<span style="color:rgba(255,255,255,0.3);font-size:11px;">OK</span>';
+            if (state.isOfficer) {
+                if (c.is_paid) {
+                    actions = '<button class="btn-sm cot-btn-edit" data-id="' + c.id + '" data-paid="' + c.amount_paid + '">Modifier</button>' +
+                        '<button class="btn-sm btn-cancel cot-btn-reset" data-id="' + c.id + '">Annuler</button>';
+                } else {
+                    actions = '<button class="btn-sm btn-approve cot-btn-pay" data-id="' + c.id + '" data-due="' + c.amount_due + '">Payer</button>' +
+                        '<button class="btn-sm cot-btn-edit" data-id="' + c.id + '" data-paid="' + c.amount_paid + '">Montant libre</button>';
+                }
             }
 
             var markedInfo = '';
@@ -122,23 +125,35 @@
         html += '</tbody></table>';
         el.innerHTML = html;
 
-        // Bind pay buttons
+        // Bind pay buttons (full amount)
         el.querySelectorAll('.cot-btn-pay').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var id = parseInt(this.getAttribute('data-id'));
                 var due = parseInt(this.getAttribute('data-due'));
+                if (!confirm('Marquer cotisation payee (' + money(due) + ') ?')) return;
                 markPaid(id, due);
             });
         });
 
-        el.querySelectorAll('.cot-btn-partial').forEach(function (btn) {
+        // Bind edit buttons (custom amount)
+        el.querySelectorAll('.cot-btn-edit').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var id = parseInt(this.getAttribute('data-id'));
-                var amount = prompt('Montant paye :');
+                var current = parseInt(this.getAttribute('data-paid')) || 0;
+                var amount = prompt('Montant paye :', current);
                 if (amount === null) return;
                 amount = parseInt(amount, 10);
                 if (isNaN(amount) || amount < 0) { auth.showToast('Montant invalide', 'error'); return; }
                 markPaid(id, amount);
+            });
+        });
+
+        // Bind reset buttons (cancel payment → back to 0)
+        el.querySelectorAll('.cot-btn-reset').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = parseInt(this.getAttribute('data-id'));
+                if (!confirm('Annuler le paiement de cette cotisation ?')) return;
+                markPaid(id, 0);
             });
         });
     }

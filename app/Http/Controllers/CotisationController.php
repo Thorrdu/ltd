@@ -223,22 +223,30 @@ class CotisationController extends Controller
         }
 
         $cotisation->update([
-            'amount_paid'      => $amount,
-            'paid_at'          => now(),
+            'amount_paid'       => $amount,
+            'paid_at'           => $amount > 0 ? now() : null,
             'marked_by_user_id' => $user->id,
-            'notes'            => $request->input('notes', $cotisation->notes),
+            'notes'             => $request->input('notes', $cotisation->notes),
         ]);
 
-        $label = $amount >= $cotisation->amount_due ? 'Cotisation marquée payée' : 'Montant enregistré';
+        if ($amount === 0) {
+            $label = 'Paiement annulé';
+        } elseif ($amount >= $cotisation->amount_due) {
+            $label = 'Cotisation marquée payée';
+        } else {
+            $label = 'Montant enregistré (' . number_format($amount, 0, ',', ' ') . ' $)';
+        }
 
         // Notify the member
         if ($cotisation->user_id !== $user->id) {
             McNotification::notify(
                 $cotisation->user_id,
                 'cotisation',
-                $amount >= $cotisation->amount_due
-                    ? 'Cotisation marquée payée'
-                    : 'Paiement partiel enregistré (' . number_format($amount, 0, ',', ' ') . ' $)',
+                $amount === 0
+                    ? 'Paiement de cotisation annulé'
+                    : ($amount >= $cotisation->amount_due
+                        ? 'Cotisation marquée payée'
+                        : 'Paiement partiel enregistré (' . number_format($amount, 0, ',', ' ') . ' $)'),
                 'Par ' . $user->name,
                 '/cotisations'
             );
