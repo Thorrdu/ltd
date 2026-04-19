@@ -5,12 +5,16 @@ Projet Laravel 12 + Filament 5 fonctionnel avec deux domaines operationnels : ca
 Toolbox MC en construction : Phases 0 (roles + settings + matrice d'acces + gestion membres),
 1 (refonte UX), 2 (ventes rapides), H (harmonisation du schema), 3 (stocks generiques + attributions
 + validations + import CSV), 3B (ameliorations UX front : stocks, attributions en masse, vente express,
-classements) et 4 (harmonisation simulateur / vente rapide) TERMINEES.
-Session du 18 avril 2026 : Phase 4 livree :
-- 4.1 : flag `is_quick_sale` sur stock_items (migration + model + Filament + API + front)
-- 4.2 : attribution sans prix (unit_cost supprime, Filament masque pour attribution)
-- 4.3 : vente rapide filtree par is_quick_sale (accordeon express ne montre que les items flags)
-- 4.4 : vente rapide depuis attributions (section "Mes articles", reconciliation automatique)
+classements), 4 (harmonisation simulateur / vente rapide), 4bis (ventes hors stock, visibilite par role),
+6 (fiches membres), 7.1 (comptabilite), 7.2 (demandes), 7.3 (cotisations) et 8 (responsive + notifications + dashboard) TERMINEES.
+Session du 19 avril 2026 :
+- Phase 6 : fiches membres detaillees (`/membres/{id}/profil`)
+- Phase 7.1 : comptabilite MC (`/comptabilite`) avec soldes, flux, semaines, transactions
+- Phase 7.3 : cotisations (`/cotisations`) avec auto-generation, paiement officier+, historique
+- Amelioration UX demandes : onglet "A valider" pour tresorier, filtres membre, auto-switch
+- Phase 8.1 : responsive (12 vues corrigees, media queries 720px/480px)
+- Phase 8.2 : notifications in-app (bell, dropdown, polling 60s, triggers auto)
+- Phase 8.3 : dashboard MC sur `/mc` (cartes par role, alertes contextuelles)
 
 ## Ce qui fonctionne
 
@@ -117,13 +121,43 @@ Session du 18 avril 2026 : Phase 4 livree :
       settings `rankings.eligible_categories` (JSON) + `rankings.criteria` (string), lien hub + navbar.
 
 ### Infrastructure
-- [x] 24 migrations appliquees (ajout de `add_attribution_fields_to_stock_movements`)
+- [x] 26 migrations appliquees (ajout de `create_mc_notifications_table`)
 - [x] 9 seeders : CategoryProduct, Enterprise, Menu, User, Weapon, StockItem,
       StockInventory, Setting, PageAccessRule
-- [x] 16 modeles Eloquent (ajout de `Sale`, `StockItem`, `StockMovement`)
+- [x] 18 modeles Eloquent (ajout de `McNotification`)
 - [x] Systeme de roles avec hierarchie numerique (prospect 1, member 2, officer 3, vice_president 4, president 5, treasurer 99)
 - [x] Auth PIN pour simulateur via header `X-Sim-User`
 - [x] Documentation (architecture, reglement BXL Life, Memory Bank, plan-developpement)
+
+### Phase 6 - Fiches membres (19 avril 2026) -- TERMINEE
+- [x] Page `/membres/{id}/profil` avec info, attributions, ventes, mouvements, cotisations, demandes
+- [x] API `/membres/api/{id}/profile` (officier+) avec totaux CA (total/semaine/mois)
+- [x] Lien "Fiche" sur chaque ligne de la gestion des membres
+
+### Phase 7.1 - Comptabilite MC (19 avril 2026) -- TERMINEE
+- [x] Page `/comptabilite` (tresorier+) avec 3 onglets
+- [x] Vue d'ensemble : soldes argent sale/propre, flux ventes/cotisations/depenses, balance
+- [x] Par semaine : tableau 12 semaines avec ventes, cotisations, depenses, balance
+- [x] Transactions : liste chronologique filtrable (ventes/cotisations/depenses)
+
+### Phase 7.3 - Cotisations (19 avril 2026) -- TERMINEE
+- [x] Table `cotisations` (user_id, period_start/end, amount_due/paid, marked_by)
+- [x] Auto-generation des cotisations par semaine (lundi-dimanche) pour tous les membres actifs
+- [x] Montants par role depuis settings (prospect 2000, membre 5000, officier+ 10000)
+- [x] Page `/cotisations` (membre+) : semaine en cours avec navigation, historique par membre
+- [x] Actions Payer/Partiel pour officiers+ avec trace du marqueur
+- [x] Alerte cotisation non payee
+
+### Amelioration UX Demandes (19 avril 2026)
+- [x] Onglet "A valider" pour tresorier+ avec badge compteur et auto-switch
+- [x] Filtre par membre dans l'historique complet
+- [x] Separation claire : A valider / Nouvelle demande / Mes demandes / Historique complet
+
+### Phase 8 - Ameliorations UX et polissage (19 avril 2026) -- TERMINEE
+- [x] 8.1 Responsive : 12 vues corrigees (inline width → CSS class), media queries 720px/480px
+- [x] 8.2 Notifications in-app : table `mc_notifications`, modele McNotification, bell + dropdown
+      dans le header, polling 60s, API list/count/read, triggers auto (attribution, cotisation, demande)
+- [x] 8.3 Dashboard MC : API `/dashboard/api` avec cartes par role, alertes contextuelles sur `/mc`
 
 ## Ce qui reste a faire
 
@@ -132,18 +166,14 @@ Session du 18 avril 2026 : Phase 4 livree :
       un `StockMovement` reason=`purchase` avec `unit_cost` et fournisseur), dashboard drogue
       avec calcul profit/perte cumule, extension seeder pour sous-categories `drug_raw` et
       `farm_consumable`.
-- [ ] **Phase 6** : fiches membres `/membres/{id}` avec historique complet (attributions,
-      ventes, cotisations, argent rapporte). Note : classements faits en Phase 3B.4.
 - [ ] Aligner le vhost Laragon sur `public/` (residuel).
 
 ### Priorite moyenne
 - [ ] Phase 5 : rendre le multiplicateur x1.5 configurable via `settings` et recalculer
       `default_sell_price` dynamiquement depuis le panel Filament.
-- [ ] Phase 7 : comptabilite MC (argent sale/propre, transactions, cotisations) avec
-      validation tresorier et historique filtrable.
 
 ### Priorite basse / Future
-- [ ] Phase 8 : polissage (responsive fin, notifications in-app, dashboards par role).
+- [ ] Phase 9 : documentation par role (qui a acces a quoi).
 
 ## Historique
 - **17 avril 2026** : Phase 3B livree -- ameliorations UX front MC : bouton admin retire (3B.0),

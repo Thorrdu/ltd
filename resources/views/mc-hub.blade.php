@@ -60,6 +60,13 @@
     <div class="mc-hub-login-prompt" id="hubLoginPrompt">
         <p>Connectez-vous pour acceder aux stocks, ventes et contrats.</p>
     </div>
+
+    {{-- SECTION: Dashboard personnalise (visible si connecte) --}}
+    <div class="mc-dash" id="hubDashboard">
+        <div class="mc-hub-section-label">Tableau de bord</div>
+        <div id="dashAlerts"></div>
+        <div class="mc-dash-grid" id="dashStats"></div>
+    </div>
 </div>
 @endsection
 
@@ -68,6 +75,7 @@
 (function() {
     var LEVEL = { prospect: 1, member: 2, officer: 3, vice_president: 4, president: 5, treasurer: 99 };
     function isAtLeast(role, min) { return (LEVEL[role] || 0) >= (LEVEL[min] || 0); }
+    function esc(s) { if (!s) return ''; var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
     function update() {
         var auth = window.McAuth;
         var loggedIn = auth && auth.isLoggedIn;
@@ -77,6 +85,7 @@
         var isSuperadmin = loggedIn && role === 'treasurer';
         document.getElementById('hubAuthSection').style.display = loggedIn ? '' : 'none';
         document.getElementById('hubLoginPrompt').style.display = loggedIn ? 'none' : '';
+        document.getElementById('hubDashboard').classList.toggle('visible', !!loggedIn);
         document.querySelectorAll('.mc-hub-btn-officer').forEach(function(el) {
             el.style.display = isOfficer ? '' : 'none';
         });
@@ -86,11 +95,61 @@
         document.querySelectorAll('.mc-hub-btn-treasurer').forEach(function(el) {
             el.style.display = isSuperadmin ? '' : 'none';
         });
+        if (loggedIn) loadDashboard();
     }
+
+    function loadDashboard() {
+        window.McAuth.apiGet('/dashboard/api', function(err, data) {
+            if (err || !data || data.error) return;
+            renderDashboard(data);
+        });
+    }
+
+    function renderDashboard(data) {
+        // Alerts
+        var alertsEl = document.getElementById('dashAlerts');
+        var ah = '';
+        (data.alerts || []).forEach(function(a) {
+            var cls = 'mc-dash-alert';
+            if (a.type === 'danger') cls += ' alert-danger';
+            else if (a.type === 'info') cls += ' alert-info';
+            ah += '<div class="' + cls + '">';
+            ah += '<span class="mc-dash-alert-icon">' + (a.icon || '⚠️') + '</span>';
+            if (a.link) {
+                ah += '<a href="' + esc(a.link) + '">' + esc(a.text) + '</a>';
+            } else {
+                ah += '<span>' + esc(a.text) + '</span>';
+            }
+            ah += '</div>';
+        });
+        alertsEl.innerHTML = ah;
+
+        // Stats cards
+        var statsEl = document.getElementById('dashStats');
+        var sh = '';
+        var stats = data.stats || {};
+        Object.keys(stats).forEach(function(key) {
+            var s = stats[key];
+            var valClass = 'mc-dash-value';
+            if (s['class']) valClass += ' ' + s['class'];
+            sh += '<div class="mc-dash-card">';
+            sh += '<div class="mc-dash-label">' + esc(s.label) + '</div>';
+            sh += '<div class="' + valClass + '">' + esc('' + s.value) + '</div>';
+            if (s.sub) sh += '<div class="mc-dash-sub">' + esc(s.sub) + '</div>';
+            sh += '</div>';
+        });
+        statsEl.innerHTML = sh || '<div style="color:#555;font-size:12px;">Aucune donnee a afficher.</div>';
+    }
+
     update();
     if (window.McAuth) {
         window.McAuth.onLogin(update);
-        window.McAuth.onLogout(update);
+        window.McAuth.onLogout(function() {
+            document.getElementById('hubDashboard').classList.remove('visible');
+            document.getElementById('dashAlerts').innerHTML = '';
+            document.getElementById('dashStats').innerHTML = '';
+            update();
+        });
     }
 })();
 </script>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\McNotification;
 use App\Models\McRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -62,6 +63,12 @@ class McRequestController extends Controller
 
         if ($status !== 'all' && in_array($status, ['pending', 'approved', 'rejected', 'cancelled'])) {
             $query->where('status', $status);
+        }
+
+        // Filter by member (for treasurer+ in history tab)
+        $memberId = $request->query('member_id');
+        if ($memberId && $scope === 'all' && $user->isAtLeast('treasurer')) {
+            $query->where('user_id', (int) $memberId);
         }
 
         $requests = $query->orderByDesc('created_at')->limit(200)->get();
@@ -140,6 +147,16 @@ class McRequestController extends Controller
             'status'      => 'pending',
         ]);
 
+        // Notify treasurers of new pending request
+        McNotification::broadcast(
+            'treasurer',
+            'demande',
+            'Nouvelle demande de ' . $user->name,
+            (McRequest::CATEGORIES[$request->input('category')] ?? $request->input('category'))
+                . ' — ' . number_format($request->input('amount'), 0, ',', ' ') . ' $',
+            '/demandes'
+        );
+
         return response()->json([
             'ok'      => true,
             'message' => 'Demande soumise avec succes.',
@@ -181,6 +198,15 @@ class McRequestController extends Controller
         ]);
 
         $label = $action === 'approve' ? 'approuvee' : 'refusee';
+
+        // Notify the requester
+        McNotification::notify(
+            $mcRequest->user_id,
+            'demande',
+            'Demande ' . $label . ' (' . number_format($mcRequest->amount, 0, ',', ' ') . ' $)',
+            $request->input('notes') ?: null,
+            '/demandes'
+        );
 
         return response()->json([
             'ok'      => true,

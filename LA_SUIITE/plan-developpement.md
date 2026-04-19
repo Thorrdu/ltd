@@ -475,44 +475,6 @@ avec un "Aigle de la semaine" et des stats de performance.
 - [x] 14 items `category=drug` deja seedes dans `stock_items` (Weed, Cook, Amphetamine,
       Methamphetamine, LSD, MDMA, LEAN avec qualites et prix).
 - [x] Deja vendables via `/ventes` (cf. SaleController::loadCatalog).
-
-### 4.1 Referentiel drogues (deja en place, a completer) [PARTIEL]
-- [x] Stock via `stock_items.category = drug` (14 items seedes).
-- [ ] Ajouter la sous-categorie `drug_raw` pour les matieres premieres (tete de weed, graine,
-      poudre de cafeine, feuille a rouler) -- deja prevue dans la taxonomie.
-- [ ] Ajouter la sous-categorie `farm_consumable` pour engrais, spray pesticide.
-- [ ] Etendre le seeder avec les donnees de `drogue_indicatif.png` (prix detailles par qualite,
-      source de fabrication), stockees dans `stock_items.notes` ou dans `settings` dediees :
-
-| Drogue | Prix PNJ (Rue) | Prix au sac | Prix vente Orga | Prix min staff | Fabrication |
-|--------|----------------|-------------|-----------------|----------------|-------------|
-| Weed Blue Dream | 140-180 | 100 | / | / | Inde-Gangs-MC |
-| Weed White Widow | 80-140 | 65 | / | / | Inde-Gangs-MC |
-| Weed Purple | 50-80 | 45 | / | / | Inde-Gangs-MC |
-| Weed OG Kush | 30-50 | 30 | / | / | Inde-Gangs-MC |
-| Cook | 350-750 | 450 | 300-350 | 300 | Orga-Famille |
-| Amphetamine basse | 500 | 400 | 400 | 400 | Orga-Famille |
-| Amphetamine moyen | 900 | 600 | 700-800 | 700 | Orga-Famille |
-| Amphetamine haute | 1000 | 800 | 800-900 | 800 | Orga-Famille |
-| Methamphetamine basse | 600-750 | 1000 | 550 | 550 | Orga-Famille |
-| Methamphetamine moyen | 1000-1500 | 1400 | 900 | 900 | Orga-Famille |
-| Methamphetamine haute | 2000-2600 | 2200 | 1300-1400 | 1400 | Orga-Famille |
-| LSD | 3800 | / | 3000-3500 | 3000 | Cayo |
-| MDMA | 2900 | / | 2000-2500 | 2000 | Cayo |
-| LEAN | 2400 | / | 1600-2000 | 1600 | Cayo |
-
-### 4.2 Flux de gestion des drogues [A FAIRE]
-- [ ] **Achat aux organisations** : formulaire dedie creant un `StockMovement`
-      `reason=purchase` avec `unit_cost` (prix d'achat orga) et notes (fournisseur).
-- [ ] **Attribution a un membre/prospect** : reutilise le formulaire generique de Phase 3.2
-      (`reason=attribution`, `attributed_to_user_id`).
-- [ ] **Reconciliation** : reutilise le flux generique de Phase 3.3 (vendu -> `Sale`, perdu
-      -> `adjustment`, retour -> `adjustment`).
-- [ ] **Dashboard drogue** : page `/drogues` (ou filtre `category=drug` sur `/stocks`) avec
-      stock total, stock en exterieur, detail par membre, pertes, profit cumule.
-- [ ] Calcul automatique profit/perte : somme des `sales.total_price` des drogues - somme des
-      `stock_movements.unit_cost * quantity_change` des achats.
-
 ---
 
 ## Phase 5 - Armes blanches [A FAIRE]
@@ -539,84 +501,136 @@ avec un "Aigle de la semaine" et des stats de performance.
 | Cle anglaise | 15 000 | 22 500 |
 
 - [x] Multiplicateur de vente x1.5 applique au seeding (valeur stockee sur chaque item).
-- [ ] **Reste a faire** : rendre le multiplicateur configurable via `settings` et recalculer
       `default_sell_price` dynamiquement sur edition depuis le panel Filament.
 - [x] Integration dans le flux de vente generique via `/ventes` (deja operationnel).
 
 ---
 
-## Phase 6 - Fiches membres detaillees
-**Priorite : moyenne -- suivi individuel**
+## Phase 6 - Fiches membres detaillees [TERMINEE]
+**Terminee le 19 avril 2026**
 
 > Les classements (ancienne 6.1) ont ete remontes dans la Phase 3B.4 car ils sont
 > directement lies a l'UX quotidienne du MC et a la motivation des membres.
 
-### 6.1 Fiches membres (ancienne 6.2)
-- [ ] Page `/membres/{id}` accessible uniquement par officiers et president
-- [ ] Contenu de la fiche :
-  - Informations : nom, role, date d'arrivee
-  - Items actuellement en sa possession (pris du stock, non reconcilies)
-  - Historique des ventes (montant total, nombre, dernieres ventes)
-  - Historique des mouvements de stock (prises, retours, pertes)
-  - Historique des attributions
-  - Argent rapporte au MC (total, ce mois, cette semaine)
-  - Cotisations : etat des paiements
-- [ ] Liste des membres : `/membres` avec filtres par role, tri par activite
+### 6.1 Fiches membres (ancienne 6.2) [FAIT]
+- [x] Page `/membres/{id}/profil` accessible officier+ (regle `fiches_membres`)
+- [x] Contenu de la fiche :
+  - Informations : nom, role, date d'arrivee, statut actif/inactif
+  - Items actuellement en sa possession (attributions ouvertes)
+  - Historique des ventes (50 dernieres + totaux CA total/semaine/mois)
+  - Historique des mouvements de stock (50 derniers)
+  - Cotisations (20 dernieres) avec statut paye/partiel/impaye
+  - Demandes (20 dernieres) avec statut
+- [x] Lien "Fiche" sur chaque ligne de `/membres` (gestion des membres)
+- [x] API `/membres/api/{id}/profile` avec toutes les donnees agregees
+
+### Fichiers
+- `app/Http/Controllers/MemberController.php` (methodes `profile`, `apiProfile`)
+- `resources/views/membre-profil.blade.php`
+- `public/js/membre-profil.js`
+- `public/js/membres.js` (lien Fiche)
+- Routes : `GET /membres/{id}/profil`, `GET /membres/api/{id}/profile`
 
 ---
 
-## Phase 7 - Comptabilite MC
-**Priorite : basse -- complexe mais necessaire a terme**
+## Phase 7 - Comptabilite MC [EN COURS]
+**7.1 et 7.3 termines le 19 avril 2026**
 
-### 7.1 Suivi des comptes
+### 7.1 Suivi des comptes [FAIT]
 > **Note** : pas besoin d'une table `mc_accounts` avec balance. Les objets "argent sale" et "argent propre" sont des `stock_items` normaux. Toute vente se fait en argent sale. Le blanchiment convertit argent sale → argent propre.
-- [ ] Utiliser les tables de vente ou les adapter
-- [ ] Page `/comptabilite` accessible officier+ : vue des soldes (= quantite stock argent_sale + argent_propre), historique transactions, etat des soldes/valeur stock, semaine par semaine
+- [x] Page `/comptabilite` accessible tresorier+ (regle `comptabilite`)
+- [x] Onglet "Vue d'ensemble" : soldes argent sale/propre (depuis stock_items), flux ventes/cotisations/depenses avec selecteur de periode (semaine/mois/tout)
+- [x] Onglet "Par semaine" : tableau des 12 dernieres semaines (ventes, cotisations, depenses, balance)
+- [x] Onglet "Transactions" : liste chronologique fusionnee (ventes + demandes approuvees + cotisations payees) filtrable par type
+- [x] API : `/comptabilite/api/summary`, `/comptabilite/api/weekly`, `/comptabilite/api/transactions`
 
-### 7.2 Systeme de demandes -- FAIT
+#### Fichiers
+- `app/Http/Controllers/ComptabiliteController.php`
+- `resources/views/comptabilite.blade.php`
+- `public/js/comptabilite.js`
+
+### 7.2 Systeme de demandes -- FAIT + UX amelioree le 19/04/2026
 - [x] Table `mc_requests` : user_id, category (amende/entretien_moto/equipement/medical/autre), amount, description, photo_path, status (pending/approved/rejected), handled_by_user_id, handled_at, handler_notes
 - [x] Les membres peuvent soumettre des demandes de remboursement avec photo justificative
 - [x] Le tresorier/president valide ou refuse avec notes
 - [ ] Le tresorier peut encoder directement des transactions sans demande (→ 7.1)
-- [x] Historique complet avec onglets (nouvelle demande / mes demandes / toutes les demandes)
+- [x] Onglets restructures : **A valider** (tresorier+, badge compteur, auto-switch) / Nouvelle demande / Mes demandes / Historique complet
+- [x] Filtre par membre dans l'historique complet (tresorier+)
 - [x] Upload photo vers `public/img/demandes/` (pas de symlink storage, ISPConfig)
 
-### 7.3 Cotisations
-- [ ] Table `cotisations` :
-  - `user_id`, `period_start`, `period_end`
-  - `amount_due`, `amount_paid`, `paid_at`
-  - `notes`
-- [ ] Montants par defaut selon le role (configurable dans les parametres) :
-  - Prospect : 3 000 / semaine
+### 7.3 Cotisations [FAIT]
+- [x] Table `cotisations` : user_id, period_start, period_end, amount_due, amount_paid, paid_at, marked_by_user_id, notes
+- [x] Modele `Cotisation` avec relations user/markedBy, methodes isPaid/isPartial/remaining
+- [x] Montants par defaut selon le role (configurable dans settings) :
+  - Prospect : 2 000 / semaine
   - Membre : 5 000 / semaine
-  - Officier : 7 000 / semaine
-- [ ] Page de suivi des cotisations :
-  - Indiquer le jour de cotisation (chaque dimanche) qui a paye, combien (possibilite de payer plus)
-  - Vue officier+ : qui est a jour, qui doit encore, mettre en ordre de cotisation par officier+
-  - Vue membre: statut de la cotisation
-- [ ] Alertes d'indication du jour de paiement et pour les retards de paiement si la perrsonne n'a pas encore payé les jours suivants
+  - Officier+ : 10 000 / semaine
+- [x] Auto-generation des cotisations par semaine (lundi-dimanche) pour tous les membres actifs
+- [x] Page `/cotisations` (membre+) avec 2 onglets :
+  - Semaine en cours : navigation ← → entre semaines, tableau des membres avec statut paye/partiel/impaye
+  - Historique : filtrable par membre (officier+)
+- [x] Actions Payer / Partiel pour officiers+ avec trace du marqueur
+- [x] Alerte cotisation non payee visible par le membre concerne
+- [x] Jour de cotisation configurable dans settings (`cotisation_day`, defaut lundi)
+
+#### Fichiers
+- `database/migrations/2026_04_19_171428_create_cotisations_table.php`
+- `app/Models/Cotisation.php`
+- `app/Http/Controllers/CotisationController.php`
+- `resources/views/cotisations.blade.php`
+- `public/js/cotisations.js`
+- Routes : `GET /cotisations`, `GET /cotisations/api/list`, `POST /cotisations/api/mark-paid/{id}`, `POST /cotisations/api/generate`, `GET /cotisations/api/my-status`
 
 ---
 
-## Phase 8 - Ameliorations UX et polissage
-**Priorite : continue -- en parallele des autres phases**
+## Phase 8 - Ameliorations UX et polissage [TERMINEE]
+**Terminee le 19 avril 2026**
 
-### 8.1 Responsive / mobile
-- [ ] Audit complet du CSS sur mobile (simulateur, stocks, classements)
-- [ ] Navigation hamburger ou bottom tabs sur mobile
-- [ ] Boutons et zones de touch suffisamment grands
+### 8.1 Responsive / mobile [FAIT]
+- [x] Remplacement de tous les `style="width:XXXpx;"` inline par classes CSS (`mc-board-md`, `mc-board-lg`, `mc-board-xl`)
+- [x] 12 vues Blade corrigees (espace-membres, simulateur-armes, simulateur-munitions, demandes, cotisations, comptabilite, classements, membre-profil, membres, ventes, stocks, stocks-detail)
+- [x] Media queries completes ajoutees a `mc-layout.css` pour 720px et 480px :
+  - Board pleine largeur, sub-tab-bar horizontal scrollable
+  - Tables classements/cotisations/comptabilite/profil/import → collapse mobile
+  - Filtres, actions, recap → empilage vertical
+  - Notification panel pleine largeur mobile
+  - Dashboard cards 2 colonnes sur petit ecran
+- [x] Navigation hamburger (existante) conservee et coherente avec les nouvelles pages
 
-### 8.2 Notifications in-app
-- [ ] Systeme de notifications simples (table `notifications`)
-- [ ] Badge compteur dans le header
-- [ ] Types : mouvement de stock en attente, cotisation due, contrat mis a jour, nouveau classement
+### 8.2 Notifications in-app [FAIT]
+- [x] Table `mc_notifications` (user_id, type, title, body, link, read_at)
+- [x] Modele `McNotification` avec helpers `notify()` et `broadcast()`
+- [x] Types supportes : `cotisation`, `attribution`, `demande`, `classement`, `stock`, `system`
+- [x] Badge compteur 🔔 dans le header (toutes les pages MC)
+- [x] Dropdown avec liste des 50 dernieres notifications, marquage lu individuel et global
+- [x] Polling automatique toutes les 60 secondes
+- [x] API : `/notifications/api/list`, `/notifications/api/count`, `POST /notifications/api/read`
+- [x] Notifications declenchees automatiquement :
+  - Attribution d'items → notifie le beneficiaire
+  - Cotisation marquee payee → notifie le membre
+  - Nouvelle demande soumise → notifie les tresoriers
+  - Demande approuvee/refusee → notifie le demandeur
 
-### 8.3 Dashboard MC
-- [ ] Page d'accueil personnalisee selon le role :
-  - Membre : ses stats, ses items, rappel cotisation
-  - Officier : alertes stock, mouvements en attente, classement
-  - Tresorier : soldes, transactions recentes, cotisations en retard
-  - President : vue globale de tout
+### 8.3 Dashboard MC [FAIT]
+- [x] Page d'accueil `/mc` personnalisee selon le role via API `/dashboard/api`
+- [x] Cartes : mes ventes semaine, statut cotisation, articles en possession, demandes en cours
+- [x] Officier+ : ventes equipe semaine, alertes rupture stock, validations en attente
+- [x] Tresorier+ : demandes a traiter, argent sale/propre, cotisations impayees, CA du mois
+- [x] Alertes visuelles : cotisation impayee, retards, ruptures stock, demandes en attente
+
+### Fichiers Phase 8
+- `database/migrations/2026_04_19_175826_create_mc_notifications_table.php`
+- `app/Models/McNotification.php`
+- `app/Http/Controllers/NotificationController.php`
+- `app/Http/Controllers/DashboardController.php`
+- `resources/views/layouts/mc.blade.php` (notification bell + JS)
+- `resources/views/mc-hub.blade.php` (dashboard section + JS)
+- `public/css/mc-layout.css` (board classes, notifications, dashboard, responsive rules)
+- 12 vues Blade (remplacement inline width → CSS class)
+- `app/Http/Controllers/CotisationController.php` (notification on pay)
+- `app/Http/Controllers/McRequestController.php` (notifications on create + handle)
+- `app/Http/Controllers/StockController.php` (notification on attribute)
+- Routes : notifications (3), dashboard (1)
 
 ---
 
@@ -632,9 +646,9 @@ avec un "Aigle de la semaine" et des stats de performance.
 | 3B | -- (utilise tables existantes + settings `rankings.*`) | FAIT |
 | 4 | Extension `stock_items` via categorie (`drug_raw`, `farm_consumable` a seeder) | SEEDER A ETENDRE |
 | 5 | Extension `stock_items` categorie `melee` | SEEDE |
-| 6 | -- (utilise les tables existantes) | -- |
-| 7 | `mc_requests` (FAIT), `mc_transactions`, `cotisations` | EN COURS |
-| 8 | `notifications` | A FAIRE |
+| 6 | -- (utilise les tables existantes) | FAIT |
+| 7 | `mc_requests` (FAIT), `cotisations` (FAIT), comptabilite (FAIT) | 7.1+7.2+7.3 FAITS |
+| 8 | `mc_notifications` | FAIT |
 
 ---
 
@@ -670,19 +684,17 @@ Phase 3B (UX pratique MC)     -- TERMINEE
   +---> Phase 5 (armes bl. UI) -- 0.5 jour (items seedes, deja vendables)
   |
   v
-Phase 6 (fiches membres)      -- 1-2 jours
+Phase 6 (fiches membres)      -- TERMINEE
   |
   v
-Phase 7.1/7.3 (compta+cotis.) -- 2-3 jours
+Phase 7.1/7.3 (compta+cotis.) -- TERMINEE
   |
   v
-Phase 8 (polissage)           -- continu
+Phase 8 (polissage)           -- TERMINEE
 ```
 
-**Estimation totale restante : ~8-12 jours de developpement (Phases 3B a 8)**
-La Phase 3B est la priorite immediate. Elle ameliore directement l'experience
-quotidienne des motards du MC : mouvements de stock simplifies, attributions
-pratiques, vente express ultra-rapide, et classements pour la motivation.
+**Toutes les phases principales sont terminees.**
+Il reste les phases optionnelles 4 (drogues flux), 5 (armes blanches UI), et 9 (documentation par role).
 
 ### Regles de visibilite (mises a jour le 18 avril 2026)
 

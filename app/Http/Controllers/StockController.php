@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\McNotification;
 use App\Models\Sale;
 use App\Models\Setting;
 use App\Models\StockItem;
@@ -506,6 +507,17 @@ class StockController extends Controller
                 'created_at'                 => now(),
             ]);
         });
+
+        // Notify the target member
+        if ($target->id !== $user->id) {
+            McNotification::notify(
+                $target->id,
+                'attribution',
+                $qty . '× ' . $item->name . ' attribue(s)',
+                'Par ' . $user->name . ($requiresApproval ? ' (en attente de validation)' : ''),
+                '/espace-membres'
+            );
+        }
 
         return response()->json([
             'ok'      => true,

@@ -250,4 +250,129 @@ class MemberController extends Controller
 
         return response()->json(['ok' => true, 'message' => 'Regle mise a jour']);
     }
+
+    // ── Member profile page ────────────────────────────────
+
+    public function profile(Request $request, int $id)
+    {
+        $members = User::orderBy('name')->get(['id', 'name', 'role']);
+
+        return view('membre-profil', [
+            'memberId' => $id,
+            'members'  => $members,
+        ]);
+    }
+
+    public function apiProfile(Request $request, int $id): JsonResponse
+    {
+        if ($denied = $this->requireAccess($request, 'fiches_membres')) {
+            return $denied;
+        }
+
+        $member = User::find($id);
+        if (! $member) {
+            return response()->json(['error' => 'Membre introuvable'], 404);
+        }
+
+        // Basic info
+        $info = [
+            'id'         => $member->id,
+            'name'       => $member->name,
+            'role'       => $member->role,
+            'role_label' => User::ROLES[$member->role]['label'] ?? $member->role,
+            'is_active'  => (bool) $member->is_active,
+            'created_at' => $member->created_at?->format('d/m/Y'),
+        ];
+
+        // Open attributions (items in possession)
+        $attributions = \App\Models\StockMovement::with(['stockItem'])
+            ->openAttribution()
+            ->where('attributed_to_user_id', $id)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn ($m) => [
+                'id'        => $m->id,
+                'item_name' => $m->stockItem?->name ?? 'Inconnu',
+                'category'  => $m->stockItem?->category ?? '',
+                'quantity'  => abs($m->attribution_original_abs ?? $m->quantity_change),
+                'date'      => $m->created_at?->format('d/m/Y'),
+            ]);
+
+        // Sales (last 50)
+        $sales = \App\Models\Sale::with(['stockItem'])
+            ->where('sold_by_user_id', $id)
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get()
+            ->map(fn ($s) => [
+                'id'         => $s->id,
+                'item_name'  => $s->stockItem?->name ?? $s->ad_hoc_label ?? 'Article',
+                'quantity'   => $s->quantity,
+                'total'      => $s->total_price,
+                'buyer'      => $s->buyer_name,
+                'date'       => $s->created_at->format('d/m/Y H:i'),
+            ]);
+
+        $salesTotals = [
+            'total_revenue' => (int) \App\Models\Sale::where('sold_by_user_id', $id)->sum('total_price'),
+            'total_count'   => \App\Models\Sale::where('sold_by_user_id', $id)->count(),
+            'week_revenue'  => (int) \App\Models\Sale::where('sold_by_user_id', $id)->where('created_at', '>=', now()->startOfWeek())->sum('total_price'),
+            'month_revenue' => (int) \App\Models\Sale::where('sold_by_user_id', $id)->where('created_at', '>=', now()->startOfMonth())->sum('total_price'),
+        ];
+
+        // Stock movements (last 50)
+        $movements = \App\Models\StockMovement::with(['stockItem'])
+            ->where(function ($q) use ($id) {
+                $q->where('user_id', $id)->orWhere('attributed_to_user_id', $id);
+            })
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get()
+            ->map(fn ($m) => [
+                'id'        => $m->id,
+                'item_name' => $m->stockItem?->name ?? 'Inconnu',
+                'qty'       => $m->quantity_change,
+                'reason'    => $m->reason_label,
+                'notes'     => $m->notes,
+                'date'      => $m->created_at?->format('d/m/Y H:i'),
+            ]);
+
+        // Cotisations (last 20)
+        $cotisations = \App\Models\Cotisation::where('user_id', $id)
+            ->orderByDesc('period_start')
+            ->limit(20)
+            ->get()
+            ->map(fn ($c) => [
+                'id'           => $c->id,
+                'period'       => $c->period_start->format('d/m') . ' - ' . $c->period_end->format('d/m/Y'),
+                'amount_due'   => $c->amount_due,
+                'amount_paid'  => $c->amount_paid,
+                'is_paid'      => $c->isPaid(),
+                'remaining'    => $c->remaining(),
+            ]);
+
+        // Demandes
+        $demandes = \App\Models\McRequest::where('user_id', $id)
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get()
+            ->map(fn ($r) => [
+                'id'             => $r->id,
+                'category_label' => \App\Models\McRequest::CATEGORIES[$r->category] ?? $r->category,
+                'amount'         => $r->amount,
+                'status'         => $r->status,
+                'status_label'   => \App\Models\McRequest::STATUSES[$r->status] ?? $r->status,
+                'date'           => $r->created_at->format('d/m/Y'),
+            ]);
+
+        return response()->json([
+            'info'         => $info,
+            'attributions' => $attributions,
+            'sales'        => $sales,
+            'sales_totals' => $salesTotals,
+            'movements'    => $movements,
+            'cotisations'  => $cotisations,
+            'demandes'     => $demandes,
+        ]);
+    }
 }

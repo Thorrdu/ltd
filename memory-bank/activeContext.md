@@ -1,9 +1,52 @@
 # Active Context - Station LTD / Toolbox Lost MC
 
 ## Travail en cours
-Phase 4bis (ventes hors stock, visibilite par role, deduction attributions) **LIVRÉE** le 18 avril 2026.
+Phases 6 (fiches membres), 7.1 (comptabilite), 7.3 (cotisations) et amelioration UX demandes **LIVREES** le 19 avril 2026.
 
-### Phase 4bis livrée (18 avril 2026)
+### Livraisons du 19 avril 2026
+
+**Phase 6 – Fiches membres detaillees** :
+- Route `/membres/{id}/profil` + API `/membres/api/{id}/profile` (officier+).
+- Vue `membre-profil.blade.php` + `membre-profil.js`.
+- Contenu de la fiche : info (nom, role, date), items en possession (attributions ouvertes),
+  historique ventes (50 dernieres + totaux CA/semaine/mois), mouvements de stock,
+  cotisations, demandes de remboursement.
+- Lien "Fiche" ajoute sur chaque ligne de la liste des membres (`/membres`).
+
+**Phase 7.1 – Comptabilite MC** :
+- Route `/comptabilite` + `ComptabiliteController` (tresorier+).
+- Vue `comptabilite.blade.php` + `comptabilite.js`.
+- Onglets : Vue d'ensemble (soldes argent sale/propre, flux ventes/cotisations/depenses
+  avec selecteur de periode), Par semaine (tableau des 12 dernieres semaines avec balance),
+  Transactions (liste chronologique filtrable par type : ventes/cotisations/depenses).
+- Les soldes sont lus depuis `stock_items` slugs `argent_sale` et `argent_propre`.
+
+**Phase 7.3 – Cotisations** :
+- Migration `2026_04_19_171428_create_cotisations_table` : user_id, period_start/end,
+  amount_due, amount_paid, paid_at, marked_by_user_id, notes.
+- Modele `Cotisation` avec methodes `isPaid()`, `isPartial()`, `remaining()`.
+- `CotisationController` : auto-generation des cotisations de la semaine pour tous les
+  membres actifs. Montants par role depuis les settings (prospect 2000, membre 5000,
+  officier+ 10000).
+- Route `/cotisations` (membre+) + API list/pay/generate/my-status.
+- Vue `cotisations.blade.php` + `cotisations.js`.
+- Onglets : Semaine en cours (navigation semaine prec/suiv, actions Payer/Partiel pour
+  officiers+), Historique (filtrable par membre pour officiers+).
+- Alerte si cotisation non payee sur la semaine en cours.
+- Setting `cotisation_day` ajoutee.
+- Page access rule `cotisations` ajoutee (min_role: member).
+
+**Amelioration UX Demandes** :
+- Nouvel onglet "A valider" visible uniquement pour tresorier+ : affiche directement
+  les demandes en statut `pending` avec les boutons Approuver/Refuser. Badge compteur
+  sur l'onglet. Auto-switch vers cet onglet si des demandes sont en attente.
+- Onglet "Historique complet" (ancien "Toutes les demandes") : filtre par statut ET
+  par membre via select.
+- Filtre par `member_id` ajoute a `McRequestController::apiList()`.
+- Navigation : lien Cotisations et Compta ajoutees a la barre MC.
+
+### Contexte précédent
+Phase 4bis (ventes hors stock, visibilite par role, deduction attributions) **LIVRÉE** le 18 avril 2026.
 
 **4bis.1 – Ventes hors stock (services, informations)** :
 - Migration `2026_04_18_100000_add_ad_hoc_label_to_sales` : `stock_item_id` devient

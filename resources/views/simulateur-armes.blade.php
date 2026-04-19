@@ -3,7 +3,7 @@
 @section('title', 'LOST MC -- Simulateur Armes')
 
 @section('content')
-<div class="menu-board" style="width:960px;">
+<div class="menu-board mc-board-md">
     <div class="inner-board">
 
         <div class="mc-page-header">

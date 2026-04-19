@@ -3,7 +3,7 @@
 @section('title', 'LOST MC -- Ventes rapides')
 
 @section('content')
-<div class="menu-board" style="width:1000px;">
+<div class="menu-board mc-board-lg">
     <div class="inner-board">
 
         <div class="mc-page-header">

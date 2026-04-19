@@ -197,6 +197,7 @@
             html += '<div class="mh-created">' + esc(m.created_at || '') + '</div>';
 
             html += '<div class="mh-actions">';
+            html += '<a href="/membres/' + m.id + '/profil" class="action-btn-sm" title="Voir la fiche">Fiche</a>';
             html += '<button class="action-btn-sm btn-reset-pin" data-mid="' + m.id + '" title="Reinitialiser le PIN">PIN</button>';
             var toggleLabel = m.is_active ? 'Desactiver' : 'Reactiver';
             html += '<button class="action-btn-sm btn-toggle-active" data-mid="' + m.id + '" data-active="' + (m.is_active ? 1 : 0) + '">' + toggleLabel + '</button>';

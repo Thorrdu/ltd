@@ -3,7 +3,7 @@
 @section('title', 'LOST MC -- Demandes')
 
 @section('content')
-<div class="menu-board" style="width:1000px;">
+<div class="menu-board mc-board-lg">
     <div class="inner-board">
 
         <div class="mc-page-header">
@@ -31,9 +31,20 @@
 
             {{-- Sub-tabs --}}
             <div class="sub-tab-bar">
+                <button class="sub-tab sub-tab-treasurer" data-subtab="pending" style="display:none;">
+                    A valider <span class="req-pending-badge" id="reqPendingBadge" style="display:none;"></span>
+                </button>
                 <button class="sub-tab active" data-subtab="new">Nouvelle demande</button>
                 <button class="sub-tab" data-subtab="mine">Mes demandes</button>
-                <button class="sub-tab sub-tab-treasurer" data-subtab="all" style="display:none;">Toutes les demandes</button>
+                <button class="sub-tab sub-tab-treasurer" data-subtab="all" style="display:none;">Historique complet</button>
+            </div>
+
+            {{-- TAB : A valider (treasurer+) --}}
+            <div class="sub-tab-content" data-subtab="pending" style="display:none;">
+                <div class="req-pending-info">Demandes en attente de validation par le tresorier.</div>
+                <div class="members-table" id="reqPendingList">
+                    <div class="empty-msg">Chargement...</div>
+                </div>
             </div>
 
             {{-- TAB : Nouvelle demande --}}
@@ -87,15 +98,18 @@
                 </div>
             </div>
 
-            {{-- TAB : Toutes (treasurer+) --}}
+            {{-- TAB : Historique complet (treasurer+) --}}
             <div class="sub-tab-content" data-subtab="all" style="display:none;">
                 <div class="req-filter-bar">
                     <select id="reqAllStatus" class="lock-input lock-input-sm">
-                        <option value="pending" selected>En attente</option>
                         <option value="all">Tous les statuts</option>
+                        <option value="pending">En attente</option>
                         <option value="approved">Approuvees</option>
                         <option value="rejected">Refusees</option>
                         <option value="cancelled">Annulees</option>
+                    </select>
+                    <select id="reqAllMember" class="lock-input lock-input-sm">
+                        <option value="">Tous les membres</option>
                     </select>
                 </div>
                 <div class="members-table" id="reqAllList">

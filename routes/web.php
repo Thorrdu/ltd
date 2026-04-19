@@ -1,7 +1,11 @@
 <?php
 
+use App\Http\Controllers\ComptabiliteController;
+use App\Http\Controllers\CotisationController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\McRequestController;
 use App\Http\Controllers\MemberController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SaleController;
@@ -93,3 +97,32 @@ Route::post('/demandes/api/{id}/handle', [McRequestController::class, 'apiHandle
     ->where('id', '[0-9]+');
 Route::post('/demandes/api/{id}/cancel', [McRequestController::class, 'apiCancel'])
     ->where('id', '[0-9]+');
+
+// Fiches membres (Phase 6)
+Route::get('/membres/{id}/profil', [MemberController::class, 'profile'])
+    ->where('id', '[0-9]+')
+    ->name('membre.profil');
+Route::get('/membres/api/{id}/profile', [MemberController::class, 'apiProfile'])
+    ->where('id', '[0-9]+');
+
+// Cotisations (Phase 7.3)
+Route::get('/cotisations', [CotisationController::class, 'index'])->name('cotisations');
+Route::get('/cotisations/api/list', [CotisationController::class, 'apiList']);
+Route::post('/cotisations/api/{id}/pay', [CotisationController::class, 'apiMarkPaid'])
+    ->where('id', '[0-9]+');
+Route::post('/cotisations/api/generate', [CotisationController::class, 'apiGenerate']);
+Route::get('/cotisations/api/my-status', [CotisationController::class, 'apiMyStatus']);
+
+// Comptabilite (Phase 7.1)
+Route::get('/comptabilite', [ComptabiliteController::class, 'index'])->name('comptabilite');
+Route::get('/comptabilite/api/summary', [ComptabiliteController::class, 'apiSummary']);
+Route::get('/comptabilite/api/weekly', [ComptabiliteController::class, 'apiWeekly']);
+Route::get('/comptabilite/api/transactions', [ComptabiliteController::class, 'apiTransactions']);
+
+// Notifications (Phase 8.2)
+Route::get('/notifications/api/list', [NotificationController::class, 'apiList']);
+Route::get('/notifications/api/count', [NotificationController::class, 'apiCount']);
+Route::post('/notifications/api/read', [NotificationController::class, 'apiMarkRead']);
+
+// Dashboard (Phase 8.3)
+Route::get('/dashboard/api', [DashboardController::class, 'api']);

@@ -11,8 +11,10 @@
     var state = {
         myRequests: [],
         allRequests: [],
+        pendingRequests: [],
         myFilter: 'all',
-        allFilter: 'pending'
+        allFilter: 'all',
+        allMember: ''
     };
 
     // ── SUB-TABS ────────────────────────────────────────────
@@ -32,6 +34,7 @@
                 });
                 if (target === 'mine') loadMine();
                 if (target === 'all') loadAll();
+                if (target === 'pending') loadPending();
             }.bind(tab));
         });
     }
@@ -51,10 +54,8 @@
             actions = '<div class="req-actions">' +
                 '<button class="btn-sm btn-approve" data-id="' + r.id + '">Approuver</button>' +
                 '<button class="btn-sm btn-reject" data-id="' + r.id + '">Refuser</button>' +
-                '<button class="btn-sm btn-cancel" data-id="' + r.id + '">Annuler</button>' +
                 '</div>';
         }
-        // Owner can cancel their own pending request
         var cancelOwn = '';
         if (!showActions && r.status === 'pending') {
             cancelOwn = '<div class="req-actions">' +
@@ -97,6 +98,30 @@
             '</div>';
     }
 
+    // ── LOAD PENDING (treasurer tab) ────────────────────────
+
+    function loadPending() {
+        auth.apiGet('/demandes/api/list?scope=all&status=pending', function (err, data) {
+            if (err || !data || data.error) {
+                $('reqPendingList').innerHTML = '<div class="empty-msg">Erreur de chargement.</div>';
+                return;
+            }
+            state.pendingRequests = data.requests || [];
+            renderStats(data.stats || {});
+            renderPending();
+        });
+    }
+
+    function renderPending() {
+        var el = $('reqPendingList');
+        if (!state.pendingRequests.length) {
+            el.innerHTML = '<div class="empty-msg" style="color:#4ade80;">Aucune demande en attente. Tout est a jour !</div>';
+            return;
+        }
+        el.innerHTML = state.pendingRequests.map(function (r) { return renderRow(r, true); }).join('');
+        bindActions(el);
+    }
+
     // ── LOAD MY REQUESTS ────────────────────────────────────
 
     function loadMine() {
@@ -126,6 +151,7 @@
 
     function loadAll() {
         var url = '/demandes/api/list?scope=all&status=' + encodeURIComponent(state.allFilter);
+        if (state.allMember) url += '&member_id=' + encodeURIComponent(state.allMember);
         auth.apiGet(url, function (err, data) {
             if (err || !data || data.error) {
                 $('reqAllList').innerHTML = '<div class="empty-msg">Erreur de chargement.</div>';
@@ -151,14 +177,16 @@
     function bindActions(container) {
         container.querySelectorAll('.btn-approve').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                handleRequest(parseInt(this.getAttribute('data-id')), 'approve');
+                var id = parseInt(this.getAttribute('data-id'));
+                if (!confirm('Approuver cette demande ?')) return;
+                handleRequest(id, 'approve');
             });
         });
         container.querySelectorAll('.btn-reject').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var id = parseInt(this.getAttribute('data-id'));
                 var notes = prompt('Raison du refus (optionnel) :');
-                if (notes === null) return; // cancelled
+                if (notes === null) return;
                 handleRequest(id, 'reject', notes);
             });
         });
@@ -174,7 +202,12 @@
                 return;
             }
             auth.showToast(data.message || 'OK', 'success');
-            loadAll();
+            var activeTab = document.querySelector('.sub-tab.active');
+            if (activeTab) {
+                var target = activeTab.getAttribute('data-subtab');
+                if (target === 'pending') loadPending();
+                else if (target === 'all') loadAll();
+            }
         });
     }
 
@@ -208,6 +241,14 @@
             html += '<div class="stat-item"><div class="stat-value">' + stats.my_pending + '</div><div class="stat-label">Mes demandes en attente</div></div>';
         }
         el.innerHTML = html;
+
+        var badge = $('reqPendingBadge');
+        if (badge && stats.pending > 0) {
+            badge.textContent = stats.pending;
+            badge.style.display = '';
+        } else if (badge) {
+            badge.style.display = 'none';
+        }
     }
 
     // ── PHOTO PREVIEW ───────────────────────────────────────
@@ -263,7 +304,6 @@
 
         var headers = auth.apiHeaders();
         headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        // Do NOT set Content-Type — browser sets multipart boundary automatically
 
         fetch('/demandes/api/create', { method: 'POST', headers: headers, body: fd })
             .then(function (r) { return r.json(); })
@@ -281,6 +321,24 @@
                 $('reqUploadLabel').style.display = '';
             })
             .catch(function () { auth.showToast('Erreur reseau', 'error'); });
+    }
+
+    // ── POPULATE MEMBER FILTER ──────────────────────────────
+
+    function populateMemberFilter() {
+        var sel = $('reqAllMember');
+        if (!sel) return;
+        var members = window.MC_MEMBERS || [];
+        members.forEach(function (m) {
+            var opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.name;
+            sel.appendChild(opt);
+        });
+        sel.addEventListener('change', function () {
+            state.allMember = this.value;
+            loadAll();
+        });
     }
 
     // ── AUTH GATE ───────────────────────────────────────────
@@ -303,9 +361,9 @@
             $('reqNoAccess').style.display = 'none';
             $('reqContent').style.display = '';
 
-            // Show "all" tab for treasurer+
             if (auth.isAtLeast('treasurer')) {
                 document.querySelectorAll('.sub-tab-treasurer').forEach(function (el) { el.style.display = ''; });
+                loadPendingCount();
             }
 
             if (data && !data.error) {
@@ -315,10 +373,28 @@
         });
     }
 
+    function loadPendingCount() {
+        auth.apiGet('/demandes/api/list?scope=all&status=pending', function (err, data) {
+            if (err || !data || data.error) return;
+            var count = (data.requests || []).length;
+            var badge = $('reqPendingBadge');
+            if (badge && count > 0) {
+                badge.textContent = count;
+                badge.style.display = '';
+                // Auto-switch to pending tab if there are requests to validate
+                var pendingTab = document.querySelector('.sub-tab[data-subtab="pending"]');
+                if (pendingTab) {
+                    pendingTab.click();
+                }
+            }
+        });
+    }
+
     // ── INIT ────────────────────────────────────────────────
 
     initSubTabs();
     initPhotoUpload();
+    populateMemberFilter();
     $('reqBtnSubmit').addEventListener('click', submitRequest);
     $('reqMyStatus').addEventListener('change', function () {
         state.myFilter = this.value;

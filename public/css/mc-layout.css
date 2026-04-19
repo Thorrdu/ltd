@@ -1809,3 +1809,557 @@
     transition: opacity 0.15s;
 }
 .req-photo img:hover { opacity: 0.8; }
+
+/* Pending badge in tab */
+.req-pending-badge {
+    display: inline-block;
+    background: #f87171;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 9px;
+    padding: 0 5px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.req-pending-info {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 12px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* ====================== PROFIL MEMBRE ====================== */
+
+.profil-info-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.profil-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.profil-info-row:last-child { border-bottom: none; }
+
+.profil-info-label {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+}
+.profil-info-value {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.profil-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+}
+.profil-table thead th {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.profil-table tbody td {
+    padding: 7px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.8);
+    vertical-align: top;
+}
+.profil-table tbody tr:hover { background: rgba(255, 255, 255, 0.03); }
+
+.profil-qty-pos { color: #4ade80; font-weight: 600; }
+.profil-qty-neg { color: #f87171; font-weight: 600; }
+
+/* ====================== COTISATIONS ====================== */
+
+.cot-week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+.cot-week-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.cot-alert {
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-family: 'Segoe UI', sans-serif;
+}
+.cot-alert-warning {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    color: #fbbf24;
+}
+
+.cot-table { font-size: 13px; }
+.cot-table .cot-actions { white-space: nowrap; }
+.cot-table .cot-actions .btn-sm { margin-right: 4px; }
+
+.cot-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.cot-badge-paid   { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.cot-badge-partial { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.cot-badge-unpaid  { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+
+.cot-row-paid    { border-left: 3px solid #4ade80; }
+.cot-row-partial { border-left: 3px solid #fbbf24; }
+.cot-row-unpaid  { border-left: 3px solid #f87171; }
+
+.cot-btn-partial {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.3);
+}
+.cot-btn-partial:hover { background: rgba(251, 191, 36, 0.25); }
+
+/* ====================== COMPTABILITE ====================== */
+
+.comp-period-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+.comp-period {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.comp-period.active {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.3);
+}
+
+.comp-section {
+    margin-bottom: 20px;
+}
+.comp-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Segoe UI', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.comp-table { font-size: 13px; }
+
+.comp-tx-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    gap: 8px;
+}
+.comp-tx-row:hover { background: rgba(255, 255, 255, 0.03); }
+
+.comp-tx-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.comp-tx-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.comp-tx-type {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+.comp-tx-vente      { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.comp-tx-depense    { background: rgba(248, 113, 113, 0.15); color: #f87171; }
+.comp-tx-cotisation { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+
+.comp-tx-label {
+    color: rgba(255, 255, 255, 0.8);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.comp-tx-amount { font-weight: 700; white-space: nowrap; }
+.comp-tx-user   { color: rgba(255, 255, 255, 0.5); font-size: 12px; white-space: nowrap; }
+.comp-tx-date   { color: rgba(255, 255, 255, 0.3); font-size: 11px; white-space: nowrap; }
+
+/* ============================================
+   BOARD WIDTH CLASSES (replaces inline styles)
+   ============================================ */
+.mc-board-md { width: 960px; }
+.mc-board-lg { width: 1000px; }
+.mc-board-xl { width: 1100px; }
+
+/* ============================================
+   NOTIFICATIONS (Phase 8.2)
+   ============================================ */
+.mc-notif-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.mc-notif-btn {
+    position: relative;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    color: #888;
+    font-size: 14px;
+    line-height: 1;
+    transition: all 0.15s;
+}
+.mc-notif-btn:hover { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+.mc-notif-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #f87171;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    min-width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    border-radius: 8px;
+    padding: 0 4px;
+}
+.mc-notif-panel {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    width: 340px;
+    max-height: 420px;
+    overflow-y: auto;
+    background: linear-gradient(160deg, #141414, #1a1a1a);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    z-index: 200;
+    animation: fadeIn 0.15s;
+}
+.mc-notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mc-notif-title {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.mc-notif-clear {
+    background: none;
+    border: none;
+    color: #666;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.mc-notif-clear:hover { color: #fff; }
+.mc-notif-empty {
+    padding: 20px;
+    text-align: center;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    color: #555;
+}
+.mc-notif-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.1s;
+    cursor: pointer;
+}
+.mc-notif-item:hover { background: rgba(255, 255, 255, 0.03); }
+.mc-notif-item.unread { background: rgba(96, 165, 250, 0.06); }
+.mc-notif-item.unread:hover { background: rgba(96, 165, 250, 0.1); }
+.mc-notif-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 13px;
+}
+.mc-notif-icon.type-cotisation  { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.mc-notif-icon.type-attribution { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+.mc-notif-icon.type-demande     { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.mc-notif-icon.type-classement  { background: rgba(255, 215, 0, 0.15); color: #ffd700; }
+.mc-notif-icon.type-stock       { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+.mc-notif-icon.type-system      { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+.mc-notif-body { flex: 1; min-width: 0; }
+.mc-notif-text {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    color: #ccc;
+    line-height: 1.4;
+}
+.mc-notif-item.unread .mc-notif-text { color: #fff; }
+.mc-notif-time {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    color: #555;
+    margin-top: 2px;
+}
+
+/* ============================================
+   DASHBOARD CARDS (Phase 8.3)
+   ============================================ */
+.mc-dash {
+    display: none;
+    margin-top: 20px;
+}
+.mc-dash.visible { display: block; }
+.mc-dash-section {
+    margin-bottom: 16px;
+}
+.mc-dash-section-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    padding-left: 4px;
+}
+.mc-dash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+}
+.mc-dash-card {
+    padding: 12px 14px;
+    background: linear-gradient(145deg, #151515, #0e0e0e);
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    transition: border-color 0.15s;
+}
+.mc-dash-card:hover { border-color: rgba(255, 255, 255, 0.15); }
+.mc-dash-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.mc-dash-value {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 4px;
+}
+.mc-dash-value.positive { color: #4ade80; }
+.mc-dash-value.warning  { color: #fbbf24; }
+.mc-dash-value.negative { color: #f87171; }
+.mc-dash-sub {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 10px;
+    color: #555;
+    margin-top: 2px;
+}
+.mc-dash-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(251, 191, 36, 0.06);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    color: #fbbf24;
+}
+.mc-dash-alert-icon { font-size: 16px; flex-shrink: 0; }
+.mc-dash-alert a {
+    color: #fbbf24;
+    text-decoration: underline;
+    font-weight: 600;
+}
+.mc-dash-alert a:hover { color: #fff; }
+.mc-dash-alert.alert-danger {
+    background: rgba(248, 113, 113, 0.06);
+    border-color: rgba(248, 113, 113, 0.2);
+    color: #f87171;
+}
+.mc-dash-alert.alert-danger a { color: #f87171; }
+.mc-dash-alert.alert-info {
+    background: rgba(96, 165, 250, 0.06);
+    border-color: rgba(96, 165, 250, 0.2);
+    color: #60a5fa;
+}
+.mc-dash-alert.alert-info a { color: #60a5fa; }
+
+/* ============================================
+   PHASE 8 — COMPREHENSIVE RESPONSIVE
+   ============================================ */
+
+/* Sub-tab bar: horizontal scroll on small screens */
+.sub-tab-bar {
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 720px) {
+    /* Board widths → full width */
+    .mc-board-md, .mc-board-lg, .mc-board-xl { width: 100% !important; }
+
+    /* Sub-tab bar: scroll horizontally */
+    .sub-tab-bar {
+        display: flex;
+        overflow-x: auto;
+        white-space: nowrap;
+        gap: 0;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .sub-tab-bar::-webkit-scrollbar { display: none; }
+    .sub-tab-bar .sub-tab { flex-shrink: 0; }
+
+    /* Classements table */
+    .rank-header-row { display: none; }
+    .rank-row {
+        grid-template-columns: 40px 1fr;
+        gap: 2px;
+        padding: 8px 10px;
+    }
+    .rank-col-stat { text-align: left; font-size: 11px; }
+    .rank-eagle-hdr { display: none; }
+    .rank-eagle-row { grid-template-columns: 1fr; gap: 2px; }
+    .rank-eagle-banner { flex-direction: column; text-align: center; gap: 8px; padding: 12px; }
+
+    /* Comptabilite */
+    .comp-period-bar { flex-wrap: wrap; }
+    .comp-tx-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .comp-tx-right { width: 100%; justify-content: space-between; }
+    .comp-table thead { display: none; }
+    .comp-table td { display: block; padding: 4px 10px; }
+
+    /* Cotisations */
+    .cot-table thead { display: none; }
+    .cot-table td { display: block; padding: 4px 10px; }
+    .cot-table tr { border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding: 6px 0; }
+
+    /* Profil tables */
+    .profil-table thead { display: none; }
+    .profil-table td {
+        display: block;
+        padding: 3px 10px;
+        font-size: 11px;
+    }
+    .profil-table tr {
+        display: block;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 4px 0;
+    }
+    .profil-info-row { flex-direction: column; gap: 2px; }
+
+    /* Demandes */
+    .req-filter-bar { flex-direction: column; }
+    .req-row-header { flex-direction: column; align-items: flex-start; }
+    .req-actions { flex-wrap: wrap; }
+
+    /* Import preview */
+    .imp-row { grid-template-columns: 1fr; gap: 2px; }
+    .imp-row.imp-head { display: none; }
+
+    /* Notification panel full width on mobile */
+    .mc-notif-panel { width: calc(100vw - 20px); right: -10px; }
+
+    /* Dashboard cards */
+    .mc-dash-grid { grid-template-columns: repeat(2, 1fr); }
+
+    /* Vente express */
+    .ve-items-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    .ve-recap-item { font-size: 11px; }
+}
+
+@media (max-width: 480px) {
+    /* Board sizes */
+    .mc-board-md, .mc-board-lg, .mc-board-xl { padding: 6px !important; }
+
+    /* Dashboard */
+    .mc-dash-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .mc-dash-value { font-size: 16px; }
+    .mc-dash-card { padding: 10px; }
+
+    /* Rank period buttons smaller */
+    .rank-period-btn { padding: 5px 10px; font-size: 12px; }
+
+    /* Cotisation week nav */
+    .cot-week-nav { flex-wrap: wrap; justify-content: center; }
+    .cot-week-label { font-size: 13px; text-align: center; width: 100%; }
+
+    /* Stocks totals */
+    .stocks-totals { grid-template-columns: repeat(2, 1fr); }
+    .stocks-capacity .cap-label { min-width: auto; font-size: 11px; }
+
+    /* Vente express items */
+    .ve-items-grid { grid-template-columns: repeat(2, 1fr); }
+}
