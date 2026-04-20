@@ -960,6 +960,33 @@
     color: #fb923c;
     font-weight: 700;
 }
+.stocks-total-card .cat-value {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 11px;
+    color: #60a5fa;
+    margin-top: 3px;
+    font-weight: 600;
+}
+.stocks-total-global {
+    grid-column: 1 / -1;
+    padding: 8px 14px;
+    background: rgba(96, 165, 250, 0.06);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    border-radius: 4px;
+    font-size: 13px;
+    color: #ccc;
+}
+.stocks-total-global .global-val-label { color: #888; }
+.stocks-total-global .global-val-amount {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-weight: 700;
+    color: #60a5fa;
+    font-size: 15px;
+}
+.stocks-total-global .global-val-out {
+    color: #fb923c;
+    font-size: 11px;
+}
 
 .stocks-list {
     border-top: 1px solid rgba(255, 255, 255, 0.05);

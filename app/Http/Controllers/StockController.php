@@ -142,6 +142,12 @@ class StockController extends Controller
             $weightG = $rows->sum(function ($r) {
                 return ($r['unit_weight_g'] ?? 0) * $r['quantity'];
             });
+            $stockValue = $rows->sum(function ($r) {
+                return ($r['default_sell_price'] ?? 0) * $r['quantity'];
+            });
+            $outValue = $rows->sum(function ($r) {
+                return ($r['default_sell_price'] ?? 0) * $r['out_attributed'];
+            });
 
             return [
                 'category'       => $cat,
@@ -150,6 +156,8 @@ class StockController extends Controller
                 'quantity'       => $rows->sum('quantity'),
                 'out_attributed' => $rows->sum('out_attributed'),
                 'weight_g'       => (int) $weightG,
+                'stock_value'    => (int) $stockValue,
+                'out_value'      => (int) $outValue,
             ];
         })->values();
 

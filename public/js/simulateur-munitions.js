@@ -159,6 +159,23 @@
         html += makeRow('Chiffre d\u2019affaires (lot vendu)', fmtEuro(venteTotale), 'highlight');
         html += makeRow('Marge totale (fer achet\u00e9)', fmtEuro(margeAch), ammoBenClass(margeAch));
         html += makeRow('Marge totale (fer r\u00e9colt\u00e9)', fmtEuro(margeRec), ammoBenClass(margeRec));
+
+        // Material requirements for the full production
+        var totalPoudre = r.poudre * crafts;
+        var totalFragments = r.fragment * crafts;
+        var totalMinerai = Math.ceil(totalFragments / AMMO_FRAGMENTS_PER_FER_UNIT);
+        var coutPoudreTot = totalPoudre * AMMO_GUNPOWDER_PRICE;
+        var coutMineraiTot = totalMinerai * prixFer;
+
+        html += makeSectionHeader('Mat\u00e9riaux n\u00e9cessaires (' + fmt(crafts) + ' crafts)');
+        html += makeRow('Poudre \u00e0 canon', fmt(totalPoudre) + ' unit\u00e9s', 'highlight');
+        html += makeRow('   Co\u00fbt poudre (' + fmt(totalPoudre) + ' \u00d7 ' + fmt(AMMO_GUNPOWDER_PRICE) + '\u20ac)', fmtEuro(coutPoudreTot));
+        html += makeRow('Fragments de m\u00e9tal', fmt(totalFragments) + ' fragments', 'highlight');
+        html += makeRow('Minerais de fer n\u00e9cessaires', fmt(totalMinerai) + ' minerais (1 minerai = ' + AMMO_FRAGMENTS_PER_FER_UNIT + ' fragments)', 'highlight');
+        if (prixFer > 0) {
+            html += makeRow('   Co\u00fbt minerai fer (' + fmt(totalMinerai) + ' \u00d7 ' + fmt(prixFer) + '\u20ac)', fmtEuro(coutMineraiTot));
+        }
+
         out.innerHTML = html;
     }
 

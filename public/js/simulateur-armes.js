@@ -647,6 +647,69 @@
     function refreshWeaponCraftSims() {
         updateWeaponCraftTable();
         updateWeaponTargetSim();
+        updateCraftableFromStock();
+    }
+
+    // ===== CRAFTABLE FROM STOCK (logged-in only) =====
+    // Pistol plan slugs: plans that can craft various pistols (9mm to heavy, cal .50 excluded)
+    var PISTOL_PLAN_WEAPONS = ['sns', 'wn29', 'ceramic', 'pistol', 'heavy'];
+
+    function updateCraftableFromStock() {
+        var el = $('craftableFromStock');
+        if (!el) return;
+        if (!auth || !auth.isLoggedIn || !cachedData || !cachedData.stock) {
+            el.style.display = 'none';
+            return;
+        }
+        el.style.display = '';
+
+        var stockMap = {};
+        cachedData.stock.forEach(function (s) { stockMap[s.slug] = s.quantity; });
+
+        var html = '';
+        html += '<div class="sim-section-title">Armes craftables avec le stock actuel</div>';
+        html += '<p class="ammo-sim-intro ammo-sim-intro-tight">Nombre maximum d\'armes craftables par type, en utilisant tout le stock disponible pour ce type. Les <strong>plans Pistol</strong> couvrent les pistolets (SNS \u2192 Heavy) <em>sauf</em> le Cal .50. Les pi\u00e8ces partag\u00e9es (ressort, canon, m\u00e9tal\u2026) sont compt\u00e9es ind\u00e9pendamment par arme.</p>';
+        var hasAny = false;
+
+        weaponList.forEach(function (w) {
+            var wd = weapons[w.slug];
+            if (!wd || wd.isBoughtWeapon) return;
+            var maxCraftable = Infinity;
+            var limitingPiece = '';
+
+            pieceKeys.forEach(function (p) {
+                var need = wd.pieces[p] || 0;
+                if (need <= 0) return;
+                var have = 0;
+                if (p === 'plans') {
+                    have = stockMap['plan_' + w.slug] || 0;
+                    if (PISTOL_PLAN_WEAPONS.indexOf(w.slug) >= 0) {
+                        have += (stockMap['plan_pistol'] || 0);
+                    }
+                } else {
+                    have = stockMap[p] || 0;
+                }
+                var canMake = Math.floor(have / need);
+                if (canMake < maxCraftable) {
+                    maxCraftable = canMake;
+                    limitingPiece = pieceNames[p] || p;
+                }
+            });
+
+            if (maxCraftable === Infinity) maxCraftable = 0;
+            hasAny = true;
+            var cls = maxCraftable <= 0 ? 'need' : (maxCraftable < 3 ? '' : 'ok');
+            var label = maxCraftable <= 0
+                ? '0 \u2014 manque ' + limitingPiece
+                : fmt(maxCraftable) + ' arme(s)' + (limitingPiece ? ' (limit\u00e9 par ' + limitingPiece + ')' : '');
+            html += makeRow(esc(wd.name), label, cls);
+        });
+
+        if (!hasAny) {
+            html += '<div class="empty-msg">Aucune arme craftable.</div>';
+        }
+
+        el.innerHTML = html;
     }
 
     // ===== WEAPON CRAFT EVENT LISTENERS =====
@@ -724,6 +787,7 @@
             populateForms();
             renderDashboard(data);
             renderProfile();
+            updateCraftableFromStock();
         });
     }
 
@@ -731,6 +795,7 @@
         cachedData = null;
         var dash = $('memberDashboard');
         if (dash) dash.style.display = 'none';
+        updateCraftableFromStock();
     }
 
     auth.onLogin(function () { showDashboard(); });
@@ -982,6 +1047,7 @@
             renderDashboard(data);
             populateForms();
             calculate();
+            updateCraftableFromStock();
         });
     }
 
@@ -1030,7 +1096,11 @@
         html = '';
         cats.weapon_plan.forEach(function (s) {
             var phys = Math.floor(s.quantity / PLANS_PER_ITEM);
-            html += '<div class="stock-mini"><span class="sm-name">' + esc(s.name) + '</span><span class="sm-val">' + phys + ' plans (' + s.quantity + ' uses)</span></div>';
+            var hint = '';
+            if (s.slug === 'plan_pistol') {
+                hint = ' <span class="sm-hint">(couvre SNS \u2192 Heavy, sauf Cal .50)</span>';
+            }
+            html += '<div class="stock-mini"><span class="sm-name">' + esc(s.name) + hint + '</span><span class="sm-val">' + phys + ' plans (' + s.quantity + ' uses)</span></div>';
         });
         cats.weapon_piece.forEach(function (s) {
             html += '<div class="stock-mini' + (s.quantity <= 0 ? ' sm-low' : '') + '"><span class="sm-name">' + esc(s.name) + '</span><span class="sm-val">' + fmt(s.quantity) + '</span></div>';

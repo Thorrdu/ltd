@@ -48,6 +48,9 @@
         <div class="sim-section" id="weaponCraftSection">
             <div class="sim-section-title">Craft armes (composants)</div>
             <p class="ammo-sim-intro">Le tableau distingue deux types de composants : les <strong>composants achetes</strong> (corp, canon, poignee) et les <strong>matieres craftees</strong> a base de fer (pieces de metal, ressorts). Deux scenarios de cout sont calcules selon que le fer est <strong>achete</strong> ou <strong>recolte</strong>. Cochez <strong>Composants en stock</strong> si vous disposez deja des composants. Le <strong>SNS</strong> n'est pas crafte : achat ref. + revente.</p>
+            <p class="ammo-sim-intro" style="border-left:3px solid #60a5fa;padding-left:10px;margin-top:4px;color:#7db8fc;">
+                <strong>Plans Pistol :</strong> les plans pistolet permettent de crafter tous les pistolets (SNS, WN 29, Ceramic, Pistol, Heavy Pistol) <strong>sauf</strong> le Cal .50 qui necessite son propre plan.
+            </p>
             <div class="ammo-sim-params">
                 <label class="ammo-sim-label" for="weaponCraftPlanPrice">Prix du plan (EUR / utilisation)</label>
                 <input type="number" class="ammo-sim-input" id="weaponCraftPlanPrice" min="0" step="0.01" value="" placeholder="Ex. 8000" inputmode="decimal">
@@ -125,6 +128,9 @@
                 <div class="results-table ammo-target-results" id="weaponTargetResults"></div>
             </div>
         </div>
+
+        {{-- Craftable from stock (visible when logged in) --}}
+        <div class="sim-section" id="craftableFromStock" style="display:none;"></div>
 
     </div>
 </div>

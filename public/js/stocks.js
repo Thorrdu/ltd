@@ -97,7 +97,15 @@
             el.innerHTML = '';
             return;
         }
-        el.innerHTML = state.totals.map(function (t) {
+        var globalValue = 0;
+        var globalOutValue = 0;
+        state.totals.forEach(function (t) { globalValue += (t.stock_value || 0); globalOutValue += (t.out_value || 0); });
+        var globalHtml = '<div class="stocks-total-global">' +
+            '<span class="global-val-label">Valeur totale stock :</span> ' +
+            '<span class="global-val-amount">' + money(globalValue) + '</span>' +
+            (globalOutValue ? ' <span class="global-val-out">(+ ' + money(globalOutValue) + ' en attribution)</span>' : '') +
+            '</div>';
+        el.innerHTML = globalHtml + state.totals.map(function (t) {
             var active = state.filter.category === t.category ? ' active' : '';
             return '<div class="stocks-total-card' + active + '" data-cat="' + esc(t.category) + '">' +
                 '<div class="cat-label">' + esc(t.category_label) + '</div>' +
@@ -106,6 +114,7 @@
                 (t.out_attributed ? ' &middot; <span class="out">' + num(t.out_attributed) + ' attrib.</span>' : '') +
                 (t.weight_g ? ' &middot; ' + num(Math.round(t.weight_g / 1000)) + ' kg' : '') +
                 '</div>' +
+                (t.stock_value ? '<div class="cat-value">' + money(t.stock_value) + '</div>' : '') +
                 '</div>';
         }).join('');
         el.querySelectorAll('.stocks-total-card').forEach(function (card) {
