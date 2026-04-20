@@ -50,18 +50,15 @@
     function renderGroup(groupKey) {
         activeGroup = groupKey;
         var items = allData.settings[groupKey] || [];
-        var types = allData.types;
         var html = '<table class="mc-table"><thead><tr>' +
-            '<th>Parametre</th><th>Valeur</th><th>Type</th><th></th>' +
+            '<th>Parametre</th><th>Valeur</th><th></th>' +
             '</tr></thead><tbody>';
 
         items.forEach(function (s) {
             html += '<tr data-id="' + s.id + '">' +
                 '<td><strong>' + esc(s.label) + '</strong>' +
-                (s.description ? '<br><small style="opacity:.6">' + esc(s.description) + '</small>' : '') +
-                '<br><code style="font-size:.75em;opacity:.5">' + esc(s.key) + '</code></td>' +
+                (s.description ? '<br><small style="opacity:.6">' + esc(s.description) + '</small>' : '') + '</td>' +
                 '<td>' + renderInput(s) + '</td>' +
-                '<td><small>' + esc(types[s.type] || s.type) + '</small></td>' +
                 '<td><button class="mc-btn mc-btn-sm set-save-btn" data-id="' + s.id + '">Enregistrer</button></td>' +
                 '</tr>';
         });

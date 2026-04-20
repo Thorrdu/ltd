@@ -23,28 +23,24 @@
 
             <div id="alertBanner" class="alert-banner" style="display:none;"></div>
 
+            {{-- Quick links --}}
+            <div class="mc-quick-links">
+                <a href="/ventes" class="mc-quick-link"><span class="ql-icon">💰</span> Ventes</a>
+                <a href="/cotisations" class="mc-quick-link"><span class="ql-icon">📋</span> Cotisations</a>
+                <a href="/classements" class="mc-quick-link"><span class="ql-icon">🏆</span> Classements</a>
+                <a href="/demandes" class="mc-quick-link"><span class="ql-icon">📨</span> Demandes</a>
+                <a href="/stocks" class="mc-quick-link" data-gate="officer"><span class="ql-icon">📦</span> Stocks</a>
+                <a href="/comptabilite" class="mc-quick-link" data-gate="treasurer"><span class="ql-icon">💵</span> Comptabilite</a>
+            </div>
+
             <div class="sub-tab-bar">
-                <button class="sub-tab active" data-subtab="overview">Stocks</button>
-                <button class="sub-tab" data-subtab="attributions">Mes attributions</button>
-                <button class="sub-tab" data-subtab="actions">Mouvements</button>
+                <button class="sub-tab active" data-subtab="attributions">Mes attributions</button>
                 <button class="sub-tab" data-subtab="contrats">Contrats</button>
-                <button class="sub-tab" data-subtab="historique">Historique</button>
                 <button class="sub-tab" data-subtab="profil">Mon profil</button>
             </div>
 
-            {{-- SUB: Stocks --}}
-            <div class="sub-content active" id="sub-overview">
-                <div class="stats-row" id="statsRow"></div>
-                <div class="sim-section-title">Armes en stock</div>
-                <div class="stock-cards" id="stockWeaponsCards"></div>
-                <div class="sim-section-title">Pieces & Plans</div>
-                <div class="stock-mini-grid" id="stockPiecesGrid"></div>
-                <div class="sim-section-title">Matieres premieres</div>
-                <div class="stock-mini-grid" id="stockRawGrid"></div>
-            </div>
-
             {{-- SUB: Mes attributions --}}
-            <div class="sub-content" id="sub-attributions">
+            <div class="sub-content active" id="sub-attributions">
                 <div class="action-card">
                     <div class="action-card-title">Mes attributions en cours</div>
                     <p class="action-hint">
@@ -70,38 +66,6 @@
                         Pour toute nouvelle vente (sans attribution prealable), rendez-vous sur la page dediee.
                     </p>
                     <a href="/ventes" class="action-btn sale-btn" style="text-decoration:none; display:inline-block;">Aller a la page Ventes</a>
-                </div>
-            </div>
-
-            {{-- SUB: Mouvements de stock --}}
-            <div class="sub-content" id="sub-actions">
-                <div class="action-card">
-                    <div class="action-card-title">Mouvement de stock</div>
-                    <p class="action-hint">Coffre, recolte, achat, ajustement...</p>
-                    <div class="action-form">
-                        <div class="form-row">
-                            <div class="form-group"><label>Article</label><select id="mvStock" class="fm-input"></select></div>
-                            <div class="form-group sm"><label>Quantite</label><input type="number" id="mvQty" class="fm-input" value="1" min="1" max="999"></div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Direction</label>
-                                <div class="direction-toggle">
-                                    <button class="dir-btn active" data-dir="in" id="mvDirIn">+ Entree</button>
-                                    <button class="dir-btn" data-dir="out" id="mvDirOut">- Sortie</button>
-                                </div>
-                            </div>
-                            <div class="form-group"><label>Raison</label><select id="mvReason" class="fm-input"></select></div>
-                        </div>
-                        <div class="form-row" id="mvCostRow" style="display:none;">
-                            <div class="form-group sm"><label>Prix unit. EUR</label><input type="number" id="mvUnitCost" class="fm-input" value="0" min="0"></div>
-                            <div class="form-group"><div class="mv-cost-preview" id="mvCostPreview"></div></div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group full"><label>Notes <span class="optional">(opt.)</span></label><input type="text" id="mvNotes" class="fm-input" placeholder="Ex: pris 2 WN du coffre"></div>
-                        </div>
-                        <button class="action-btn mv-btn" id="btnMovement">Enregistrer le mouvement</button>
-                    </div>
                 </div>
             </div>
 
@@ -150,14 +114,6 @@
 
                 <div class="sim-section-title" style="margin-top:16px;">Tous les contrats</div>
                 <div id="allContractsList"></div>
-            </div>
-
-            {{-- SUB: Historique --}}
-            <div class="sub-content" id="sub-historique">
-                <div class="sim-section-title">Derniers mouvements</div>
-                <div class="movements-list" id="movementsList"></div>
-                <div class="sim-section-title" style="margin-top:10px;">Dernieres ventes</div>
-                <div class="movements-list" id="salesList"></div>
             </div>
 
             {{-- SUB: Mon profil --}}
@@ -216,7 +172,14 @@ window.MC_CATEGORIES = @json(\App\Models\StockItem::CATEGORIES);
         var loggedIn = window.McAuth && window.McAuth.isLoggedIn;
         if (dash) dash.style.display = loggedIn ? '' : 'none';
         if (msg) msg.style.display = loggedIn ? 'none' : '';
-        if (loggedIn) loadMyAttributions();
+        if (loggedIn) {
+            loadMyAttributions();
+            // Show/hide quick links by role
+            document.querySelectorAll('.mc-quick-link[data-gate]').forEach(function (el) {
+                var gate = el.getAttribute('data-gate');
+                el.style.display = window.McAuth.isAtLeast(gate) ? '' : 'none';
+            });
+        }
     }
     toggle();
     if (window.McAuth) {

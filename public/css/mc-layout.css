@@ -2377,3 +2377,146 @@
     /* Vente express items */
     .ve-items-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ============================================
+   PARAMETRES PAGE
+   ============================================ */
+.mc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+}
+.mc-table thead th {
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+    background: #0a0a0a;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.mc-table tbody td {
+    padding: 12px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #ccc;
+    vertical-align: middle;
+}
+.mc-table tbody tr:hover { background: rgba(255, 255, 255, 0.025); }
+.mc-table tbody td strong { color: #fff; }
+.mc-table tbody td code { color: #888; }
+
+.mc-input {
+    padding: 7px 10px;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    transition: border-color 0.15s;
+    width: 100%;
+    box-sizing: border-box;
+}
+.mc-input:focus { outline: none; border-color: #fff; }
+.mc-input[type=number] { width: 140px; }
+textarea.mc-input { resize: vertical; min-height: 60px; }
+
+.mc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: #fff;
+    color: #000;
+    white-space: nowrap;
+}
+.mc-btn:hover { background: #ddd; }
+.mc-btn:active { transform: scale(0.97); }
+.mc-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.mc-btn-sm { padding: 6px 12px; font-size: 11px; }
+
+.mc-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 13px;
+    color: #ccc;
+}
+.mc-toggle input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 36px;
+    height: 20px;
+    background: #333;
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.mc-toggle input[type="checkbox"]::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: #888;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+.mc-toggle input[type="checkbox"]:checked { background: #22c55e; }
+.mc-toggle input[type="checkbox"]:checked::after {
+    left: 18px;
+    background: #fff;
+}
+
+/* Quick links section */
+.mc-quick-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+.mc-quick-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    color: #aaa;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 12px;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.mc-quick-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+.mc-quick-link .ql-icon { font-size: 14px; }
+
+@media (max-width: 720px) {
+    .mc-table thead { display: none; }
+    .mc-table tbody td { display: block; padding: 6px 12px; }
+    .mc-table tbody td:first-child { padding-top: 12px; }
+    .mc-table tbody td:last-child { padding-bottom: 12px; }
+    .mc-table tbody tr { border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+    .mc-input[type=number] { width: 100%; }
+}

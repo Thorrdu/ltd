@@ -1004,7 +1004,8 @@
         });
         var revenue = (data.finance && data.finance.total_revenue) || 0;
         var contracts = (data.contracts || []).length;
-        $('statsRow').innerHTML =
+        var sr = $('statsRow');
+        if (sr) sr.innerHTML =
             '<div class="stat-card"><div class="stat-val">' + fmt(totalWeapons) + '</div><div class="stat-label">Armes</div></div>' +
             '<div class="stat-card"><div class="stat-val">' + fmt(totalPieces) + '</div><div class="stat-label">Pi\u00e8ces</div></div>' +
             '<div class="stat-card revenue"><div class="stat-val">' + fmt(revenue) + ' \u20ac</div><div class="stat-label">Revenus</div></div>' +
@@ -1023,7 +1024,8 @@
             if (s.quantity > 0 && wid) html += '<div class="stock-card-action">Vendre</div>';
             html += '</div>';
         });
-        $('stockWeaponsCards').innerHTML = html || '<div class="empty-msg">Aucune arme</div>';
+        var swc = $('stockWeaponsCards');
+        if (swc) swc.innerHTML = html || '<div class="empty-msg">Aucune arme</div>';
 
         html = '';
         cats.weapon_plan.forEach(function (s) {
@@ -1033,13 +1035,15 @@
         cats.weapon_piece.forEach(function (s) {
             html += '<div class="stock-mini' + (s.quantity <= 0 ? ' sm-low' : '') + '"><span class="sm-name">' + esc(s.name) + '</span><span class="sm-val">' + fmt(s.quantity) + '</span></div>';
         });
-        $('stockPiecesGrid').innerHTML = html || '<div class="empty-msg">\u2014</div>';
+        var spg = $('stockPiecesGrid');
+        if (spg) spg.innerHTML = html || '<div class="empty-msg">\u2014</div>';
 
         html = '';
         cats.raw_material.forEach(function (s) {
             html += '<div class="stock-mini"><span class="sm-name">' + esc(s.name) + '</span><span class="sm-val highlight">' + fmt(s.quantity) + '</span></div>';
         });
-        $('stockRawGrid').innerHTML = html || '<div class="empty-msg">\u2014</div>';
+        var srg = $('stockRawGrid');
+        if (srg) srg.innerHTML = html || '<div class="empty-msg">\u2014</div>';
     }
 
     function renderAlerts(alerts) {
@@ -1279,7 +1283,8 @@
             if (m.unit_cost) html += '<span class="mv-notes">' + fmt(m.unit_cost) + ' \u20ac/u (total: ' + fmt(m.unit_cost * Math.abs(qc)) + ' \u20ac)</span>';
             html += '</div>';
         });
-        $('movementsList').innerHTML = html || '<div class="empty-msg">Aucun mouvement</div>';
+        var ml = $('movementsList');
+        if (ml) ml.innerHTML = html || '<div class="empty-msg">Aucun mouvement</div>';
 
         html = '';
         sales.forEach(function (s) {
@@ -1292,7 +1297,8 @@
             if (s.notes) html += '<span class="mv-notes">' + esc(s.notes) + '</span>';
             html += '</div>';
         });
-        $('salesList').innerHTML = html || '<div class="empty-msg">Aucune vente</div>';
+        var sl = $('salesList');
+        if (sl) sl.innerHTML = html || '<div class="empty-msg">Aucune vente</div>';
     }
 
     // ===== MEMBERS LIST =====
