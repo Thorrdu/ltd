@@ -13,13 +13,26 @@
             <a href="/mc" class="mc-page-back">&larr; Retour a l'accueil</a>
         </div>
 
-        <div class="sim-section" id="ammoCraftSection">
-            <div class="sim-section-title">Craft munitions</div>
-            <p class="ammo-sim-intro">Chaque craft produit <strong>10 munitions</strong>. Les couts sont affiches <strong>par munition</strong>. La poudre coute <strong>100 EUR</strong>/u et <strong>1 minerai de fer = 2 fragments</strong>. Les prix de vente sont calcules automatiquement a partir des couts (exceptions : 5.56x45, 7.62x39, 12 Gauge). Le tableau se met a jour en temps reel si vous modifiez le prix du fer.</p>
-            <div class="ammo-sim-params">
+        {{-- Selection multi-calibres --}}
+        <div class="sim-section">
+            <div class="sim-section-title">Selection des munitions</div>
+            <p class="ammo-sim-intro ammo-sim-intro-tight">Selectionnez les calibres et quantites de <strong>munitions</strong> souhaitees. Le recapitulatif affiche les materiaux, couts et marges cumules. Cliquez <strong>+</strong> / <strong>&minus;</strong> (pas de 100) ou saisissez directement la quantite.</p>
+            <div class="ammo-sim-params" style="margin-bottom:8px;">
                 <label class="ammo-sim-label" for="ammoFerPrice">Prix du fer (EUR / unite)</label>
                 <input type="number" class="ammo-sim-input" id="ammoFerPrice" min="0" step="0.01" value="30" inputmode="decimal">
             </div>
+            <div class="weapons-grid" id="ammoMultiGrid"></div>
+        </div>
+
+        <div class="sim-section" id="ammoMultiSection" style="display:none;">
+            <div class="sim-section-title">Recapitulatif de la commande</div>
+            <div class="results-table ammo-target-results" id="ammoMultiResults"></div>
+        </div>
+
+        {{-- Craft table --}}
+        <div class="sim-section" id="ammoCraftSection">
+            <div class="sim-section-title">Craft munitions (tableau)</div>
+            <p class="ammo-sim-intro">Chaque craft produit <strong>10 munitions</strong>. Les couts sont affiches <strong>par munition</strong>. La poudre coute <strong>100 EUR</strong>/u et <strong>1 minerai de fer = 2 fragments</strong>. Les prix de vente sont calcules automatiquement a partir des couts (exceptions : 5.56x45, 7.62x39, 12 Gauge). Le tableau se met a jour en temps reel si vous modifiez le prix du fer.</p>
             <div class="ammo-craft-wrap">
                 <table class="ammo-craft-table" aria-label="Couts et marges des munitions">
                     <thead>
@@ -44,9 +57,10 @@
                 </table>
             </div>
 
+            {{-- Single target sim --}}
             <div class="ammo-target-block">
-                <div class="sim-section-title">Objectif en munitions</div>
-                <p class="ammo-sim-intro ammo-sim-intro-tight">Saisissez le <strong>nombre de munitions</strong> a fabriquer (ex. 1000 munitions, pas 1000 crafts). Les crafts se font par lots de <strong>10 munitions</strong> : le nombre de crafts est arrondi au superieur. Le <strong>prix de vente / munition</strong> est pris du tableau par defaut ; vous pouvez le <strong>remplacer</strong> pour tester une marge.</p>
+                <div class="sim-section-title">Objectif en munitions (calibre unique)</div>
+                <p class="ammo-sim-intro ammo-sim-intro-tight">Simulation detaillee pour <strong>un seul calibre</strong>. Saisissez le nombre de munitions a fabriquer. Les crafts se font par lots de <strong>10</strong> : le nombre de crafts est arrondi au superieur.</p>
                 <div class="ammo-sim-params ammo-target-params">
                     <label class="ammo-sim-label" for="ammoTargetSlug">Calibre</label>
                     <select id="ammoTargetSlug" class="ammo-sim-select" aria-label="Calibre pour la simulation"></select>

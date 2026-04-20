@@ -182,6 +182,138 @@
     function refreshAll() {
         updateAmmoCraft();
         updateAmmoTargetSim();
+        updateAmmoMulti();
+    }
+
+    // ===== MULTI-CALIBRE GRID =====
+    var multiGrid = $('ammoMultiGrid');
+    if (multiGrid) {
+        AMMO_RECIPES.forEach(function (r) {
+            var safe = r.name.replace(/[^a-zA-Z0-9]/g, '_');
+            multiGrid.insertAdjacentHTML('beforeend',
+                '<div class="weapon-card ammo-multi-card" data-ammo="' + esc(r.name) + '">' +
+                '<div class="weapon-name">' + esc(r.name) + '</div>' +
+                '<div class="weapon-craft-time">' + r.craftSec + 's &middot; ' + r.poudre + 'p &middot; ' + r.fragment + 'f</div>' +
+                '<div class="weapon-qty-row">' +
+                '<button class="qty-btn minus" data-ammo="' + esc(r.name) + '">−</button>' +
+                '<input type="number" class="qty-input ammo-multi-qty" id="ammoMulti-' + safe + '" data-ammo="' + esc(r.name) + '" value="0" min="0" max="9999999" step="10">' +
+                '<button class="qty-btn plus" data-ammo="' + esc(r.name) + '">+</button>' +
+                '</div></div>'
+            );
+        });
+
+        multiGrid.addEventListener('click', function (e) {
+            var btn = e.target.closest('.qty-btn');
+            if (!btn) return;
+            var ammoName = btn.getAttribute('data-ammo');
+            var safe = ammoName.replace(/[^a-zA-Z0-9]/g, '_');
+            var input = $('ammoMulti-' + safe);
+            if (!input) return;
+            var val = parseInt(input.value, 10) || 0;
+            var step = 100;
+            input.value = btn.classList.contains('plus') ? Math.min(val + step, 9999999) : Math.max(val - step, 0);
+            updateAmmoMulti();
+        });
+        multiGrid.addEventListener('input', function (e) {
+            if (e.target.classList.contains('ammo-multi-qty')) updateAmmoMulti();
+        });
+    }
+
+    function updateAmmoMulti() {
+        var out = $('ammoMultiResults');
+        var section = $('ammoMultiSection');
+        if (!out) return;
+        var priceIn = $('ammoFerPrice');
+        var prixFer = priceIn ? Math.max(0, parseFloat(priceIn.value) || 0) : 30;
+
+        // Gather orders
+        var orders = [];
+        var hasAny = false;
+        AMMO_RECIPES.forEach(function (r) {
+            var safe = r.name.replace(/[^a-zA-Z0-9]/g, '_');
+            var input = $('ammoMulti-' + safe);
+            var qty = input ? Math.max(0, parseInt(input.value, 10) || 0) : 0;
+            orders.push({ recipe: r, munitions: qty });
+            if (qty > 0) hasAny = true;
+            // Toggle card active state
+            var card = input ? input.closest('.weapon-card') : null;
+            if (card) card.classList.toggle('active', qty > 0);
+        });
+
+        if (!hasAny) {
+            if (section) section.style.display = 'none';
+            return;
+        }
+        if (section) section.style.display = '';
+
+        var grandTotalPoudre = 0, grandTotalFragments = 0, grandTotalCrafts = 0;
+        var grandTotalProduced = 0, grandTotalCostAch = 0, grandTotalCostRec = 0;
+        var grandTotalVente = 0, grandTotalTime = 0;
+
+        var html = '';
+
+        // Per-calibre breakdown
+        orders.forEach(function (o) {
+            if (o.munitions <= 0) return;
+            var r = o.recipe;
+            var crafts = Math.ceil(o.munitions / AMMO_YIELD_PER_CRAFT);
+            var produced = crafts * AMMO_YIELD_PER_CRAFT;
+            var achatPoudre = r.poudre * AMMO_GUNPOWDER_PRICE;
+            var ferUnits = r.fragment / AMMO_FRAGMENTS_PER_FER_UNIT;
+            var costAch = (achatPoudre + ferUnits * prixFer) * crafts;
+            var costRec = achatPoudre * crafts;
+            var prixVente = ammoSellPriceForRecipe(r);
+            var vente = prixVente * produced;
+            var poudre = r.poudre * crafts;
+            var fragments = r.fragment * crafts;
+            var time = crafts * (r.craftSec || 0);
+
+            grandTotalPoudre += poudre;
+            grandTotalFragments += fragments;
+            grandTotalCrafts += crafts;
+            grandTotalProduced += produced;
+            grandTotalCostAch += costAch;
+            grandTotalCostRec += costRec;
+            grandTotalVente += vente;
+            grandTotalTime += time;
+
+            html += makeSectionHeader(esc(r.name) + ' \u2014 ' + fmt(o.munitions) + ' mun. (' + fmt(crafts) + ' crafts \u2192 ' + fmt(produced) + ')');
+            html += makeRow('Poudre', fmt(poudre));
+            html += makeRow('Fragments', fmt(fragments));
+            html += makeRow('Co\u00fbt (fer ach.)', fmtEuro(costAch));
+            html += makeRow('Vente', fmtEuro(vente));
+            html += makeRow('Marge (fer ach.)', fmtEuro(vente - costAch), ammoBenClass(vente - costAch));
+        });
+
+        // Grand totals
+        var grandTotalMinerai = Math.ceil(grandTotalFragments / AMMO_FRAGMENTS_PER_FER_UNIT);
+        var grandMargeAch = grandTotalVente - grandTotalCostAch;
+        var grandMargeRec = grandTotalVente - grandTotalCostRec;
+        var coutPoudreTotal = grandTotalPoudre * AMMO_GUNPOWDER_PRICE;
+        var coutMineraiTotal = grandTotalMinerai * prixFer;
+
+        html += makeSectionHeader('TOTAL COMMANDE');
+        html += makeRow('Munitions produites', fmt(grandTotalProduced), 'highlight');
+        html += makeRow('Crafts totaux', fmt(grandTotalCrafts));
+        html += makeRow('Temps de craft', formatTime(grandTotalTime));
+
+        html += makeSectionHeader('Mat\u00e9riaux n\u00e9cessaires');
+        html += makeRow('Poudre \u00e0 canon', fmt(grandTotalPoudre) + ' unit\u00e9s', 'highlight');
+        html += makeRow('   Co\u00fbt poudre', fmtEuro(coutPoudreTotal));
+        html += makeRow('Fragments de m\u00e9tal', fmt(grandTotalFragments) + ' fragments', 'highlight');
+        html += makeRow('Minerais de fer', fmt(grandTotalMinerai) + ' minerais', 'highlight');
+        if (prixFer > 0) {
+            html += makeRow('   Co\u00fbt minerai', fmtEuro(coutMineraiTotal));
+        }
+
+        html += makeSectionHeader('Bilan financier');
+        html += makeRow('Co\u00fbt total (fer achet\u00e9)', fmtEuro(grandTotalCostAch), 'highlight');
+        html += makeRow('Co\u00fbt total (fer r\u00e9colt\u00e9)', fmtEuro(grandTotalCostRec), 'highlight');
+        html += makeRow('Chiffre d\u2019affaires', fmtEuro(grandTotalVente), 'highlight');
+        html += makeRow('Marge totale (fer achet\u00e9)', fmtEuro(grandMargeAch), ammoBenClass(grandMargeAch));
+        html += makeRow('Marge totale (fer r\u00e9colt\u00e9)', fmtEuro(grandMargeRec), ammoBenClass(grandMargeRec));
+
+        out.innerHTML = html;
     }
 
     var ammoTargetSlugEl = $('ammoTargetSlug');
