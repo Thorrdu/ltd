@@ -77,15 +77,31 @@ class CotisationController extends Controller
         $end = $start->copy()->endOfWeek(Carbon::SUNDAY);
 
         $members = User::where('is_active', true)->get();
+        $created = 0;
 
         foreach ($members as $member) {
-            Cotisation::firstOrCreate(
+            $cotisation = Cotisation::firstOrCreate(
                 ['user_id' => $member->id, 'period_start' => $start->toDateString()],
                 [
                     'period_end'  => $end->toDateString(),
                     'amount_due'  => $this->amountForRole($member->role),
                     'amount_paid' => 0,
                 ]
+            );
+            if ($cotisation->wasRecentlyCreated) {
+                $created++;
+            }
+        }
+
+        // Notify all members when a new week is generated
+        if ($created > 0) {
+            $label = $start->format('d/m') . ' - ' . $end->format('d/m');
+            McNotification::broadcast(
+                'prospect',
+                'cotisation',
+                'Nouvelle semaine de cotisation',
+                'Semaine du ' . $label . '. Pensez a payer votre cotisation.',
+                '/cotisations'
             );
         }
     }
