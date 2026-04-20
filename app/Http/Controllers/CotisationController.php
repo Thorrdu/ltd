@@ -109,10 +109,16 @@ class CotisationController extends Controller
         $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
 
         if ($scope === 'current') {
-            $cotisations = Cotisation::with(['user', 'markedBy'])
+            $query = Cotisation::with(['user', 'markedBy'])
                 ->where('period_start', $weekStart->toDateString())
-                ->orderBy('user_id')
-                ->get();
+                ->orderBy('user_id');
+
+            // Prospects only see their own row
+            if (! $user->isAtLeast('member')) {
+                $query->where('user_id', $user->id);
+            }
+
+            $cotisations = $query->get();
 
             $data = $cotisations->map(function (Cotisation $c) {
                 return [

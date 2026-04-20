@@ -28,21 +28,25 @@
     <div class="mc-hub-section mc-hub-auth-section" id="hubAuthSection" style="display:none;">
         <div class="mc-hub-section-label">Espace membres</div>
         <div class="mc-hub-grid">
-            <a href="/ventes" class="mc-hub-btn mc-hub-btn-wide">
+            <a href="/espace-membres" class="mc-hub-btn mc-hub-btn-wide">
+                <span class="mc-hub-btn-label">Espace membres</span>
+                <span class="mc-hub-btn-desc">Attributions, contrats, profil</span>
+            </a>
+            <a href="/cotisations" class="mc-hub-btn mc-hub-btn-wide">
+                <span class="mc-hub-btn-label">Cotisations</span>
+                <span class="mc-hub-btn-desc">Suivi des cotisations hebdomadaires</span>
+            </a>
+            <a href="/ventes" class="mc-hub-btn mc-hub-btn-wide mc-hub-btn-member" style="display:none;">
                 <span class="mc-hub-btn-label">Ventes rapides</span>
                 <span class="mc-hub-btn-desc">Saisie rapide (armes, drogues, autres)</span>
             </a>
-            <a href="/classements" class="mc-hub-btn mc-hub-btn-wide">
+            <a href="/classements" class="mc-hub-btn mc-hub-btn-wide mc-hub-btn-member" style="display:none;">
                 <span class="mc-hub-btn-label">Classements</span>
                 <span class="mc-hub-btn-desc">Performance, aigle de la semaine</span>
             </a>
-            <a href="/espace-membres" class="mc-hub-btn mc-hub-btn-wide">
-                <span class="mc-hub-btn-label">Espace membres</span>
-                <span class="mc-hub-btn-desc">Stocks, contrats, historique</span>
-            </a>
-            <a href="/demandes" class="mc-hub-btn mc-hub-btn-wide">
-                <span class="mc-hub-btn-label">Demandes</span>
-                <span class="mc-hub-btn-desc">Remboursements, amendes, frais</span>
+            <a href="/demandes" class="mc-hub-btn mc-hub-btn-wide mc-hub-btn-member" style="display:none;">
+                <span class="mc-hub-btn-label">Remboursements</span>
+                <span class="mc-hub-btn-desc">Demandes de remboursement, amendes, frais</span>
             </a>
             <a href="/stocks" class="mc-hub-btn mc-hub-btn-officer" style="display:none;">
                 <span class="mc-hub-btn-label">Stocks generiques</span>
@@ -81,11 +85,15 @@
         var loggedIn = auth && auth.isLoggedIn;
         var role = loggedIn ? auth.userRole : '';
         var isOfficer = loggedIn && isAtLeast(role, 'officer');
+        var isMember = loggedIn && isAtLeast(role, 'member');
         var isVp = loggedIn && isAtLeast(role, 'vice_president');
         var isSuperadmin = loggedIn && role === 'treasurer';
         document.getElementById('hubAuthSection').style.display = loggedIn ? '' : 'none';
         document.getElementById('hubLoginPrompt').style.display = loggedIn ? 'none' : '';
         document.getElementById('hubDashboard').classList.toggle('visible', !!loggedIn);
+        document.querySelectorAll('.mc-hub-btn-member').forEach(function(el) {
+            el.style.display = isMember ? '' : 'none';
+        });
         document.querySelectorAll('.mc-hub-btn-officer').forEach(function(el) {
             el.style.display = isOfficer ? '' : 'none';
         });

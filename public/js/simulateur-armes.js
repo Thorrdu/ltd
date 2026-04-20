@@ -1049,6 +1049,11 @@
     function renderAlerts(alerts) {
         var banner = $('alertBanner');
         if (!banner) return;
+        // Stock alerts only visible to officers+
+        if (!auth || !auth.isLoggedIn || !auth.isAtLeast('officer')) {
+            banner.style.display = 'none';
+            return;
+        }
         if (!alerts || !alerts.length) { banner.style.display = 'none'; return; }
         var html = 'Stock bas : ';
         alerts.forEach(function (a, i) {

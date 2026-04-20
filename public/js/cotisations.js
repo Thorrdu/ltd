@@ -112,8 +112,12 @@
                 markedInfo = '<br><span style="font-size:10px;color:rgba(255,255,255,0.4)">par ' + esc(c.marked_by) + (c.paid_at ? ' le ' + esc(c.paid_at) : '') + '</span>';
             }
 
+            var nameHtml = state.isOfficer
+                ? '<a href="/membres/' + c.user_id + '/profil" style="color:#fff;text-decoration:underline dotted;text-underline-offset:3px">' + esc(c.user_name) + '</a>'
+                : esc(c.user_name);
+
             html += '<tr class="' + (c.is_paid ? 'cot-row-paid' : (c.is_partial ? 'cot-row-partial' : 'cot-row-unpaid')) + '">' +
-                '<td><strong>' + esc(c.user_name) + '</strong></td>' +
+                '<td><strong>' + nameHtml + '</strong></td>' +
                 '<td>' + esc(c.role_label) + '</td>' +
                 '<td>' + money(c.amount_due) + '</td>' +
                 '<td>' + money(c.amount_paid) + markedInfo + '</td>' +

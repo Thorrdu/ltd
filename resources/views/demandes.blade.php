@@ -1,6 +1,6 @@
 @extends('layouts.mc')
 
-@section('title', 'LOST MC -- Demandes')
+@section('title', 'LOST MC -- Remboursements')
 
 @section('content')
 <div class="menu-board mc-board-lg">
@@ -8,7 +8,7 @@
 
         <div class="mc-page-header">
             <img src="{{ asset('img/3651.webp') }}" alt="Lost MC">
-            <div class="mc-page-title">Demandes</div>
+            <div class="mc-page-title">Remboursements</div>
             <div class="mc-page-motto">Le Tout-Puissant pardonne. Pas les Lost.</div>
             <a href="/mc" class="mc-page-back">&larr; Retour a l'accueil</a>
         </div>

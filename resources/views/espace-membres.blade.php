@@ -25,10 +25,10 @@
 
             {{-- Quick links --}}
             <div class="mc-quick-links">
-                <a href="/ventes" class="mc-quick-link"><span class="ql-icon">💰</span> Ventes</a>
+                <a href="/ventes" class="mc-quick-link" data-gate="member"><span class="ql-icon">💰</span> Ventes</a>
                 <a href="/cotisations" class="mc-quick-link"><span class="ql-icon">📋</span> Cotisations</a>
-                <a href="/classements" class="mc-quick-link"><span class="ql-icon">🏆</span> Classements</a>
-                <a href="/demandes" class="mc-quick-link"><span class="ql-icon">📨</span> Demandes</a>
+                <a href="/classements" class="mc-quick-link" data-gate="member"><span class="ql-icon">🏆</span> Classements</a>
+                <a href="/demandes" class="mc-quick-link" data-gate="member"><span class="ql-icon">📨</span> Remboursements</a>
                 <a href="/stocks" class="mc-quick-link" data-gate="officer"><span class="ql-icon">📦</span> Stocks</a>
                 <a href="/comptabilite" class="mc-quick-link" data-gate="treasurer"><span class="ql-icon">💵</span> Comptabilite</a>
             </div>

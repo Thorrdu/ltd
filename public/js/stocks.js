@@ -411,7 +411,7 @@
                 extBadge +
             '</div>' +
             '<div class="a-qty">x' + a.quantity_abs + '</div>' +
-            '<div class="a-meta">Vers <strong>' + esc(a.attributed_to_name || '?') + '</strong><br>par ' + esc(a.by_name) + ' &middot; ' + esc(a.date) + '</div>' +
+            '<div class="a-meta">Vers <strong><a href="/membres/' + a.attributed_to_id + '/profil" style="color:#fff;text-decoration:underline dotted;text-underline-offset:3px">' + esc(a.attributed_to_name || '?') + '</a></strong><br>par ' + esc(a.by_name) + ' &middot; ' + esc(a.date) + '</div>' +
             '<div class="a-meta"><span class="a-status ' + statusClass + '">' + esc(statusLabel) + '</span>' +
                 (a.estimated_value ? '<br>' + money(a.estimated_value) : '') +
                 (a.notes ? '<br><em>' + esc(a.notes) + '</em>' : '') +
