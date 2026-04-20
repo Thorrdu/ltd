@@ -27,6 +27,7 @@
             ['route' => 'espace-membres',      'url' => '/espace-membres',       'label' => 'Espace',     'gate' => 'logged'],
             ['route' => 'stocks',              'url' => '/stocks',               'label' => 'Stocks',     'gate' => 'officer'],
             ['route' => 'comptabilite',        'url' => '/comptabilite',         'label' => 'Compta',     'gate' => 'treasurer'],
+            ['route' => 'parametres',          'url' => '/parametres',            'label' => 'Parametres','gate' => 'treasurer'],
             ['route' => 'membres',             'url' => '/membres',              'label' => 'Gestion',    'gate' => 'vice_president'],
         ];
     @endphp

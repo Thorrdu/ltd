@@ -9,6 +9,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\RankingController;
 use App\Http\Controllers\SaleController;
+use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\WeaponSimController;
 use App\Http\Middleware\AllowIframe;
@@ -126,3 +127,9 @@ Route::post('/notifications/api/read', [NotificationController::class, 'apiMarkR
 
 // Dashboard (Phase 8.3)
 Route::get('/dashboard/api', [DashboardController::class, 'api']);
+
+// Parametres (front)
+Route::get('/parametres', [SettingController::class, 'index'])->name('parametres');
+Route::get('/parametres/api/list', [SettingController::class, 'apiList']);
+Route::put('/parametres/api/{id}', [SettingController::class, 'apiUpdate'])
+    ->where('id', '[0-9]+');
