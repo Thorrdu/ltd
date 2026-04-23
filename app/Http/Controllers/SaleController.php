@@ -467,7 +467,9 @@ class SaleController extends Controller
         $warnings = [];
         $totalTheoretical = 0;
 
-        DB::transaction(function () use ($items, $buyerName, $notes, $user, &$sales, &$warnings, &$totalTheoretical) {
+        DB::transaction(function () use ($items, $buyerName, $notes, $user, $actualAmount, &$sales, &$warnings, &$totalTheoretical) {
+            // First pass: resolve items and compute theoretical total
+            $resolved = [];
             foreach ($items as $line) {
                 $item = StockItem::find($line['stock_item_id']);
                 if (! $item || ! $item->is_active) {
@@ -479,6 +481,37 @@ class SaleController extends Controller
                 $unitPrice = (int) ($item->default_sell_price ?? 0);
                 $lineTotal = $unitPrice * $qty;
                 $totalTheoretical += $lineTotal;
+
+                $resolved[] = [
+                    'item'       => $item,
+                    'qty'        => $qty,
+                    'unitPrice'  => $unitPrice,
+                    'lineTotal'  => $lineTotal,
+                ];
+            }
+
+            // If actual_amount provided, distribute proportionally across lines
+            $useActual = $actualAmount !== null && $totalTheoretical > 0 && (int) $actualAmount !== $totalTheoretical;
+            $distributedSum = 0;
+
+            // Second pass: create sales
+            foreach ($resolved as $i => $r) {
+                $item = $r['item'];
+                $qty = $r['qty'];
+
+                if ($useActual) {
+                    if ($i === count($resolved) - 1) {
+                        // Last line gets the remainder to avoid rounding drift
+                        $lineTotal = (int) $actualAmount - $distributedSum;
+                    } else {
+                        $lineTotal = (int) round($r['lineTotal'] / $totalTheoretical * (int) $actualAmount);
+                        $distributedSum += $lineTotal;
+                    }
+                    $unitPrice = (int) round($lineTotal / max($qty, 1));
+                } else {
+                    $unitPrice = $r['unitPrice'];
+                    $lineTotal = $r['lineTotal'];
+                }
 
                 // Auto-deduct from all open attributions (FIFO), then from central stock.
                 $result = $this->reconcileAttributions($user, $item, $qty, $buyerName);
