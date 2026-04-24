@@ -301,6 +301,9 @@
         fd.append('description', description);
         var photoFile = $('reqPhoto').files[0];
         if (photoFile) fd.append('photo', photoFile);
+        var onBehalfSel = $('reqOnBehalf');
+        var onBehalfId = onBehalfSel ? parseInt(onBehalfSel.value, 10) : 0;
+        if (onBehalfId > 0) fd.append('on_behalf_of_user_id', onBehalfId);
 
         var headers = auth.apiHeaders();
         headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -390,10 +393,32 @@
         });
     }
 
+    // ── "AU NOM DE" (on behalf of) ────────────────────────
+
+    function initOnBehalf() {
+        if (!auth.isAtLeast('treasurer')) return;
+
+        var members = window.MC_MEMBERS || [];
+        if (!members.length) return;
+
+        var row = $('reqOnBehalfRow');
+        var sel = $('reqOnBehalf');
+        if (!row || !sel) return;
+
+        row.style.display = '';
+        members.forEach(function (m) {
+            var opt = document.createElement('option');
+            opt.value = m.id;
+            opt.textContent = m.name;
+            sel.appendChild(opt);
+        });
+    }
+
     // ── INIT ────────────────────────────────────────────────
 
     initSubTabs();
     initPhotoUpload();
+    initOnBehalf();
     populateMemberFilter();
     $('reqBtnSubmit').addEventListener('click', submitRequest);
     $('reqMyStatus').addEventListener('change', function () {

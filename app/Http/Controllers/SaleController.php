@@ -151,10 +151,23 @@ class SaleController extends Controller
             // Permet de declarer une vente d'un article non encore encode.
             'ad_hoc_name'     => 'nullable|string|max:120',
             'ad_hoc_category' => 'nullable|string|in:' . implode(',', self::SELLABLE_CATEGORIES),
+            'on_behalf_of_user_id' => 'nullable|integer|exists:users,id',
         ]);
 
         if ($v->fails()) {
             return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
+        }
+
+        // "Au nom de" : treasurer/vp/prez can sell on behalf of another member.
+        $seller = $user;
+        if ($request->filled('on_behalf_of_user_id')) {
+            if (! $user->isAtLeast('treasurer')) {
+                return response()->json(['error' => 'Seul un trésorier, VP ou président peut vendre au nom d\'un autre membre'], 403);
+            }
+            $seller = User::find($request->input('on_behalf_of_user_id'));
+            if (! $seller) {
+                return response()->json(['error' => 'Membre introuvable'], 404);
+            }
         }
 
         $warning = null;
@@ -200,17 +213,17 @@ class SaleController extends Controller
             if (! $explicit) {
                 return response()->json(['error' => 'Attribution invalide ou deja reconciliee'], 422);
             }
-            if ($explicit->attributed_to_user_id !== $user->id) {
-                return response()->json(['error' => 'Cette attribution n\'est pas la votre'], 403);
+            if ($explicit->attributed_to_user_id !== $seller->id) {
+                return response()->json(['error' => 'Cette attribution n\'appartient pas au vendeur'], 403);
             }
             if ($explicit->stock_item_id !== $item->id) {
                 return response()->json(['error' => 'Article incoherent avec l\'attribution'], 422);
             }
             $hasAttribution = true;
         } elseif ($item) {
-            // Auto-detect: check if the user has any open attributions for this item.
+            // Auto-detect: check if the seller has any open attributions for this item.
             $anyAttrib = StockMovement::openAttribution()
-                ->where('attributed_to_user_id', $user->id)
+                ->where('attributed_to_user_id', $seller->id)
                 ->where('stock_item_id', $item->id)
                 ->exists();
             $hasAttribution = $anyAttrib;
@@ -225,13 +238,15 @@ class SaleController extends Controller
                 'unit_price'      => $unit,
                 'total_price'     => $total,
                 'buyer_name'      => $request->input('buyer_name'),
-                'sold_by_user_id' => $user->id,
+                'sold_by_user_id' => $seller->id,
                 'notes'           => $request->input('notes'),
             ]);
 
+            $onBehalfMsg = $seller->id !== $user->id ? ' (par ' . $user->name . ' au nom de ' . $seller->name . ')' : '';
+
             return response()->json([
                 'ok'      => true,
-                'message' => $qty . '× ' . $adHocLabel . ' vendu(s) à ' . $request->input('buyer_name') . ' (hors stock)',
+                'message' => $qty . '× ' . $adHocLabel . ' vendu(s) à ' . $request->input('buyer_name') . ' (hors stock)' . $onBehalfMsg,
                 'warning' => null,
                 'sale'    => $this->mapSale($sale->fresh(['soldBy', 'stockItem'])),
                 'attribution_remaining' => null,
@@ -245,7 +260,7 @@ class SaleController extends Controller
 
         if ($hasAttribution) {
             // Consume from open attributions (FIFO), then deduct remainder from central stock.
-            $result = $this->reconcileAttributions($user, $item, $qty, $request->input('buyer_name'));
+            $result = $this->reconcileAttributions($seller, $item, $qty, $request->input('buyer_name'));
             $fromStock = $result['from_stock'];
             $attributionRemaining = $result['attribution_remaining'];
 
@@ -285,18 +300,21 @@ class SaleController extends Controller
             'unit_price'      => $unit,
             'total_price'     => $total,
             'buyer_name'      => $request->input('buyer_name'),
-            'sold_by_user_id' => $user->id,
+            'sold_by_user_id' => $seller->id,
             'notes'           => $request->input('notes'),
         ]);
+
+        $onBehalfMsg = $seller->id !== $user->id ? ' (par ' . $user->name . ' au nom de ' . $seller->name . ')' : '';
 
         return response()->json([
             'ok'      => true,
             'message' => $qty . '× ' . $itemLabel . ' vendu(s) à ' . $request->input('buyer_name')
                 . ($hasAttribution
                     ? ($attributionRemaining > 0
-                        ? ' (il reste ' . $attributionRemaining . ' sur vos attributions)'
+                        ? ' (il reste ' . $attributionRemaining . ' sur les attributions)'
                         : ' (attributions reconciliées)')
-                    : ''),
+                    : '')
+                . $onBehalfMsg,
             'warning' => $warning,
             'sale'    => $this->mapSale($sale->fresh(['soldBy', 'stockItem'])),
             'attribution_remaining' => $attributionRemaining,
@@ -317,8 +335,21 @@ class SaleController extends Controller
 
         $user = $this->authUser($request);
 
+        // Allow treasurer/vp/prez to query another member's attributions.
+        $targetUser = $user;
+        $forUserId = $request->query('for_user_id');
+        if ($forUserId) {
+            if (! $user->isAtLeast('treasurer')) {
+                return response()->json(['error' => 'Accès refusé'], 403);
+            }
+            $targetUser = User::find($forUserId);
+            if (! $targetUser) {
+                return response()->json(['error' => 'Membre introuvable'], 404);
+            }
+        }
+
         $raw = StockMovement::openAttribution()
-            ->where('attributed_to_user_id', $user->id)
+            ->where('attributed_to_user_id', $targetUser->id)
             ->with(['stockItem'])
             ->get()
             ->filter(fn (StockMovement $m) => $m->stockItem && $m->stockItem->is_active);
@@ -453,9 +484,22 @@ class SaleController extends Controller
             'actual_amount'   => 'nullable|integer|min:0',
             'buyer_name'      => 'required|string|max:100',
             'notes'           => 'nullable|string|max:500',
+            'on_behalf_of_user_id' => 'nullable|integer|exists:users,id',
         ]);
         if ($v->fails()) {
             return response()->json(['error' => 'validation', 'messages' => $v->errors()], 422);
+        }
+
+        // "Au nom de" : treasurer/vp/prez can sell on behalf of another member.
+        $seller = $user;
+        if ($request->filled('on_behalf_of_user_id')) {
+            if (! $user->isAtLeast('treasurer')) {
+                return response()->json(['error' => 'Seul un trésorier, VP ou président peut vendre au nom d\'un autre membre'], 403);
+            }
+            $seller = User::find($request->input('on_behalf_of_user_id'));
+            if (! $seller) {
+                return response()->json(['error' => 'Membre introuvable'], 404);
+            }
         }
 
         $items = $request->input('items');
@@ -467,7 +511,7 @@ class SaleController extends Controller
         $warnings = [];
         $totalTheoretical = 0;
 
-        DB::transaction(function () use ($items, $buyerName, $notes, $user, $actualAmount, &$sales, &$warnings, &$totalTheoretical) {
+        DB::transaction(function () use ($items, $buyerName, $notes, $user, $seller, $actualAmount, &$sales, &$warnings, &$totalTheoretical) {
             // First pass: resolve items and compute theoretical total
             $resolved = [];
             foreach ($items as $line) {
@@ -514,7 +558,7 @@ class SaleController extends Controller
                 }
 
                 // Auto-deduct from all open attributions (FIFO), then from central stock.
-                $result = $this->reconcileAttributions($user, $item, $qty, $buyerName);
+                $result = $this->reconcileAttributions($seller, $item, $qty, $buyerName);
                 $fromStock = $result['from_stock'];
 
                 if ($fromStock > 0) {
@@ -538,7 +582,7 @@ class SaleController extends Controller
                     'unit_price'      => $unitPrice,
                     'total_price'     => $lineTotal,
                     'buyer_name'      => $buyerName,
-                    'sold_by_user_id' => $user->id,
+                    'sold_by_user_id' => $seller->id,
                     'notes'           => $notes,
                 ]);
 
@@ -555,9 +599,11 @@ class SaleController extends Controller
             $actualNote = ' (encaissé: $' . number_format($actualAmount, 0, '.', ' ') . ')';
         }
 
+        $onBehalfNote = $seller->id !== $user->id ? ' (par ' . $user->name . ' au nom de ' . $seller->name . ')' : '';
+
         return response()->json([
             'ok'        => true,
-            'message'   => count($sales) . ' article(s) vendu(s) à ' . $buyerName . $actualNote,
+            'message'   => count($sales) . ' article(s) vendu(s) à ' . $buyerName . $actualNote . $onBehalfNote,
             'sales'     => $sales,
             'total'     => $totalTheoretical,
             'actual'    => $actualAmount,

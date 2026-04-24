@@ -325,6 +325,8 @@
         } else {
             payload.stock_item_id = stockItemId;
         }
+        var onBehalfId = getOnBehalfUserId('vOnBehalf');
+        if (onBehalfId) payload.on_behalf_of_user_id = onBehalfId;
 
         auth.apiPost('/ventes/api/create', payload, function (err, data) {
             btn.disabled = false;
@@ -709,7 +711,8 @@
             items: stockItems,
             actual_amount: actual || null,
             buyer_name: buyer,
-            notes: notes || null
+            notes: notes || null,
+            on_behalf_of_user_id: getOnBehalfUserId('veOnBehalf') || undefined
         }, function (err, data) {
             btn.disabled = false;
             btn.textContent = 'Valider la vente';
@@ -738,7 +741,10 @@
     // ── MES ATTRIBUTIONS (items sur moi) ──────────────────
 
     function refreshMyAttributions() {
-        auth.apiGet('/ventes/api/my-attributions', function (err, data) {
+        var url = '/ventes/api/my-attributions';
+        var forUserId = getOnBehalfUserId('veOnBehalf');
+        if (forUserId) url += '?for_user_id=' + forUserId;
+        auth.apiGet(url, function (err, data) {
             if (err || !data) return;
             state.myAttributions = data.attributions || [];
             renderMyAttributions();
@@ -760,7 +766,7 @@
             html += '<div class="ve-item ve-item-attr' + selClass + '" data-item-id="' + a.stock_item_id + '">';
             html += '<div class="ve-item-name">' + esc(a.name) + '</div>';
             html += '<div class="ve-item-price">' + (a.default_sell_price ? money(a.default_sell_price) : '-') + '</div>';
-            html += '<div class="ve-item-stock">Sur moi: ' + a.quantity + '</div>';
+            html += '<div class="ve-item-stock">' + (getOnBehalfUserId('veOnBehalf') ? 'Sur lui/elle' : 'Sur moi') + ': ' + a.quantity + '</div>';
             html += '<div class="ve-item-qty">';
             html += '<button class="qty-btn ve-attr-minus" data-key="' + key + '" data-max="' + a.quantity + '">−</button>';
             html += '<input type="number" class="qty-input ve-attr-qty-input" data-key="' + key + '" data-max="' + a.quantity + '" value="' + qtyVal + '" min="0" max="' + a.quantity + '">';
@@ -854,6 +860,48 @@
         });
     }
 
+    // ── "AU NOM DE" (on behalf of) ────────────────────────
+
+    function initOnBehalf() {
+        if (!auth.isAtLeast('treasurer')) return;
+
+        var members = window.MC_MEMBERS || [];
+        if (!members.length) return;
+
+        // Show both rows
+        var classicRow = $('vOnBehalfRow');
+        var expressRow = $('veOnBehalfRow');
+        if (classicRow) classicRow.style.display = '';
+        if (expressRow) expressRow.style.display = '';
+
+        // Populate both selects
+        ['vOnBehalf', 'veOnBehalf'].forEach(function (selId) {
+            var sel = $(selId);
+            if (!sel) return;
+            members.forEach(function (m) {
+                var opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.name;
+                sel.appendChild(opt);
+            });
+        });
+
+        // When express "on behalf of" changes, refresh attributions for that member
+        var veOnBehalf = $('veOnBehalf');
+        if (veOnBehalf) {
+            veOnBehalf.addEventListener('change', function () {
+                refreshMyAttributions();
+            });
+        }
+    }
+
+    function getOnBehalfUserId(selectId) {
+        var sel = $(selectId);
+        if (!sel) return null;
+        var val = parseInt(sel.value, 10);
+        return val > 0 ? val : null;
+    }
+
     // ── EVENTS ─────────────────────────────────────────────
 
     function bindEvents() {
@@ -883,6 +931,7 @@
 
     initSubTabs();
     bindEvents();
+    initOnBehalf();
     updateGate();
     auth.onLogin(updateGate);
     auth.onLogout(updateGate);

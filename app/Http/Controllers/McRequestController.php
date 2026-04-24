@@ -120,10 +120,23 @@ class McRequestController extends Controller
             'amount'      => 'required|integer|min:1',
             'description' => 'required|string|max:1000',
             'photo'       => 'nullable|image|max:5120', // 5 MB max
+            'on_behalf_of_user_id' => 'nullable|integer|exists:users,id',
         ]);
 
         if ($v->fails()) {
             return response()->json(['error' => $v->errors()->first()], 422);
+        }
+
+        // "Au nom de" : treasurer/vp/prez can create a request on behalf of another member.
+        $requester = $user;
+        if ($request->filled('on_behalf_of_user_id')) {
+            if (! $user->isAtLeast('treasurer')) {
+                return response()->json(['error' => 'Seul un trésorier, VP ou président peut soumettre au nom d\'un autre membre'], 403);
+            }
+            $requester = User::find($request->input('on_behalf_of_user_id'));
+            if (! $requester) {
+                return response()->json(['error' => 'Membre introuvable'], 404);
+            }
         }
 
         $photoPath = null;
@@ -139,7 +152,7 @@ class McRequestController extends Controller
         }
 
         $mcRequest = McRequest::create([
-            'user_id'     => $user->id,
+            'user_id'     => $requester->id,
             'category'    => $request->input('category'),
             'amount'      => $request->input('amount'),
             'description' => $request->input('description'),
@@ -147,11 +160,13 @@ class McRequestController extends Controller
             'status'      => 'pending',
         ]);
 
+        $onBehalfMsg = $requester->id !== $user->id ? ' (par ' . $user->name . ' au nom de ' . $requester->name . ')' : '';
+
         // Notify treasurers of new pending request
         McNotification::broadcast(
             'treasurer',
             'demande',
-            'Nouvelle demande de ' . $user->name,
+            'Nouvelle demande de ' . $requester->name . $onBehalfMsg,
             (McRequest::CATEGORIES[$request->input('category')] ?? $request->input('category'))
                 . ' — ' . number_format($request->input('amount'), 0, ',', ' ') . ' $',
             '/demandes'

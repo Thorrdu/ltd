@@ -79,6 +79,13 @@
                         </div>
                     </div>
                     <button class="btn-primary" id="reqBtnSubmit">Soumettre la demande</button>
+
+                    <div class="field-row ve-on-behalf" id="reqOnBehalfRow" style="display:none; margin-top:12px;">
+                        <label class="field-label">Au nom de <span class="optional">(demande pour un autre membre)</span></label>
+                        <select id="reqOnBehalf" class="lock-input">
+                            <option value="">-- Moi-meme --</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -123,5 +130,8 @@
 @endsection
 
 @section('scripts')
+<script>
+window.MC_MEMBERS = {!! $members->map(fn($m) => ['id' => $m->id, 'name' => $m->name, 'role' => $m->role])->toJson() !!};
+</script>
 <script src="{{ asset('js/demandes.js') }}?v={{ filemtime(public_path('js/demandes.js')) }}"></script>
 @endsection

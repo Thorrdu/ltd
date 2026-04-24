@@ -74,6 +74,14 @@
                                 <input type="text" id="veNotes" class="fm-input" placeholder="Contexte...">
                             </div>
                         </div>
+                        <div class="form-row ve-on-behalf" id="veOnBehalfRow" style="display:none; margin:8px 0 0;">
+                            <div class="form-group full">
+                                <label>Au nom de <span class="optional">(vente pour un autre membre)</span></label>
+                                <select id="veOnBehalf" class="fm-input">
+                                    <option value="">-- Moi-meme --</option>
+                                </select>
+                            </div>
+                        </div>
                         <button class="action-btn sale-btn" id="veBtnSave" style="margin-top:8px;">Valider la vente</button>
                     </div>
                 </div>
@@ -146,6 +154,15 @@
                             </div>
                         </div>
 
+                        <div class="form-row ve-on-behalf" id="vOnBehalfRow" style="display:none;">
+                            <div class="form-group full">
+                                <label>Au nom de <span class="optional">(vente pour un autre membre)</span></label>
+                                <select id="vOnBehalf" class="fm-input">
+                                    <option value="">-- Moi-meme --</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <button class="action-btn sale-btn" id="vBtnSave">Enregistrer la vente</button>
                     </div>
                 </div>
@@ -191,6 +208,7 @@
 @section('scripts')
 <script>
 window.MC_VENTES_CATALOG = {!! $catalogJson !!};
+window.MC_MEMBERS = {!! $members->map(fn($m) => ['id' => $m->id, 'name' => $m->name, 'role' => $m->role])->toJson() !!};
 </script>
 <script src="{{ asset('js/ventes.js') }}?v={{ filemtime(public_path('js/ventes.js')) }}"></script>
 @endsection
