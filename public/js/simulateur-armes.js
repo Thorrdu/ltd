@@ -426,6 +426,13 @@
     }
 
     function weaponStockReadFromForm() {
+        var toggle = $('weaponUseStock');
+        if (toggle && !toggle.checked) {
+            return {
+                plans: 0, corp: 0, crosse: 0, corp_smg: 0, corp_rifle: 0,
+                ressort: 0, canon: 0, poignee: 0, metal: 0, polymere: 0, sns: 0
+            };
+        }
         function iv(id) {
             var el = $(id);
             if (!el) return 0;
@@ -753,6 +760,14 @@
             el.addEventListener('change', updateWeaponTargetSim);
         }
     });
+    var weaponUseStockEl = $('weaponUseStock');
+    if (weaponUseStockEl) {
+        weaponUseStockEl.addEventListener('change', function () {
+            var fields = $('weaponStockFields');
+            if (fields) fields.style.display = weaponUseStockEl.checked ? '' : 'none';
+            refreshWeaponCraftSims();
+        });
+    }
     refreshWeaponCraftSims();
 
     // ===== MEMBER DASHBOARD =====

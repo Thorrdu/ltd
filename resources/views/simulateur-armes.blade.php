@@ -98,7 +98,12 @@
                     <input type="number" class="ammo-sim-input" id="weaponTargetSellPrice" min="0" step="0.01" placeholder="Base" inputmode="decimal" autocomplete="off">
                 </div>
                 <div class="weapon-stock-block">
-                    <div class="weapon-stock-title">Deja en stock (optionnel)</div>
+                    <div class="weapon-stock-title">
+                        <label class="ammo-sim-label ammo-sim-label-cb" for="weaponUseStock" style="margin:0;font-size:1em;">
+                            <input type="checkbox" id="weaponUseStock"> Deduire le stock des couts
+                        </label>
+                    </div>
+                    <div id="weaponStockFields" style="display:none;">
                     <p class="ammo-sim-intro ammo-sim-intro-tight">Pieces deja disponibles, deduites automatiquement du besoin total.</p>
                     <div class="ammo-sim-params weapon-stock-grid">
                         <label class="ammo-sim-label" for="weaponStockPlans">Plans (util.)</label>
@@ -123,6 +128,7 @@
                         <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPolymere" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
                         <label class="ammo-sim-label" for="weaponStockSns">SNS (armes)</label>
                         <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockSns" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                    </div>
                     </div>
                 </div>
                 <div class="results-table ammo-target-results" id="weaponTargetResults"></div>

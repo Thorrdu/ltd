@@ -41,6 +41,25 @@
         return 'ammo-ben-zero';
     }
 
+    function ammoStockEnabled() {
+        var el = $('ammoUseStock');
+        return el ? el.checked : false;
+    }
+
+    function ammoStockRead() {
+        function iv(id) {
+            var el = $(id);
+            if (!el) return 0;
+            var v = parseInt(String(el.value).trim(), 10);
+            return Math.max(0, isNaN(v) ? 0 : v);
+        }
+        return {
+            poudre: iv('ammoStockPoudre'),
+            fragments: iv('ammoStockFragments'),
+            minerais: iv('ammoStockMinerais')
+        };
+    }
+
     function ammoRecipeByName(name) {
         for (var i = 0; i < AMMO_RECIPES.length; i++) {
             if (AMMO_RECIPES[i].name === name) return AMMO_RECIPES[i];
@@ -174,6 +193,38 @@
         html += makeRow('Minerais de fer n\u00e9cessaires', fmt(totalMinerai) + ' minerais (1 minerai = ' + AMMO_FRAGMENTS_PER_FER_UNIT + ' fragments)', 'highlight');
         if (prixFer > 0) {
             html += makeRow('   Co\u00fbt minerai fer (' + fmt(totalMinerai) + ' \u00d7 ' + fmt(prixFer) + '\u20ac)', fmtEuro(coutMineraiTot));
+        }
+
+        if (ammoStockEnabled()) {
+            var st = ammoStockRead();
+            // Convert stock minerais to fragments equivalent
+            var stockFragsFromMinerais = st.minerais * AMMO_FRAGMENTS_PER_FER_UNIT;
+            var totalStockFrags = st.fragments + stockFragsFromMinerais;
+
+            var netPoudre = Math.max(0, totalPoudre - st.poudre);
+            var netFragments = Math.max(0, totalFragments - totalStockFrags);
+            var netMinerai = Math.ceil(netFragments / AMMO_FRAGMENTS_PER_FER_UNIT);
+            var netCoutPoudre = netPoudre * AMMO_GUNPOWDER_PRICE;
+            var netCoutMinerai = netMinerai * prixFer;
+            var netCostAch = netCoutPoudre + netCoutMinerai;
+            var netCostRec = netCoutPoudre;
+            var netMargeAch = venteTotale - netCostAch;
+            var netMargeRec = venteTotale - netCostRec;
+
+            html += makeSectionHeader('Apr\u00e8s d\u00e9duction du stock');
+            html += makeRow('Poudre en stock', fmt(st.poudre) + ' unit\u00e9s');
+            html += makeRow('Fragments en stock', fmt(st.fragments) + ' fragments' + (st.minerais > 0 ? ' + ' + fmt(st.minerais) + ' minerais (\u2192 ' + fmt(stockFragsFromMinerais) + ' frags)' : ''));
+            html += makeRow('Poudre restante \u00e0 acqu\u00e9rir', fmt(netPoudre) + ' unit\u00e9s', netPoudre > 0 ? 'need' : 'ok');
+            html += makeRow('Fragments restants \u00e0 acqu\u00e9rir', fmt(netFragments) + ' fragments', netFragments > 0 ? 'need' : 'ok');
+            html += makeRow('Minerais restants \u00e0 acqu\u00e9rir', fmt(netMinerai) + ' minerais', netMinerai > 0 ? 'need' : 'ok');
+            html += makeRow('Co\u00fbt net (fer achet\u00e9)', fmtEuro(netCostAch), 'highlight');
+            html += makeRow('Co\u00fbt net (fer r\u00e9colt\u00e9)', fmtEuro(netCostRec), 'highlight');
+            html += makeRow('Marge nette (fer achet\u00e9)', fmtEuro(netMargeAch), ammoBenClass(netMargeAch));
+            html += makeRow('Marge nette (fer r\u00e9colt\u00e9)', fmtEuro(netMargeRec), ammoBenClass(netMargeRec));
+            var ecoAch = costAch - netCostAch;
+            var ecoRec = costRec - netCostRec;
+            if (ecoAch > 0) html += makeRow('\u00c9conomie stock (fer ach.)', fmtEuro(ecoAch), 'ammo-ben-pos');
+            if (ecoRec > 0) html += makeRow('\u00c9conomie stock (fer r\u00e9c.)', fmtEuro(ecoRec), 'ammo-ben-pos');
         }
 
         out.innerHTML = html;
@@ -313,6 +364,38 @@
         html += makeRow('Marge totale (fer achet\u00e9)', fmtEuro(grandMargeAch), ammoBenClass(grandMargeAch));
         html += makeRow('Marge totale (fer r\u00e9colt\u00e9)', fmtEuro(grandMargeRec), ammoBenClass(grandMargeRec));
 
+        if (ammoStockEnabled()) {
+            var st = ammoStockRead();
+            var stockFragsFromMinerais = st.minerais * AMMO_FRAGMENTS_PER_FER_UNIT;
+            var totalStockFrags = st.fragments + stockFragsFromMinerais;
+
+            var netPoudre = Math.max(0, grandTotalPoudre - st.poudre);
+            var netFragments = Math.max(0, grandTotalFragments - totalStockFrags);
+            var netMinerai = Math.ceil(netFragments / AMMO_FRAGMENTS_PER_FER_UNIT);
+            var netCoutPoudre = netPoudre * AMMO_GUNPOWDER_PRICE;
+            var netCoutMinerai = netMinerai * prixFer;
+            var netCostAch = netCoutPoudre + netCoutMinerai;
+            var netCostRec = netCoutPoudre;
+            var netMargeAch = grandTotalVente - netCostAch;
+            var netMargeRec = grandTotalVente - netCostRec;
+
+            html += makeSectionHeader('Apr\u00e8s d\u00e9duction du stock');
+            html += makeRow('Poudre en stock', fmt(st.poudre) + ' unit\u00e9s');
+            html += makeRow('Fragments en stock', fmt(st.fragments) + ' fragments' + (st.minerais > 0 ? ' + ' + fmt(st.minerais) + ' minerais (\u2192 ' + fmt(stockFragsFromMinerais) + ' frags)' : ''));
+            html += makeRow('Poudre restante \u00e0 acqu\u00e9rir', fmt(netPoudre) + ' unit\u00e9s', netPoudre > 0 ? 'need' : 'ok');
+            html += makeRow('Fragments restants \u00e0 acqu\u00e9rir', fmt(netFragments) + ' fragments', netFragments > 0 ? 'need' : 'ok');
+            html += makeRow('Minerais restants \u00e0 acqu\u00e9rir', fmt(netMinerai) + ' minerais', netMinerai > 0 ? 'need' : 'ok');
+            html += makeRow('Co\u00fbt net (fer achet\u00e9)', fmtEuro(netCostAch), 'highlight');
+            html += makeRow('Co\u00fbt net (fer r\u00e9colt\u00e9)', fmtEuro(netCostRec), 'highlight');
+            html += makeRow('Chiffre d\u2019affaires', fmtEuro(grandTotalVente), 'highlight');
+            html += makeRow('Marge nette (fer achet\u00e9)', fmtEuro(netMargeAch), ammoBenClass(netMargeAch));
+            html += makeRow('Marge nette (fer r\u00e9colt\u00e9)', fmtEuro(netMargeRec), ammoBenClass(netMargeRec));
+            var ecoAch = grandTotalCostAch - netCostAch;
+            var ecoRec = grandTotalCostRec - netCostRec;
+            if (ecoAch > 0) html += makeRow('\u00c9conomie stock (fer ach.)', fmtEuro(ecoAch), 'ammo-ben-pos');
+            if (ecoRec > 0) html += makeRow('\u00c9conomie stock (fer r\u00e9c.)', fmtEuro(ecoRec), 'ammo-ben-pos');
+        }
+
         out.innerHTML = html;
     }
 
@@ -335,6 +418,21 @@
         ammoFerEl.addEventListener('input', refreshAll);
         ammoFerEl.addEventListener('change', refreshAll);
     }
+    var ammoUseStockEl = $('ammoUseStock');
+    if (ammoUseStockEl) {
+        ammoUseStockEl.addEventListener('change', function () {
+            var fields = $('ammoStockFields');
+            if (fields) fields.style.display = ammoUseStockEl.checked ? '' : 'none';
+            refreshAll();
+        });
+    }
+    ['ammoStockPoudre', 'ammoStockFragments', 'ammoStockMinerais'].forEach(function (sid) {
+        var el = $(sid);
+        if (el) {
+            el.addEventListener('input', refreshAll);
+            el.addEventListener('change', refreshAll);
+        }
+    });
     var ammoTargetMunsEl = $('ammoTargetMuns');
     if (ammoTargetMunsEl) {
         ammoTargetMunsEl.addEventListener('input', updateAmmoTargetSim);

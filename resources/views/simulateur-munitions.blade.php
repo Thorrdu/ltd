@@ -22,6 +22,26 @@
                 <input type="number" class="ammo-sim-input" id="ammoFerPrice" min="0" step="0.01" value="30" inputmode="decimal">
             </div>
             <div class="weapons-grid" id="ammoMultiGrid"></div>
+
+            {{-- Stock disponible --}}
+            <div class="weapon-stock-block" style="margin-top:16px;">
+                <div class="weapon-stock-title">
+                    <label class="ammo-sim-label ammo-sim-label-cb" for="ammoUseStock" style="margin:0;font-size:1em;">
+                        <input type="checkbox" id="ammoUseStock"> Deduire le stock des materiaux
+                    </label>
+                </div>
+                <div id="ammoStockFields" style="display:none;">
+                    <p class="ammo-sim-intro ammo-sim-intro-tight">Indiquez les quantites deja en stock. Elles seront deduites des besoins dans les recapitulatifs.</p>
+                    <div class="ammo-sim-params weapon-stock-grid">
+                        <label class="ammo-sim-label" for="ammoStockPoudre">Poudre a canon</label>
+                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="ammoStockPoudre" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                        <label class="ammo-sim-label" for="ammoStockFragments">Fragments de metal</label>
+                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="ammoStockFragments" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                        <label class="ammo-sim-label" for="ammoStockMinerais">Minerais de fer</label>
+                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="ammoStockMinerais" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="sim-section" id="ammoMultiSection" style="display:none;">
