@@ -26,12 +26,23 @@
             {{-- Stock disponible --}}
             <div class="weapon-stock-block" style="margin-top:16px;">
                 <div class="weapon-stock-title">
-                    <label class="ammo-sim-label ammo-sim-label-cb" for="ammoUseStock" style="margin:0;font-size:1em;">
-                        <input type="checkbox" id="ammoUseStock"> Deduire le stock des materiaux
+                    <label class="ammo-sim-label ammo-sim-label-cb" for="ammoUseAmmoStock" style="margin:0;font-size:1em;">
+                        <input type="checkbox" id="ammoUseAmmoStock"> Deduire les munitions deja en stock
                     </label>
                 </div>
-                <div id="ammoStockFields" style="display:none;">
-                    <p class="ammo-sim-intro ammo-sim-intro-tight">Indiquez les quantites deja en stock. Elles seront deduites des besoins dans les recapitulatifs.</p>
+                <div id="ammoAmmoStockFields" style="display:none;">
+                    <p class="ammo-sim-intro ammo-sim-intro-tight">Munitions deja disponibles. Le simulateur deduira ces quantites du besoin total avant de calculer les crafts.</p>
+                    <div class="ammo-sim-params weapon-stock-grid" id="ammoAmmoStockGrid"></div>
+                </div>
+            </div>
+            <div class="weapon-stock-block" style="margin-top:8px;">
+                <div class="weapon-stock-title">
+                    <label class="ammo-sim-label ammo-sim-label-cb" for="ammoUseMatStock" style="margin:0;font-size:1em;">
+                        <input type="checkbox" id="ammoUseMatStock"> Deduire les materiaux en stock
+                    </label>
+                </div>
+                <div id="ammoMatStockFields" style="display:none;">
+                    <p class="ammo-sim-intro ammo-sim-intro-tight">Materiaux deja disponibles. Ils seront deduits des besoins en materiaux dans les recapitulatifs.</p>
                     <div class="ammo-sim-params weapon-stock-grid">
                         <label class="ammo-sim-label" for="ammoStockPoudre">Poudre a canon</label>
                         <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="ammoStockPoudre" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
@@ -52,7 +63,7 @@
         {{-- Craft table --}}
         <div class="sim-section" id="ammoCraftSection">
             <div class="sim-section-title">Craft munitions (tableau)</div>
-            <p class="ammo-sim-intro">Chaque craft produit <strong>10 munitions</strong>. Les couts sont affiches <strong>par munition</strong>. La poudre coute <strong>100 EUR</strong>/u et <strong>1 minerai de fer = 2 fragments</strong>. Les prix de vente sont calcules automatiquement a partir des couts (exceptions : 5.56x45, 7.62x39, 12 Gauge). Le tableau se met a jour en temps reel si vous modifiez le prix du fer.</p>
+            <p class="ammo-sim-intro">Chaque craft produit <strong>10 munitions</strong>. Les couts sont affiches <strong>par munition</strong>. La poudre coute <strong>100 EUR</strong>/u et <strong>1 minerai de fer = 2 fragments</strong>. Les prix de vente proviennent de la base de donnees. Le tableau se met a jour en temps reel si vous modifiez le prix du fer.</p>
             <div class="ammo-craft-wrap">
                 <table class="ammo-craft-table" aria-label="Couts et marges des munitions">
                     <thead>
@@ -71,25 +82,10 @@
                     <tbody id="ammoCraftBody"></tbody>
                     <tfoot>
                         <tr class="ammo-craft-foot">
-                            <td colspan="9">EUR par munition. Vente : poudre / mun <= 50 EUR -> x 2 sur la poudre ; sinon x 1,5 sur le cout fer achete ; arrondi 10 EUR ; exceptions 5.56x45, 7.62x39, 12 Gauge. Pdr/Frag = par craft.</td>
+                            <td colspan="9">EUR par munition. Prix de vente : base de donnees (stocks). Pdr/Frag = par craft.</td>
                         </tr>
                     </tfoot>
                 </table>
-            </div>
-
-            {{-- Single target sim --}}
-            <div class="ammo-target-block">
-                <div class="sim-section-title">Objectif en munitions (calibre unique)</div>
-                <p class="ammo-sim-intro ammo-sim-intro-tight">Simulation detaillee pour <strong>un seul calibre</strong>. Saisissez le nombre de munitions a fabriquer. Les crafts se font par lots de <strong>10</strong> : le nombre de crafts est arrondi au superieur.</p>
-                <div class="ammo-sim-params ammo-target-params">
-                    <label class="ammo-sim-label" for="ammoTargetSlug">Calibre</label>
-                    <select id="ammoTargetSlug" class="ammo-sim-select" aria-label="Calibre pour la simulation"></select>
-                    <label class="ammo-sim-label" for="ammoTargetMuns">Munitions a fabriquer</label>
-                    <input type="number" class="ammo-sim-input ammo-sim-input-muns" id="ammoTargetMuns" min="1" max="9999999" step="1" value="1000" inputmode="numeric">
-                    <label class="ammo-sim-label" for="ammoTargetSellPriceMun">Prix vente / mun (optionnel)</label>
-                    <input type="number" class="ammo-sim-input" id="ammoTargetSellPriceMun" min="0" step="0.01" placeholder="Tableau" inputmode="decimal" autocomplete="off">
-                </div>
-                <div class="results-table ammo-target-results" id="ammoTargetResults"></div>
             </div>
         </div>
 
@@ -98,5 +94,8 @@
 @endsection
 
 @section('scripts')
-<script src="{{ asset('js/simulateur-munitions.js') }}"></script>
+<script>
+window.AMMO_SELL_PRICES = {!! $ammoPricesJson !!};
+</script>
+<script src="{{ asset('js/simulateur-munitions.js') }}?v={{ filemtime(public_path('js/simulateur-munitions.js')) }}"></script>
 @endsection

@@ -222,6 +222,83 @@
         });
     }
 
+    // ===== BUILD WEAPON STOCK INPUTS =====
+    var compStockGrid = $('weaponCompStockGrid');
+    if (compStockGrid) {
+        // Plan inputs per weapon
+        weaponList.forEach(function (w) {
+            if (w.slug === 'sns') return; // SNS is bought, no plan needed
+            compStockGrid.insertAdjacentHTML('beforeend',
+                '<label class="ammo-sim-label" for="weaponStock-plan_' + esc(w.slug) + '">Plan ' + esc(w.name) + '</label>' +
+                '<input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStock-plan_' + esc(w.slug) + '" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">'
+            );
+        });
+        // Shared component inputs
+        var compInputs = [
+            { key: 'ressort', label: 'Ressort' },
+            { key: 'canon', label: 'Canon' },
+            { key: 'poignee', label: 'Poign\u00e9e' },
+            { key: 'corp', label: 'Corp de pistolet' },
+            { key: 'crosse', label: 'Crosse' },
+            { key: 'corp_smg', label: 'Corps de SMG' },
+            { key: 'corp_rifle', label: 'Corps de fusil' },
+            { key: 'metal', label: 'Pi\u00e8ce de m\u00e9tal' },
+            { key: 'polymere', label: 'Polym\u00e8re' }
+        ];
+        compInputs.forEach(function (c) {
+            compStockGrid.insertAdjacentHTML('beforeend',
+                '<label class="ammo-sim-label" for="weaponStock-' + c.key + '">' + c.label + '</label>' +
+                '<input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStock-' + c.key + '" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">'
+            );
+        });
+    }
+    // Toggle stock fields visibility
+    var compStockCb = $('weaponUseCompStock');
+    if (compStockCb) {
+        compStockCb.addEventListener('change', function () {
+            var fields = $('weaponCompStockFields');
+            if (fields) fields.style.display = compStockCb.checked ? '' : 'none';
+            calculate();
+        });
+    }
+
+    function weaponCompStockEnabled() { var el = $('weaponUseCompStock'); return el ? el.checked : false; }
+
+    function weaponStockReadComps() {
+        var vals = {};
+        // plans per weapon
+        weaponList.forEach(function (w) {
+            if (w.slug === 'sns') return;
+            var el = $('weaponStock-plan_' + w.slug);
+            var v = el ? parseInt(String(el.value).trim(), 10) : 0;
+            vals['plan_' + w.slug] = Math.max(0, isNaN(v) ? 0 : v);
+        });
+        // shared components
+        ['ressort', 'canon', 'poignee', 'corp', 'crosse', 'corp_smg', 'corp_rifle', 'metal', 'polymere'].forEach(function (k) {
+            var el = $('weaponStock-' + k);
+            var v = el ? parseInt(String(el.value).trim(), 10) : 0;
+            vals[k] = Math.max(0, isNaN(v) ? 0 : v);
+        });
+        return vals;
+    }
+
+    function fillWeaponStockFields() {
+        if (!cachedData || !cachedData.stock) return;
+        var stockMap = {};
+        cachedData.stock.forEach(function (s) { stockMap[s.slug] = s.quantity; });
+        // plans
+        weaponList.forEach(function (w) {
+            if (w.slug === 'sns') return;
+            var el = $('weaponStock-plan_' + w.slug);
+            if (el && stockMap['plan_' + w.slug] != null) el.value = stockMap['plan_' + w.slug];
+        });
+        // shared components
+        ['ressort', 'canon', 'poignee', 'corp', 'crosse', 'corp_smg', 'corp_rifle', 'metal', 'polymere'].forEach(function (k) {
+            var el = $('weaponStock-' + k);
+            if (el && stockMap[k] != null) el.value = stockMap[k];
+        });
+    }
+
     // ===== TAB SWITCHING =====
     document.querySelectorAll('.tab-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -280,10 +357,12 @@
         pieceKeys.forEach(function (p) { if (totals[p]) html += makeRow(pieceNames[p], fmt(totals[p])); });
         $('totalPieces').innerHTML = html;
 
-        if (auth && auth.isLoggedIn && cachedData && cachedData.stock) {
+        // Stock deduction from form inputs
+        var useStock = weaponCompStockEnabled();
+        var compStock = useStock ? weaponStockReadComps() : null;
+
+        if (useStock) {
             $('simStockCompare').style.display = '';
-            var stockMap = {};
-            cachedData.stock.forEach(function (s) { stockMap[s.slug] = s.quantity; });
             html = '';
             pieceKeys.forEach(function (p) {
                 if (!totals[p]) return;
@@ -291,16 +370,18 @@
                     Object.keys(weapons).forEach(function (slug) {
                         if (!orders[slug]) return;
                         var planNeed = (weapons[slug].pieces.plans || 0) * orders[slug];
-                        var planHave = stockMap['plan_' + slug] || 0;
+                        var planHave = compStock['plan_' + slug] || 0;
                         var diff = planNeed - planHave;
-                        html += makeRow('Plan ' + weapons[slug].name + ' \u2014 ' + fmt(planNeed) + ' / stock ' + fmt(planHave),
-                            diff <= 0 ? '\u2713 OK' : '\u25b2 ' + fmt(diff), diff <= 0 ? 'ok' : 'need');
+                        var missing = Math.max(0, diff);
+                        html += makeRow('Plan ' + weapons[slug].name + ' \u2014 besoin ' + fmt(planNeed) + ' / stock ' + fmt(planHave),
+                            diff <= 0 ? '\u2713 OK' : '\u25b2 manque ' + fmt(missing), diff <= 0 ? 'ok' : 'need');
                     });
                 } else {
-                    var have = stockMap[p] || 0;
+                    var have = compStock[p] || 0;
                     var diff = totals[p] - have;
-                    html += makeRow(pieceNames[p] + ' \u2014 ' + fmt(totals[p]) + ' / stock ' + fmt(have),
-                        diff <= 0 ? '\u2713 OK' : '\u25b2 ' + fmt(diff), diff <= 0 ? 'ok' : 'need');
+                    var missing = Math.max(0, diff);
+                    html += makeRow(pieceNames[p] + ' \u2014 besoin ' + fmt(totals[p]) + ' / stock ' + fmt(have),
+                        diff <= 0 ? '\u2713 OK' : '\u25b2 manque ' + fmt(missing), diff <= 0 ? 'ok' : 'need');
                 }
             });
             $('simStockTable').innerHTML = html;
@@ -309,36 +390,62 @@
             if (ssc) ssc.style.display = 'none';
         }
 
-        var metalForR = totals.ressort * RESSORT_METAL_RATE;
-        var mineraiForR = totals.ressort * RESSORT_MINERAI_RATE;
-        var totalMetal = totals.metal + metalForR;
+        // Effective totals after stock deduction
+        var effTotals = {};
+        if (compStock) {
+            pieceKeys.forEach(function (k) {
+                if (k === 'plans') {
+                    var totalPlansNeeded = totals.plans;
+                    var totalPlansInStock = 0;
+                    Object.keys(weapons).forEach(function (slug) {
+                        if (!orders[slug]) return;
+                        var planNeed = (weapons[slug].pieces.plans || 0) * orders[slug];
+                        var planHave = compStock['plan_' + slug] || 0;
+                        totalPlansInStock += Math.min(planNeed, planHave);
+                    });
+                    effTotals.plans = Math.max(0, totalPlansNeeded - totalPlansInStock);
+                } else {
+                    effTotals[k] = Math.max(0, totals[k] - (compStock[k] || 0));
+                }
+            });
+        } else {
+            pieceKeys.forEach(function (k) { effTotals[k] = totals[k]; });
+        }
+
+        var metalForR = effTotals.ressort * RESSORT_METAL_RATE;
+        var mineraiForR = effTotals.ressort * RESSORT_MINERAI_RATE;
+        var totalMetal = effTotals.metal + metalForR;
         var totalMineraiMetal = totalMetal * METAL_MINERAI_RATE;
         var totalMinerai = totalMineraiMetal + mineraiForR;
-        var totalPetrole = totals.polymere * POLYMERE_PETROLE_RATE;
+        var totalPetrole = effTotals.polymere * POLYMERE_PETROLE_RATE;
 
+        var stockLabel = useStock ? ' (apr\u00e8s stock)' : '';
         html = '';
-        html += makeSectionHeader('Craft Ressorts (' + fmt(totals.ressort) + ')');
+        html += makeSectionHeader('Craft Ressorts (' + fmt(effTotals.ressort) + ')' + stockLabel);
         html += makeRow('Pi\u00e8ces m\u00e9tal (pour ressorts)', fmt(metalForR));
         html += makeRow('Minerais (pour ressorts)', fmt(mineraiForR));
-        html += makeSectionHeader('Craft Pi\u00e8ces m\u00e9tal (' + fmt(totalMetal) + ')');
-        html += makeRow('Directes', fmt(totals.metal));
+        html += makeSectionHeader('Craft Pi\u00e8ces m\u00e9tal (' + fmt(totalMetal) + ')' + stockLabel);
+        html += makeRow('Directes', fmt(effTotals.metal));
         html += makeRow('Pour ressorts', fmt(metalForR));
         html += makeRow('Minerais n\u00e9cessaires', fmt(totalMineraiMetal));
-        html += makeSectionHeader('Craft Polym\u00e8res (' + fmt(totals.polymere) + ')');
+        html += makeSectionHeader('Craft Polym\u00e8res (' + fmt(effTotals.polymere) + ')' + stockLabel);
         html += makeRow('P\u00e9troles n\u00e9cessaires', fmt(totalPetrole));
         $('materialCraft').innerHTML = html;
 
         html = '';
-        html += makeRow('Minerais de fer', fmt(totalMinerai), 'highlight');
-        html += makeRow('P\u00e9troles', fmt(totalPetrole), 'highlight');
-        html += makeRow('Plans (utilisations)', fmt(totals.plans));
-        html += makeRow('Canons', fmt(totals.canon));
-        html += makeRow('Poign\u00e9es', fmt(totals.poignee));
-        html += makeRow('Corps de pistolet', fmt(totals.corp));
+        html += makeRow('Minerais de fer' + stockLabel, fmt(totalMinerai), 'highlight');
+        html += makeRow('P\u00e9troles' + stockLabel, fmt(totalPetrole), 'highlight');
+        if (effTotals.plans) html += makeRow('Plans (utilisations)', fmt(effTotals.plans));
+        if (effTotals.canon) html += makeRow('Canons', fmt(effTotals.canon));
+        if (effTotals.poignee) html += makeRow('Poign\u00e9es', fmt(effTotals.poignee));
+        if (effTotals.corp) html += makeRow('Corps de pistolet', fmt(effTotals.corp));
+        if (effTotals.crosse) html += makeRow('Crosses', fmt(effTotals.crosse));
+        if (effTotals.corp_smg) html += makeRow('Corps de SMG', fmt(effTotals.corp_smg));
+        if (effTotals.corp_rifle) html += makeRow('Corps de fusil', fmt(effTotals.corp_rifle));
         $('rawMaterials').innerHTML = html;
 
-        var cost = totals.polymere * POLYMERE_COST;
-        $('costTable').innerHTML = makeRow('Polym\u00e8res (' + fmt(totals.polymere) + ' \u00d7 ' + fmt(POLYMERE_COST) + '\u20ac)', fmt(cost) + ' \u20ac', 'highlight');
+        var cost = effTotals.polymere * POLYMERE_COST;
+        $('costTable').innerHTML = makeRow('Polym\u00e8res (' + fmt(effTotals.polymere) + ' \u00d7 ' + fmt(POLYMERE_COST) + '\u20ac)', fmt(cost) + ' \u20ac', 'highlight');
 
         var totalTime = 0, hasUnknown = false;
         Object.keys(weapons).forEach(function (key) {
@@ -362,6 +469,11 @@
             calculate();
         });
         grid.addEventListener('input', function (e) { if (e.target.classList.contains('qty-input')) calculate(); });
+    }
+
+    // Re-calculate when stock inputs change
+    if (compStockGrid) {
+        compStockGrid.addEventListener('input', function (e) { if (e.target.classList.contains('weapon-stock-in')) calculate(); });
     }
 
     // ===== WEAPON CRAFT COST =====
@@ -393,69 +505,6 @@
         var totalAch = costPlans + costComp + costMat + costPoly;
         var totalRec = costPlans + costComp + costPoly;
         return { costPlans: costPlans, costComp: costComp, costMat: costMat, costPoly: costPoly, totalAch: totalAch, totalRec: totalRec };
-    }
-
-    function weaponStockPaidUnits(need, stockAvail) {
-        var n = Math.max(0, Math.floor(Number(need)) || 0);
-        var s = Math.max(0, Math.floor(Number(stockAvail)) || 0);
-        return Math.max(0, n - Math.min(s, n));
-    }
-
-    function weaponCraftOrderCost(w, planPriceEu, ferPrice, compsInStock, Q, st) {
-        var p = w.pieces;
-        var pp = Math.max(0, planPriceEu);
-        var fp = Math.max(0, ferPrice);
-        var u = weaponStockPaidUnits;
-        var costPlans = u(Q * (p.plans || 0), st.plans) * pp;
-        var costComp = 0;
-        if (!compsInStock) {
-            costComp = u(Q * (p.corp || 0), st.corp) * WEAPON_CRAFT_CORP_EUR
-                     + u(Q * (p.corp_smg || 0), st.corp_smg || 0) * WEAPON_CRAFT_CORP_SMG_EUR
-                     + u(Q * (p.corp_rifle || 0), st.corp_rifle || 0) * WEAPON_CRAFT_CORP_RIFLE_EUR
-                     + u(Q * (p.canon || 0), st.canon) * WEAPON_CRAFT_WEAPON_PIECE_EUR
-                     + u(Q * (p.poignee || 0), st.poignee) * WEAPON_CRAFT_WEAPON_PIECE_EUR
-                     + u(Q * (p.crosse || 0), st.crosse || 0) * WEAPON_CRAFT_WEAPON_PIECE_EUR;
-        }
-        var metalNeeded = u(Q * (p.metal || 0), st.metal);
-        var ressortNeeded = u(Q * (p.ressort || 0), st.ressort);
-        var costMat = (metalNeeded * METAL_MINERAI_RATE + ressortNeeded * MINERAI_PER_RESSORT) * fp;
-        var costPoly = u(Q * (p.polymere || 0), st.polymere) * POLYMERE_COST;
-        var totalAch = costPlans + costComp + costMat + costPoly;
-        var totalRec = costPlans + costComp + costPoly;
-        return { costPlans: costPlans, costComp: costComp, costMat: costMat, costPoly: costPoly, totalAch: totalAch, totalRec: totalRec };
-    }
-
-    function weaponStockReadFromForm() {
-        var toggle = $('weaponUseStock');
-        if (toggle && !toggle.checked) {
-            return {
-                plans: 0, corp: 0, crosse: 0, corp_smg: 0, corp_rifle: 0,
-                ressort: 0, canon: 0, poignee: 0, metal: 0, polymere: 0, sns: 0
-            };
-        }
-        function iv(id) {
-            var el = $(id);
-            if (!el) return 0;
-            var v = parseInt(String(el.value).trim(), 10);
-            return Math.max(0, isNaN(v) ? 0 : Math.min(v, 999999));
-        }
-        return {
-            plans: iv('weaponStockPlans'), corp: iv('weaponStockCorp'),
-            crosse: iv('weaponStockCrosse'), corp_smg: iv('weaponStockCorpSmg'),
-            corp_rifle: iv('weaponStockCorpRifle'),
-            ressort: iv('weaponStockRessort'), canon: iv('weaponStockCanon'),
-            poignee: iv('weaponStockPoignee'), metal: iv('weaponStockMetal'),
-            polymere: iv('weaponStockPolymere'), sns: iv('weaponStockSns')
-        };
-    }
-
-    function parseEuroOptionalInput(raw) {
-        var t = String(raw == null ? '' : raw).trim().replace(/\s/g, '');
-        if (t === '') return { ok: true, empty: true, value: 0 };
-        if (!/^\d+([.,]\d+)?$/.test(t)) return { ok: false, empty: false, value: 0 };
-        var v = parseFloat(t.replace(',', '.'));
-        if (!isFinite(v) || v < 0) return { ok: false, empty: false, value: 0 };
-        return { ok: true, empty: false, value: v };
     }
 
     function weaponCraftTimeLabel(craftTime) {
@@ -518,142 +567,8 @@
         tbody.innerHTML = html;
     }
 
-    function updateWeaponTargetSim() {
-        var sel = $('weaponTargetSlug');
-        var qtyIn = $('weaponTargetQty');
-        var sellOv = $('weaponTargetSellPrice');
-        var out = $('weaponTargetResults');
-        var planIn = $('weaponCraftPlanPrice');
-        if (!sel || !qtyIn || !out || !planIn) return;
-        var slug = sel.value;
-        var wd = weapons[slug];
-        if (!wd) {
-            out.innerHTML = '<div class="result-row"><span class="label">\u2014</span><span class="value">Choisissez une arme</span></div>';
-            return;
-        }
-        var Qraw = parseInt(qtyIn.value, 10);
-        var Q = Math.max(1, Math.min(9999, isNaN(Qraw) ? 1 : Qraw));
-        if (qtyIn.value === '' || isNaN(Qraw) || Qraw < 1) qtyIn.value = Q;
-        var rawPlan = String(planIn.value).trim();
-        var planEu = rawPlan === '' ? 0 : Math.max(0, parseFloat(rawPlan) || 0);
-        var ferPrice = readWeaponCraftFerPrice();
-        var compsInStock = readWeaponCraftCompsInStock();
-        var bOne = weaponCraftCostBreakdownOne(wd, planEu, ferPrice, compsInStock);
-        var st = weaponStockReadFromForm();
-        var bought = wd.isBoughtWeapon;
-
-        var costNoStockAch = bought ? 0 : bOne.totalAch * Q;
-        var costNoStockRec = bought ? 0 : bOne.totalRec * Q;
-        var emptyOrder = { costPlans: 0, costComp: 0, costMat: 0, costPoly: 0, totalAch: 0, totalRec: 0 };
-        var order = bought ? emptyOrder : weaponCraftOrderCost(wd, planEu, ferPrice, compsInStock, Q, st);
-        var costTotAch = order.totalAch;
-        var costTotRec = order.totalRec;
-        var costOneAch = bought ? 0 : (Q > 0 ? costTotAch / Q : 0);
-        var costOneRec = bought ? 0 : (Q > 0 ? costTotRec / Q : 0);
-
-        var baseSell = wd.sellPrice || 0;
-        var sellParsed = sellOv ? parseEuroOptionalInput(sellOv.value) : { ok: true, empty: true, value: 0 };
-        var sellInvalid = !!(sellOv && String(sellOv.value).trim() !== '' && !sellParsed.ok);
-        var useOverride = !!(sellOv && sellParsed.ok && !sellParsed.empty);
-        var prixVente = useOverride ? sellParsed.value : baseSell;
-        var sellNote = useOverride ? '(sc\u00e9nario)' : (baseSell > 0 ? '(base)' : '(non d\u00e9fini)');
-        var venteTotale = prixVente > 0 ? prixVente * Q : 0;
-
-        var refBuyOne = wd.referencePurchasePrice || 0;
-        var snsToBuy = bought ? weaponStockPaidUnits(Q, st.sns) : 0;
-        var coutAchatArmeTot = (bought && refBuyOne > 0) ? snsToBuy * refBuyOne : 0;
-        var coutAchatUnitMoyen = (bought && Q > 0) ? coutAchatArmeTot / Q : 0;
-
-        var margeTotAch = (!bought && prixVente > 0) ? venteTotale - costTotAch : null;
-        var margeTotRec = (!bought && prixVente > 0) ? venteTotale - costTotRec : null;
-        var margeTotRevente = (bought && prixVente > 0 && refBuyOne > 0) ? venteTotale - coutAchatArmeTot : null;
-        var margeOneAch = (!bought && prixVente > 0) ? prixVente - costOneAch : null;
-        var margeOneRec = (!bought && prixVente > 0) ? prixVente - costOneRec : null;
-        var margeOneRevente = (bought && prixVente > 0 && refBuyOne > 0) ? prixVente - coutAchatUnitMoyen : null;
-
-        var timeOne = wd.craftTime;
-        var timeTot = (timeOne != null ? timeOne * Q : null);
-
-        var ecoAch = (!bought && costNoStockAch > costTotAch) ? costNoStockAch - costTotAch : 0;
-        var ecoRec = (!bought && costNoStockRec > costTotRec) ? costNoStockRec - costTotRec : 0;
-        var ecoSnsAcq = (bought && refBuyOne > 0 && st.sns > 0) ? Math.min(st.sns, Q) * refBuyOne : 0;
-        var stockUsedCraft = !bought && (st.plans + st.corp + st.crosse + st.corp_smg + st.corp_rifle + st.ressort + st.canon + st.poignee + st.metal + st.polymere) > 0;
-        var stockUsedSns = bought && st.sns > 0;
-
-        var html = '';
-        html += makeRow('Arme', esc(wd.name || slug));
-        html += makeRow('Armes \u00e0 fabriquer', fmt(Q));
-        html += makeRow('Temps de craft total', bought ? '\u2014 (arme non craft\u00e9e)' : (timeTot != null ? formatTime(timeTot) : 'Inconnu'));
-        if (sellInvalid) html += makeRow('Prix vente (champ optionnel)', 'Saisie non num\u00e9rique \u2014 prix en base utilis\u00e9', '');
-
-        html += makeSectionHeader('Par arme');
-        if (bought) {
-            html += makeRow('Co\u00fbt craft', '\u2014 (non applicable)', '');
-            if (refBuyOne > 0) {
-                html += makeRow('Prix achat r\u00e9f. / unit\u00e9 neuve', fmtEuro(refBuyOne), 'highlight');
-                html += makeRow('Co\u00fbt acquisition (apr\u00e8s stock)', fmtEuro(coutAchatUnitMoyen), 'highlight');
-            }
-        } else {
-            if (stockUsedCraft) {
-                html += makeRow('Co\u00fbt / arme hors stock (fer ach.)', fmtEuro(bOne.totalAch), '');
-                html += makeRow('Co\u00fbt / arme stock d\u00e9duit (fer ach.)', fmtEuro(costOneAch), 'highlight');
-                html += makeRow('Co\u00fbt / arme stock d\u00e9duit (fer r\u00e9c.)', fmtEuro(costOneRec), 'highlight');
-            } else {
-                html += makeRow('Co\u00fbt / arme (fer achet\u00e9)', fmtEuro(costOneAch), 'highlight');
-                html += makeRow('Co\u00fbt / arme (fer r\u00e9colt\u00e9)', fmtEuro(costOneRec), 'highlight');
-            }
-            if (!compsInStock) html += makeRow('\u00a0\u00a0\u00a0dont composants', fmtEuro(bOne.costComp), '');
-            html += makeRow('\u00a0\u00a0\u00a0dont mat. craft\u00e9es (fer ach.)', fmtEuro(bOne.costMat), '');
-        }
-        html += makeRow('Prix vente / arme ' + sellNote, prixVente > 0 ? fmtEuro(prixVente) : '\u2014');
-        var rangeTarget = fmtPriceRange(wd);
-        if (rangeTarget) html += makeRow('Range autoris\u00e9e', rangeTarget, '');
-        if (prixVente > 0) {
-            if (bought) {
-                html += makeRow('Marge / arme (revente)', margeOneRevente != null ? fmtEuro(margeOneRevente) : '\u2014', ammoBenClass(margeOneRevente));
-            } else {
-                html += makeRow('Marge / arme (fer achet\u00e9)', margeOneAch != null ? fmtEuro(margeOneAch) : '\u2014', ammoBenClass(margeOneAch));
-                html += makeRow('Marge / arme (fer r\u00e9colt\u00e9)', margeOneRec != null ? fmtEuro(margeOneRec) : '\u2014', ammoBenClass(margeOneRec));
-            }
-        }
-
-        if (stockUsedCraft || stockUsedSns) {
-            html += makeSectionHeader('Effet du stock');
-            if (stockUsedCraft) {
-                if (ecoAch > 0) html += makeRow('\u00c9conomie stock (fer achet\u00e9)', fmtEuro(ecoAch), 'ammo-ben-pos');
-                if (ecoRec > 0) html += makeRow('\u00c9conomie stock (fer r\u00e9colt\u00e9)', fmtEuro(ecoRec), 'ammo-ben-pos');
-            }
-            if (stockUsedSns && refBuyOne > 0) {
-                html += makeRow('SNS couverts par le stock', fmt(Math.min(st.sns, Q)) + ' / ' + fmt(Q));
-                if (ecoSnsAcq > 0) html += makeRow('\u00c9conomie (acquisitions \u00e9vit\u00e9es)', fmtEuro(ecoSnsAcq), 'ammo-ben-pos');
-            }
-        }
-
-        html += makeSectionHeader('Sur la commande (' + fmt(Q) + ' armes)');
-        if (bought) {
-            html += makeRow('Co\u00fbt total acquisition (r\u00e9f.)', coutAchatArmeTot > 0 ? fmtEuro(coutAchatArmeTot) : (refBuyOne > 0 ? fmtEuro(0) : '\u2014'), 'highlight');
-        } else {
-            html += makeRow('Co\u00fbt total (fer achet\u00e9)', fmtEuro(costTotAch), 'highlight');
-            html += makeRow('Co\u00fbt total (fer r\u00e9colt\u00e9)', fmtEuro(costTotRec), 'highlight');
-            if (bOne.costMat > 0) html += makeRow('\u00c9cart fer ach. \u2212 fer r\u00e9c. (cette commande)', fmtEuro(costTotAch - costTotRec), 'ammo-ben-pos');
-        }
-        html += makeRow('Chiffre d\u2019affaires', prixVente > 0 ? fmtEuro(venteTotale) : '\u2014', prixVente > 0 ? 'highlight' : '');
-        if (prixVente > 0) {
-            if (bought) {
-                html += makeRow('Marge totale (revente)', margeTotRevente != null ? fmtEuro(margeTotRevente) : '\u2014', ammoBenClass(margeTotRevente));
-            } else {
-                html += makeRow('Marge totale (fer achet\u00e9)', margeTotAch != null ? fmtEuro(margeTotAch) : '\u2014', ammoBenClass(margeTotAch));
-                html += makeRow('Marge totale (fer r\u00e9colt\u00e9)', margeTotRec != null ? fmtEuro(margeTotRec) : '\u2014', ammoBenClass(margeTotRec));
-            }
-        } else {
-            html += makeRow('Marge totale', 'D\u00e9finissez un prix de vente', '');
-        }
-        out.innerHTML = html;
-    }
-
     function refreshWeaponCraftSims() {
         updateWeaponCraftTable();
-        updateWeaponTargetSim();
         updateCraftableFromStock();
     }
 
@@ -734,40 +649,6 @@
     if (weaponCraftCompsEl) {
         weaponCraftCompsEl.addEventListener('change', refreshWeaponCraftSims);
     }
-    var weaponTargetSlugEl = $('weaponTargetSlug');
-    if (weaponTargetSlugEl && weaponTargetSlugEl.options.length === 0) {
-        weaponList.forEach(function (w) {
-            weaponTargetSlugEl.insertAdjacentHTML('beforeend', '<option value="' + esc(w.slug) + '">' + esc(w.name) + '</option>');
-        });
-    }
-    var weaponTargetQtyEl = $('weaponTargetQty');
-    if (weaponTargetQtyEl) {
-        weaponTargetQtyEl.addEventListener('input', updateWeaponTargetSim);
-        weaponTargetQtyEl.addEventListener('change', updateWeaponTargetSim);
-    }
-    if (weaponTargetSlugEl) {
-        weaponTargetSlugEl.addEventListener('change', updateWeaponTargetSim);
-    }
-    var weaponTargetSellEl = $('weaponTargetSellPrice');
-    if (weaponTargetSellEl) {
-        weaponTargetSellEl.addEventListener('input', updateWeaponTargetSim);
-        weaponTargetSellEl.addEventListener('change', updateWeaponTargetSim);
-    }
-    ['weaponStockPlans', 'weaponStockCorp', 'weaponStockCrosse', 'weaponStockCorpSmg', 'weaponStockCorpRifle', 'weaponStockRessort', 'weaponStockCanon', 'weaponStockPoignee', 'weaponStockMetal', 'weaponStockPolymere', 'weaponStockSns'].forEach(function (sid) {
-        var el = $(sid);
-        if (el) {
-            el.addEventListener('input', updateWeaponTargetSim);
-            el.addEventListener('change', updateWeaponTargetSim);
-        }
-    });
-    var weaponUseStockEl = $('weaponUseStock');
-    if (weaponUseStockEl) {
-        weaponUseStockEl.addEventListener('change', function () {
-            var fields = $('weaponStockFields');
-            if (fields) fields.style.display = weaponUseStockEl.checked ? '' : 'none';
-            refreshWeaponCraftSims();
-        });
-    }
     refreshWeaponCraftSims();
 
     // ===== MEMBER DASHBOARD =====
@@ -803,6 +684,8 @@
             renderDashboard(data);
             renderProfile();
             updateCraftableFromStock();
+            fillWeaponStockFields();
+            calculate();
         });
     }
 

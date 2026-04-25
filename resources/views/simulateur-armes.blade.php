@@ -17,6 +17,19 @@
         <div class="sim-section">
             <div class="sim-section-title">Selection des armes</div>
             <div class="weapons-grid" id="weaponsGrid"></div>
+
+            {{-- Stock disponible --}}
+            <div class="weapon-stock-block" style="margin-top:16px;">
+                <div class="weapon-stock-title">
+                    <label class="ammo-sim-label ammo-sim-label-cb" for="weaponUseCompStock" style="margin:0;font-size:1em;">
+                        <input type="checkbox" id="weaponUseCompStock"> Deduire les composants en stock
+                    </label>
+                </div>
+                <div id="weaponCompStockFields" style="display:none;">
+                    <p class="ammo-sim-intro ammo-sim-intro-tight">Composants et matieres deja disponibles. Le simulateur deduira ces quantites du besoin total avant de calculer les crafts et les couts.</p>
+                    <div class="ammo-sim-params weapon-stock-grid" id="weaponCompStockGrid"></div>
+                </div>
+            </div>
         </div>
 
         <div class="sim-section" id="resultsSection" style="display:none;">
@@ -85,54 +98,6 @@
                     </tfoot>
                 </table>
             </div>
-
-            <div class="ammo-target-block">
-                <div class="sim-section-title">Objectif en armes</div>
-                <p class="ammo-sim-intro ammo-sim-intro-tight">Simulez le cout de production d'un lot d'<strong>armes finies</strong> (craft) ou l'achat d'<strong>unites SNS</strong>. Deux scenarios sont compares : <strong>fer achete</strong> et <strong>fer recolte</strong>.</p>
-                <div class="ammo-sim-params ammo-target-params">
-                    <label class="ammo-sim-label" for="weaponTargetSlug">Arme</label>
-                    <select id="weaponTargetSlug" class="ammo-sim-select" aria-label="Arme pour la simulation"></select>
-                    <label class="ammo-sim-label" for="weaponTargetQty">Armes a fabriquer</label>
-                    <input type="number" class="ammo-sim-input ammo-sim-input-muns" id="weaponTargetQty" min="1" max="9999" step="1" value="10" inputmode="numeric" autocomplete="off">
-                    <label class="ammo-sim-label" for="weaponTargetSellPrice">Prix vente / arme (optionnel)</label>
-                    <input type="number" class="ammo-sim-input" id="weaponTargetSellPrice" min="0" step="0.01" placeholder="Base" inputmode="decimal" autocomplete="off">
-                </div>
-                <div class="weapon-stock-block">
-                    <div class="weapon-stock-title">
-                        <label class="ammo-sim-label ammo-sim-label-cb" for="weaponUseStock" style="margin:0;font-size:1em;">
-                            <input type="checkbox" id="weaponUseStock"> Deduire le stock des couts
-                        </label>
-                    </div>
-                    <div id="weaponStockFields" style="display:none;">
-                    <p class="ammo-sim-intro ammo-sim-intro-tight">Pieces deja disponibles, deduites automatiquement du besoin total.</p>
-                    <div class="ammo-sim-params weapon-stock-grid">
-                        <label class="ammo-sim-label" for="weaponStockPlans">Plans (util.)</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPlans" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockCorp">Corp pistolet</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCorp" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockCrosse">Crosse</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCrosse" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockCorpSmg">Corps SMG</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCorpSmg" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockCorpRifle">Corps fusil</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCorpRifle" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockRessort">Ressort</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockRessort" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockCanon">Canon</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockCanon" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockPoignee">Poignee</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPoignee" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockMetal">Metal</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockMetal" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockPolymere">Polymere</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockPolymere" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                        <label class="ammo-sim-label" for="weaponStockSns">SNS (armes)</label>
-                        <input type="number" class="ammo-sim-input ammo-sim-input-sm weapon-stock-in" id="weaponStockSns" min="0" max="999999" step="1" value="0" inputmode="numeric" autocomplete="off">
-                    </div>
-                    </div>
-                </div>
-                <div class="results-table ammo-target-results" id="weaponTargetResults"></div>
-            </div>
         </div>
 
         {{-- Craftable from stock (visible when logged in) --}}
@@ -147,5 +112,5 @@
 window.WEAPONS = {!! $weaponsJson !!};
 window.MEMBERS = [];
 </script>
-<script src="{{ asset('js/simulateur-armes.js') }}"></script>
+<script src="{{ asset('js/simulateur-armes.js') }}?v={{ filemtime(public_path('js/simulateur-armes.js')) }}"></script>
 @endsection

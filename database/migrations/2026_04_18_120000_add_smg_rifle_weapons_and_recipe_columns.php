@@ -90,7 +90,7 @@ return new class extends Migration
                 'recipe_metal' => 15,
                 'recipe_polymere' => 20,
                 'sort_order' => 10,
-                'is_active' => true,
+                'is_active' => false,
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
