@@ -7,14 +7,9 @@ Toolbox MC en construction : Phases 0 (roles + settings + matrice d'acces + gest
 + validations + import CSV), 3B (ameliorations UX front : stocks, attributions en masse, vente express,
 classements), 4 (harmonisation simulateur / vente rapide), 4bis (ventes hors stock, visibilite par role),
 6 (fiches membres), 7.1 (comptabilite), 7.2 (demandes), 7.3 (cotisations) et 8 (responsive + notifications + dashboard) TERMINEES.
-Session du 19 avril 2026 :
-- Phase 6 : fiches membres detaillees (`/membres/{id}/profil`)
-- Phase 7.1 : comptabilite MC (`/comptabilite`) avec soldes, flux, semaines, transactions
-- Phase 7.3 : cotisations (`/cotisations`) avec auto-generation, paiement officier+, historique
-- Amelioration UX demandes : onglet "A valider" pour tresorier, filtres membre, auto-switch
-- Phase 8.1 : responsive (12 vues corrigees, media queries 720px/480px)
-- Phase 8.2 : notifications in-app (bell, dropdown, polling 60s, triggers auto)
-- Phase 8.3 : dashboard MC sur `/mc` (cartes par role, alertes contextuelles)
+Session du 25 avril 2026 :
+- Simulateurs armes et munitions : multiples corrections et améliorations
+- Import stock CSV (76 items depuis captures in-game)
 
 ## Ce qui fonctionne
 
@@ -159,6 +154,16 @@ Session du 19 avril 2026 :
       dans le header, polling 60s, API list/count/read, triggers auto (attribution, cotisation, demande)
 - [x] 8.3 Dashboard MC : API `/dashboard/api` avec cartes par role, alertes contextuelles sur `/mc`
 
+### Corrections simulateurs (25 avril 2026)
+- [x] Import stock CSV : `database/csv/stock_import_2026-04-25.csv` (76 items)
+- [x] Simulateur munitions : fix JS cassé (code dupliqué après IIFE), suppression sim du bas
+- [x] Simulateur munitions : prix de vente depuis DB (AMMO_SELL_PRICES), marges réelles (gFullCA/gFullCR)
+- [x] Simulateur munitions : stock renommé "Investissement restant" + "Économie grâce au stock"
+- [x] Simulateur armes : suppression sim du bas (updateWeaponTargetSim + section HTML)
+- [x] Simulateur armes : Tec 9 désactivé (doublon Mini SMG) via is_active=false en migration
+- [x] Simulateur armes : déduction stock composants dans le sim du haut (checkbox + inputs + auto-fill API + calculate avec effTotals)
+- [x] Cache-busters ajoutés sur les scripts des deux simulateurs
+
 ## Ce qui reste a faire
 
 ### Priorite haute (prochaine session)
@@ -176,6 +181,10 @@ Session du 19 avril 2026 :
 - [ ] Phase 9 : documentation par role (qui a acces a quoi).
 
 ## Historique
+- **25 avril 2026** : Corrections simulateurs armes et munitions -- import stock CSV (76 items),
+  fix JS cassé munitions, suppression des sims du bas (armes + munitions), prix de vente DB pour
+  munitions, marges réelles (gFullCA/gFullCR), déduction stock composants dans le sim armes du haut
+  (checkbox + inputs dynamiques + auto-fill API + effTotals), Tec 9 désactivé, cache-busters scripts.
 - **17 avril 2026** : Phase 3B livree -- ameliorations UX front MC : bouton admin retire (3B.0),
   stocks ameliores avec mouvement direct + creation article + boutons rapides (3B.1), attributions
   en masse avec checkboxes et barre d'actions groupees (3B.2), vente express repensee avec accordeon

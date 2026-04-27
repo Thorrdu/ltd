@@ -194,8 +194,10 @@
             grouped[catKey].forEach(function (it) {
                 var qtyClass = it.quantity <= 0 ? 'zero' : (it.quantity < 5 ? 'low' : '');
                 var outClass = it.out_attributed > 0 ? '' : 'none';
-                html += '<div class="stocks-row">' +
-                    '<div class="s-name"><a href="/stocks/' + esc(it.slug) + '">' + esc(it.name) + '</a><span class="s-slug">' + esc(it.slug) + '</span></div>' +
+                var inactiveClass = it.is_active === false ? ' inactive' : '';
+                var inactiveBadge = it.is_active === false ? '<span class="s-badge-inactive">inactif</span>' : '';
+                html += '<div class="stocks-row' + inactiveClass + '">' +
+                    '<div class="s-name"><a href="/stocks/' + esc(it.slug) + '">' + esc(it.name) + '</a>' + inactiveBadge + '<span class="s-slug">' + esc(it.slug) + '</span></div>' +
                     '<div class="s-qty ' + qtyClass + '">' +
                     '<input type="number" class="fm-input s-qty-inline" data-slug="' + esc(it.slug) + '" value="' + it.quantity + '" min="-999999999" max="999999999" step="1" title="Entree ou clic hors champ pour enregistrer">' +
                     '</div>' +

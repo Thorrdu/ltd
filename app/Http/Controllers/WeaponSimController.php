@@ -39,7 +39,6 @@ class WeaponSimController extends Controller
         $members = User::orderBy('name')->get(['id', 'name', 'role']);
 
         $ammoPrices = StockItem::where('category', 'ammo')
-            ->where('is_active', true)
             ->pluck('default_sell_price', 'slug');
 
         return view('simulateur-munitions', [

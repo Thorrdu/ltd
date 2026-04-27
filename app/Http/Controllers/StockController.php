@@ -101,7 +101,7 @@ class StockController extends Controller
             return $denied;
         }
 
-        $items = StockItem::active()
+        $items = StockItem::query()
             ->orderBy('category')
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -133,12 +133,15 @@ class StockController extends Controller
                 'default_purchase_price' => $i->default_purchase_price,
                 'is_sellable'        => (bool) $i->is_sellable,
                 'is_quick_sale'      => (bool) $i->is_quick_sale,
+                'is_active'          => (bool) $i->is_active,
                 'notes'              => $i->notes,
             ];
         });
 
-        // Totals per category.
-        $totals = $catalog->groupBy('category')->map(function ($rows, $cat) {
+        // Totals per category (active items only).
+        $totals = $catalog->filter(function ($r) {
+            return $r['is_active'] ?? true;
+        })->groupBy('category')->map(function ($rows, $cat) {
             $weightG = $rows->sum(function ($r) {
                 return ($r['unit_weight_g'] ?? 0) * $r['quantity'];
             });
@@ -285,8 +288,8 @@ class StockController extends Controller
             $item->update($data);
 
             $summary = collect($changes)->map(function ($c, $field) {
-                $from = is_null($c['from']) || $c['from'] === '' ? 'null' : (string) $c['from'];
-                $to   = is_null($c['to'])   || $c['to']   === '' ? 'null' : (string) $c['to'];
+                $from = is_null($c['from']) || $c['from'] === '' ? 'null' : (is_bool($c['from']) ? ($c['from'] ? '1' : '0') : (string) $c['from']);
+                $to   = is_null($c['to'])   || $c['to']   === '' ? 'null' : (is_bool($c['to'])   ? ($c['to']   ? '1' : '0') : (string) $c['to']);
                 if (mb_strlen($from) > 40) {
                     $from = mb_substr($from, 0, 40) . '...';
                 }

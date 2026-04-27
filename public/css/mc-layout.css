@@ -1069,6 +1069,24 @@
 }
 .stocks-row .s-actions a:hover { background: rgba(255, 215, 0, 0.15); }
 
+/* Inactive items */
+.stocks-row.inactive { opacity: 0.45; }
+.stocks-row.inactive:hover { opacity: 0.75; }
+.s-badge-inactive {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 3px;
+    vertical-align: middle;
+}
+
 @media (max-width: 720px) {
     .stocks-row {
         grid-template-columns: 1fr auto;

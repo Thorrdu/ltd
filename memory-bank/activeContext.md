@@ -1,6 +1,37 @@
 # Active Context - Station LTD / Toolbox Lost MC
 
 ## Travail en cours
+
+### Session du 25 avril 2026 — Simulateurs armes et munitions
+
+**Import stock CSV** :
+- Fichier `database/csv/stock_import_2026-04-25.csv` crée avec 76 lignes (slug;quantity) depuis captures in-game.
+
+**Simulateur munitions — corrections** :
+- Fix JS cassé : code dupliqué après la closure IIFE `})();` supprimé.
+- Simulateur du bas supprimé (fonction `updateAmmoTargetSim` + listeners + select + section HTML).
+- Prix de vente chargés depuis la DB (`window.AMMO_SELL_PRICES` via controller) au lieu de valeurs en dur.
+- Marges réelles : ajout `gFullCA`/`gFullCR` pour tracker le coût réel de TOUTES les munitions (y compris stock). Sections "Coût réel total" et "Marge réelle" par calibre. Bilan financier utilise les marges réelles.
+- Section stock renommée "Investissement restant" (ce qu'il faut acheter) + "Économie grâce au stock".
+- Cache-buster ajouté sur le `<script>` tag : `?v={{ filemtime(...) }}`.
+
+**Simulateur armes — corrections** :
+- Simulateur du bas supprimé (`updateWeaponTargetSim`, `weaponStockPaidUnits`, `weaponCraftOrderCost`, `weaponStockReadFromForm`, `parseEuroOptionalInput` + listeners + section HTML "Objectif en armes").
+- Tec 9 (doublon de Mini SMG) : `is_active => false` dans la migration d'ajout SMG/rifle.
+- **Déduction stock composants** (simulateur du haut) :
+  - Checkbox "Déduire les composants en stock" dans le blade template (même pattern que munitions).
+  - Inputs dynamiques créés en JS : plan par arme (sauf SNS) + composants partagés (ressort, canon, poignée, corp, crosse, corp_smg, corp_rifle, métal, polymère).
+  - Auto-remplissage depuis l'API `/simulateur-armes/api/data` (stock items) via `fillWeaponStockFields()` appelé après `loadDashboardData()`.
+  - `calculate()` utilise les valeurs des inputs quand la checkbox est cochée : section "Comparaison avec le stock" (besoin/stock/manque), `effTotals` déduits pour craft matériaux, matières premières, coûts.
+  - Labels "(après stock)" quand la déduction est active.
+  - Event listeners sur les inputs stock pour recalcul en temps réel.
+  - Cache-buster ajouté sur le `<script>` tag.
+
+**Corrections techniques** :
+- `WeaponSimController::munitions()` charge `$ammoPrices` depuis `StockItem` catégorie `ammo` et passe `ammoPricesJson` à la vue.
+- `simulateur-munitions.blade.php` : ajout `<script>window.AMMO_SELL_PRICES = {!! $ammoPricesJson !!};</script>`.
+
+### Contexte précédent
 Phases 6 (fiches membres), 7.1 (comptabilite), 7.3 (cotisations) et amelioration UX demandes **LIVREES** le 19 avril 2026.
 
 ### Livraisons du 19 avril 2026
