@@ -223,6 +223,7 @@ class StockController extends Controller
                 'default_purchase_price' => $item->default_purchase_price,
                 'is_sellable'        => (bool) $item->is_sellable,
                 'is_quick_sale'      => (bool) $item->is_quick_sale,
+                'is_active'          => (bool) $item->is_active,
                 'notes'              => $item->notes,
             ],
             'open_attributions' => $openAttr,
