@@ -48,6 +48,10 @@ class CotisationController extends Controller
      */
     private function amountForRole(string $role): int
     {
+        if ($role === 'nomade') {
+            return 0;
+        }
+
         $level = User::ROLES[$role]['level'] ?? 0;
         if ($level >= 3) {
             return (int) Setting::get('cotisation_officer', 10000);
@@ -86,6 +90,7 @@ class CotisationController extends Controller
                     'period_end'  => $end->toDateString(),
                     'amount_due'  => $this->amountForRole($member->role),
                     'amount_paid' => 0,
+                    'is_exempt'   => $member->role === 'nomade',
                 ]
             );
             if ($cotisation->wasRecentlyCreated) {
@@ -147,6 +152,7 @@ class CotisationController extends Controller
                     'period_end'   => $c->period_end->format('d/m/Y'),
                     'amount_due'   => $c->amount_due,
                     'amount_paid'  => $c->amount_paid,
+                    'is_exempt'    => $c->isExempt(),
                     'is_paid'      => $c->isPaid(),
                     'is_partial'   => $c->isPartial(),
                     'remaining'    => $c->remaining(),
@@ -199,6 +205,7 @@ class CotisationController extends Controller
                 'period_end'   => $c->period_end->format('d/m/Y'),
                 'amount_due'   => $c->amount_due,
                 'amount_paid'  => $c->amount_paid,
+                'is_exempt'    => $c->isExempt(),
                 'is_paid'      => $c->isPaid(),
                 'is_partial'   => $c->isPartial(),
                 'remaining'    => $c->remaining(),
@@ -318,6 +325,7 @@ class CotisationController extends Controller
 
         $overdue = Cotisation::where('user_id', $user->id)
             ->where('amount_paid', '<', \DB::raw('amount_due'))
+            ->where('is_exempt', false)
             ->where('period_start', '<', $start->toDateString())
             ->count();
 
@@ -325,10 +333,60 @@ class CotisationController extends Controller
             'current_week' => $cotisation ? [
                 'amount_due'  => $cotisation->amount_due,
                 'amount_paid' => $cotisation->amount_paid,
+                'is_exempt'   => $cotisation->isExempt(),
                 'is_paid'     => $cotisation->isPaid(),
                 'remaining'   => $cotisation->remaining(),
             ] : null,
             'overdue_count' => $overdue,
+        ]);
+    }
+
+    // ── API : Exempt (toggle) ───────────────────────────────
+
+    public function apiExempt(Request $request, int $id): JsonResponse
+    {
+        if ($denied = $this->requireAccess($request)) {
+            return $denied;
+        }
+
+        $user = $this->authUser($request);
+        if (! $user->isOfficer()) {
+            return response()->json(['error' => 'Officier minimum requis'], 403);
+        }
+
+        $cotisation = Cotisation::find($id);
+        if (! $cotisation) {
+            return response()->json(['error' => 'Cotisation introuvable'], 404);
+        }
+
+        $exempt = ! $cotisation->is_exempt;
+
+        $cotisation->update([
+            'is_exempt'         => $exempt,
+            'marked_by_user_id' => $user->id,
+            'notes'             => $exempt
+                ? 'Exempté par ' . $user->name
+                : $cotisation->notes,
+        ]);
+
+        // Notify the member
+        if ($cotisation->user_id !== $user->id) {
+            McNotification::notify(
+                $cotisation->user_id,
+                'cotisation',
+                $exempt
+                    ? 'Cotisation exemptée cette semaine'
+                    : 'Exemption de cotisation retirée',
+                'Par ' . $user->name,
+                '/cotisations'
+            );
+        }
+
+        return response()->json([
+            'ok'      => true,
+            'message' => $exempt
+                ? 'Membre exempté pour cette semaine.'
+                : 'Exemption retirée.',
         ]);
     }
 }

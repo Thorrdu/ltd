@@ -16,6 +16,7 @@ class User extends Authenticatable implements FilamentUser
 
     public const ROLES = [
         'prospect'       => ['label' => 'Prospect',        'level' => 1],
+        'nomade'         => ['label' => 'Nomade',          'level' => 2],
         'member'         => ['label' => 'Membre',          'level' => 2],
         'officer'        => ['label' => 'Officier',        'level' => 3],
         'vice_president' => ['label' => 'Vice-Président',  'level' => 4],

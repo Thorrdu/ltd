@@ -9,8 +9,8 @@ class Cotisation extends Model
 {
     protected $fillable = [
         'user_id', 'period_start', 'period_end',
-        'amount_due', 'amount_paid', 'paid_at',
-        'marked_by_user_id', 'notes',
+        'amount_due', 'amount_paid', 'is_exempt',
+        'paid_at', 'marked_by_user_id', 'notes',
     ];
 
     protected function casts(): array
@@ -21,6 +21,7 @@ class Cotisation extends Model
             'paid_at'      => 'datetime',
             'amount_due'   => 'integer',
             'amount_paid'  => 'integer',
+            'is_exempt'    => 'boolean',
         ];
     }
 
@@ -36,7 +37,12 @@ class Cotisation extends Model
 
     public function isPaid(): bool
     {
-        return $this->amount_paid >= $this->amount_due;
+        return $this->is_exempt || $this->amount_paid >= $this->amount_due;
+    }
+
+    public function isExempt(): bool
+    {
+        return (bool) $this->is_exempt;
     }
 
     public function isPartial(): bool

@@ -111,6 +111,8 @@ Route::get('/cotisations', [CotisationController::class, 'index'])->name('cotisa
 Route::get('/cotisations/api/list', [CotisationController::class, 'apiList']);
 Route::post('/cotisations/api/{id}/pay', [CotisationController::class, 'apiMarkPaid'])
     ->where('id', '[0-9]+');
+Route::post('/cotisations/api/{id}/exempt', [CotisationController::class, 'apiExempt'])
+    ->where('id', '[0-9]+');
 Route::post('/cotisations/api/generate', [CotisationController::class, 'apiGenerate']);
 Route::get('/cotisations/api/my-status', [CotisationController::class, 'apiMyStatus']);
 
