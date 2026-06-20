@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             SettingSeeder::class,
             PageAccessRuleSeeder::class,
             StockItemSeeder::class,
+            AmmoMarket20260620Seeder::class,
             StockInventorySeeder::class,
         ]);
     }

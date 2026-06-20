@@ -41,9 +41,13 @@ class WeaponSimController extends Controller
         $ammoPrices = StockItem::where('category', 'ammo')
             ->pluck('default_sell_price', 'slug');
 
+        $compPrices = StockItem::where('category', 'ammo_component')
+            ->pluck('default_purchase_price', 'slug');
+
         return view('simulateur-munitions', [
             'members'        => $members,
             'ammoPricesJson' => $ammoPrices->toJson(),
+            'compPricesJson' => $compPrices->toJson(),
         ]);
     }
 
