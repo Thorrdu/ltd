@@ -601,8 +601,35 @@
 .members-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
     margin-bottom: 10px;
+}
+
+.members-stats .stat-item {
+    display: inline-flex;
+    flex-direction: column;
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    min-width: 90px;
+}
+
+.members-stats .stat-value {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.members-stats .stat-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #999;
+    margin-top: 2px;
 }
 
 .stats-chip {
