@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cotisation;
 use App\Models\McNotification;
+use App\Models\McRequest;
 use App\Models\Setting;
 use App\Models\User;
 use Carbon\Carbon;
@@ -168,6 +169,10 @@ class CotisationController extends Controller
                 'paid_count' => $cotisations->filter(fn ($c) => $c->isPaid())->count(),
                 'total_count' => $cotisations->count(),
                 'week_label' => $weekStart->format('d/m') . ' - ' . $weekEnd->format('d/m/Y'),
+                'global_paid'    => (int) Cotisation::sum('amount_paid'),
+                'global_refunds' => (int) McRequest::where('status', 'approved')->sum('amount'),
+                'personal_paid'    => (int) Cotisation::where('user_id', $user->id)->sum('amount_paid'),
+                'personal_refunds' => (int) McRequest::where('user_id', $user->id)->where('status', 'approved')->sum('amount'),
             ];
 
             return response()->json([

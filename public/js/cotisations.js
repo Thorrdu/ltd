@@ -71,7 +71,11 @@
         el.innerHTML =
             '<div class="stat-item"><div class="stat-value">' + (stats.paid_count || 0) + ' / ' + (stats.total_count || 0) + '</div><div class="stat-label">Payes</div></div>' +
             '<div class="stat-item"><div class="stat-value">' + money(stats.total_paid || 0) + '</div><div class="stat-label">Encaisse</div></div>' +
-            '<div class="stat-item"><div class="stat-value">' + money((stats.total_due || 0) - (stats.total_paid || 0)) + '</div><div class="stat-label">Reste a percevoir</div></div>';
+            '<div class="stat-item"><div class="stat-value">' + money((stats.total_due || 0) - (stats.total_paid || 0)) + '</div><div class="stat-label">Reste a percevoir</div></div>' +
+            '<div class="stat-item stat-item-global"><div class="stat-value" style="color:#4ade80">' + money(stats.global_paid || 0) + '</div><div class="stat-label">Total cotisations recues</div></div>' +
+            '<div class="stat-item stat-item-global"><div class="stat-value" style="color:#f87171">' + money(stats.global_refunds || 0) + '</div><div class="stat-label">Total remboursements</div></div>' +
+            '<div class="stat-item stat-item-perso"><div class="stat-value" style="color:#4ade80">' + money(stats.personal_paid || 0) + '</div><div class="stat-label">Mes cotisations versees</div></div>' +
+            '<div class="stat-item stat-item-perso"><div class="stat-value" style="color:#f87171">' + money(stats.personal_refunds || 0) + '</div><div class="stat-label">Mes remboursements recus</div></div>';
     }
 
     function renderWeek() {
