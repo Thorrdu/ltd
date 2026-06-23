@@ -18,7 +18,7 @@ class WeaponSimController extends Controller
 {
     public function hub()
     {
-        $members = User::orderBy('name')->get(['id', 'name', 'role']);
+        $members = User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'role']);
 
         return view('mc-hub', ['members' => $members]);
     }
@@ -26,7 +26,7 @@ class WeaponSimController extends Controller
     public function index()
     {
         $weapons = Weapon::active()->orderBy('sort_order')->get();
-        $members = User::orderBy('name')->get(['id', 'name', 'role']);
+        $members = User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'role']);
 
         return view('simulateur-armes', [
             'weaponsJson' => $weapons->toJson(),
@@ -36,7 +36,7 @@ class WeaponSimController extends Controller
 
     public function munitions()
     {
-        $members = User::orderBy('name')->get(['id', 'name', 'role']);
+        $members = User::where('is_active', true)->orderBy('name')->get(['id', 'name', 'role']);
 
         $ammoPrices = StockItem::where('category', 'ammo')
             ->pluck('default_sell_price', 'slug');

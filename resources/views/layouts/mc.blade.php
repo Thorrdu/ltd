@@ -18,8 +18,8 @@
         $currentRoute = Route::currentRouteName();
         $navLinks = [
             ['route' => 'mc.hub',              'url' => '/mc',                   'label' => 'Accueil',    'gate' => 'any'],
-            ['route' => 'simulateur-armes',    'url' => '/simulateur-armes',     'label' => 'Armes',      'gate' => 'any'],
-            ['route' => 'simulateur-munitions','url' => '/simulateur-munitions', 'label' => 'Munitions',  'gate' => 'any'],
+            ['route' => 'simulateur-armes',    'url' => '/simulateur-armes',     'label' => 'Armes',      'gate' => 'logged'],
+            ['route' => 'simulateur-munitions','url' => '/simulateur-munitions', 'label' => 'Munitions',  'gate' => 'logged'],
             ['route' => 'ventes',              'url' => '/ventes',               'label' => 'Ventes',     'gate' => 'member'],
             ['route' => 'classements',         'url' => '/classements',          'label' => 'Classements','gate' => 'member'],
             ['route' => 'demandes',            'url' => '/demandes',             'label' => 'Remboursements','gate' => 'member'],
@@ -83,11 +83,9 @@
             <input type="password" name="prevent_autofill_pw" style="display:none" tabindex="-1" aria-hidden="true">
             <select class="lock-input" id="loginMemberSelect">
                 <option value="">-- Qui etes-vous ? --</option>
-                @if(isset($members))
-                    @foreach($members as $m)
-                        <option value="{{ $m->id }}">{{ $m->name }}</option>
-                    @endforeach
-                @endif
+                @foreach(($loginMembers ?? collect()) as $m)
+                    <option value="{{ $m->id }}">{{ $m->name }}</option>
+                @endforeach
             </select>
             <input type="password" class="lock-input" id="loginPin" placeholder="PIN" autocomplete="new-password" maxlength="20">
             <button class="lock-btn" id="btnLogin">Valider</button>

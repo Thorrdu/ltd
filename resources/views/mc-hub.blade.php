@@ -9,8 +9,8 @@
         <div class="mc-hub-motto">Le Tout-Puissant pardonne. Pas les Lost.</div>
     </div>
 
-    {{-- SECTION: Simulateurs (toujours visible) --}}
-    <div class="mc-hub-section">
+    {{-- SECTION: Simulateurs (visible si connecte) --}}
+    <div class="mc-hub-section" id="hubSimSection" style="display:none;">
         <div class="mc-hub-section-label">Simulateurs</div>
         <div class="mc-hub-grid">
             <a href="/simulateur-armes" class="mc-hub-btn">
@@ -89,6 +89,7 @@
         var isVp = loggedIn && isAtLeast(role, 'vice_president');
         var isSuperadmin = loggedIn && role === 'treasurer';
         document.getElementById('hubAuthSection').style.display = loggedIn ? '' : 'none';
+        document.getElementById('hubSimSection').style.display = loggedIn ? '' : 'none';
         document.getElementById('hubLoginPrompt').style.display = loggedIn ? 'none' : '';
         document.getElementById('hubDashboard').classList.toggle('visible', !!loggedIn);
         document.querySelectorAll('.mc-hub-btn-member').forEach(function(el) {

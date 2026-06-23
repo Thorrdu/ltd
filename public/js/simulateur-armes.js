@@ -674,8 +674,17 @@
         updateCraftableFromStock();
     }
 
-    auth.onLogin(function () { showDashboard(); });
-    auth.onLogout(function () { hideDashboard(); });
+    function updateWeaponGate() {
+        var notLogged = $('weaponSimNotLogged');
+        var content = $('weaponSimContent');
+        var loggedIn = !!(auth && auth.isLoggedIn);
+        if (notLogged) notLogged.style.display = loggedIn ? 'none' : '';
+        if (content) content.style.display = loggedIn ? '' : 'none';
+    }
+
+    auth.onLogin(function () { updateWeaponGate(); showDashboard(); });
+    auth.onLogout(function () { updateWeaponGate(); hideDashboard(); });
+    updateWeaponGate();
     if (auth.isLoggedIn) showDashboard();
 
     // ===== POPULATE FORMS =====

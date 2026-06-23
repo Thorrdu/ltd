@@ -292,6 +292,18 @@
     if (ammoStockPoudreEl) { ammoStockPoudreEl.addEventListener('input', refreshAll); ammoStockPoudreEl.addEventListener('change', refreshAll); }
 
     // ===== AUTH =====
-    if (auth) { auth.onLogin(function () { loadStockData(); }); if (auth.isLoggedIn) loadStockData(); }
+    function updateAmmoGate() {
+        var notLogged = $('ammoSimNotLogged');
+        var content = $('ammoSimContent');
+        var loggedIn = !!(auth && auth.isLoggedIn);
+        if (notLogged) notLogged.style.display = loggedIn ? 'none' : '';
+        if (content) content.style.display = loggedIn ? '' : 'none';
+    }
+    if (auth) {
+        auth.onLogin(function () { updateAmmoGate(); loadStockData(); });
+        auth.onLogout(function () { updateAmmoGate(); });
+        if (auth.isLoggedIn) loadStockData();
+    }
+    updateAmmoGate();
     refreshAll();
 })();

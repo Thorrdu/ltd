@@ -22,6 +22,35 @@ class PageAccessRule extends Model
 
     public const CACHE_KEY = 'page_access_rules_all';
 
+    /**
+     * Code-level default min_role per page key. Used as a fallback when no DB
+     * rule exists for a key, so a non-seeded (or partially seeded) database does
+     * not lock out every role except the superadmin. A DB rule, when present,
+     * always overrides these defaults.
+     *
+     * @var array<string, string>
+     */
+    public const DEFAULT_MIN_ROLES = [
+        'panel_admin'          => 'treasurer',
+        'panel_armurerie'      => 'officer',
+        'mc_hub'               => 'prospect',
+        'simulateur_armes'     => 'member',
+        'simulateur_munitions' => 'member',
+        'espace_membres'       => 'prospect',
+        'membres_gestion'      => 'vice_president',
+        'matrice_acces'        => 'treasurer',
+        'ventes_rapides'       => 'member',
+        'stocks_generique'     => 'officer',
+        'stocks_validations'   => 'treasurer',
+        'stocks_import'        => 'treasurer',
+        'comptabilite'         => 'treasurer',
+        'classements'          => 'member',
+        'demandes'             => 'member',
+        'fiches_membres'       => 'officer',
+        'cotisations'          => 'prospect',
+        'parametres'           => 'treasurer',
+    ];
+
     protected static function booted(): void
     {
         static::saved(fn () => Cache::forget(self::CACHE_KEY));
@@ -48,8 +77,10 @@ class PageAccessRule extends Model
     }
 
     /**
-     * Access resolution: if a rule exists for the given key, the user must reach the min_role level.
-     * If no rule exists, access is denied by default (secure by default).
+     * Access resolution: a DB rule (if present) defines the required min_role.
+     * If no DB rule exists, a code-level default (DEFAULT_MIN_ROLES) is used so
+     * that an un-seeded database does not lock out everyone but the superadmin.
+     * If neither exists, access is denied by default (secure by default).
      * Superadmin always has access.
      */
     public static function userCanAccess(?User $user, string $pageKey): bool
@@ -61,11 +92,12 @@ class PageAccessRule extends Model
             return true;
         }
         $rule = self::findCached($pageKey);
-        if (! $rule) {
+        $minRole = $rule?->min_role ?? (self::DEFAULT_MIN_ROLES[$pageKey] ?? null);
+        if ($minRole === null) {
             return false;
         }
 
-        return $user->isAtLeast($rule->min_role);
+        return $user->isAtLeast($minRole);
     }
 
     public function getMinRoleLabelAttribute(): string

@@ -13,6 +13,14 @@
             <a href="/mc" class="mc-page-back">&larr; Retour a l'accueil</a>
         </div>
 
+        {{-- Non connecte --}}
+        <div id="weaponSimNotLogged" class="contract-lock">
+            <div class="lock-text">Connectez-vous via le bouton en haut a droite pour acceder au simulateur.</div>
+        </div>
+
+        {{-- Contenu (reserve aux membres connectes) --}}
+        <div id="weaponSimContent" style="display:none;">
+
         {{-- Selection des armes --}}
         <div class="sim-section">
             <div class="sim-section-title">Selection des armes</div>
@@ -93,6 +101,8 @@
 
         {{-- Craftable from stock (visible when logged in) --}}
         <div class="sim-section" id="craftableFromStock" style="display:none;"></div>
+
+        </div>{{-- /weaponSimContent --}}
 
     </div>
 </div>
