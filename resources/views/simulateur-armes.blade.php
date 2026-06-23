@@ -60,18 +60,10 @@
         {{-- Craft armes (composants) --}}
         <div class="sim-section" id="weaponCraftSection">
             <div class="sim-section-title">Craft armes (composants)</div>
-            <p class="ammo-sim-intro">Le tableau distingue deux types de composants : les <strong>composants achetes</strong> (corp, canon, poignee) et les <strong>matieres craftees</strong> a base de fer (pieces de metal, ressorts). Deux scenarios de cout sont calcules selon que le fer est <strong>achete</strong> ou <strong>recolte</strong>. Cochez <strong>Composants en stock</strong> si vous disposez deja des composants. Le <strong>SNS</strong> n'est pas crafte : achat ref. + revente.</p>
-            <p class="ammo-sim-intro" style="border-left:3px solid #60a5fa;padding-left:10px;margin-top:4px;color:#7db8fc;">
-                <strong>Plans Pistol :</strong> les plans pistolet permettent de crafter tous les pistolets (SNS, WN 29, Ceramic, Pistol, Heavy Pistol) <strong>sauf</strong> le Cal .50 qui necessite son propre plan.
-            </p>
+            <p class="ammo-sim-intro">Le tableau distingue deux types de composants : les <strong>composants braquables</strong> (canon, poignee, corp de pistolet, corps de SMG/fusil, crosse) qui peuvent etre <strong>braques</strong> (gratuits) ou <strong>achetes</strong>, et les <strong>matieres craftees uniquement</strong> (pieces de metal, ressorts, polymere). Deux scenarios de cout sont calcules : composants <strong>achetes</strong> ou <strong>braques</strong>. Le <strong>SNS</strong> n'est pas crafte : achat ref. + revente.</p>
             <div class="ammo-sim-params">
-                <label class="ammo-sim-label" for="weaponCraftPlanPrice">Prix du plan (EUR / utilisation)</label>
-                <input type="number" class="ammo-sim-input" id="weaponCraftPlanPrice" min="0" step="0.01" value="" placeholder="Ex. 8000" inputmode="decimal">
                 <label class="ammo-sim-label" for="weaponCraftFerPrice">Prix du fer (EUR / unite)</label>
                 <input type="number" class="ammo-sim-input" id="weaponCraftFerPrice" min="0" step="0.01" value="30" inputmode="decimal">
-                <label class="ammo-sim-label ammo-sim-label-cb" for="weaponCraftCompsInStock">
-                    <input type="checkbox" id="weaponCraftCompsInStock"> Composants en stock
-                </label>
             </div>
             <div class="ammo-craft-wrap">
                 <table class="ammo-craft-table weapon-craft-table" aria-label="Cout craft arme par composants">
@@ -79,21 +71,20 @@
                         <tr>
                             <th>Arme</th>
                             <th>Tps</th>
-                            <th>EUR plans</th>
                             <th>EUR Comp</th>
                             <th>EUR Mat</th>
                             <th>EUR polym.</th>
-                            <th>Tot. ach.</th>
-                            <th>Tot. rec.</th>
+                            <th>Cout achat</th>
+                            <th>Cout braque</th>
                             <th>Vente</th>
-                            <th>M ach.</th>
-                            <th>M rec.</th>
+                            <th>M achat</th>
+                            <th>M braque</th>
                         </tr>
                     </thead>
                     <tbody id="weaponCraftBody"></tbody>
                     <tfoot>
                         <tr class="ammo-craft-foot">
-                            <td colspan="11">EUR Comp = composants achetes (corp, canon, poignee) -- 0 si "en stock". EUR Mat = matieres craftees (metal x 5 + ressort x 8) x prix fer. Tot. ach. = cout total fer achete ; Tot. rec. = cout si fer recolte (Mat = 0). SNS : achat ref. + vente.</td>
+                            <td colspan="10">EUR Comp = composants braquables (canon, poignee, corp, corps SMG/fusil, crosse). EUR Mat = matieres craftees (metal x 5 + ressort x 8) x prix fer. Cout achat = composants achetes ; Cout braque = composants braques (gratuits). SNS : achat ref. + vente.</td>
                         </tr>
                     </tfoot>
                 </table>
