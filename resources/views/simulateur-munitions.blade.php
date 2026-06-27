@@ -13,6 +13,14 @@
             <a href="/mc" class="mc-page-back">&larr; Retour a l'accueil</a>
         </div>
 
+        {{-- Non connecte --}}
+        <div id="ammoSimNotLogged" class="contract-lock">
+            <div class="lock-text">Connectez-vous via le bouton en haut a droite pour acceder au simulateur.</div>
+        </div>
+
+        {{-- Contenu (reserve aux membres connectes) --}}
+        <div id="ammoSimContent" style="display:none;">
+
         {{-- Selection multi-calibres --}}
         <div class="sim-section">
             <div class="sim-section-title">Selection des munitions</div>
@@ -84,6 +92,8 @@
                 </table>
             </div>
         </div>
+
+        </div>{{-- /ammoSimContent --}}
 
     </div>
 </div>

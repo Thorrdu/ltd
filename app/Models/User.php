@@ -115,8 +115,10 @@ class User extends Authenticatable implements FilamentUser
 
     /**
      * Returns true if this user is allowed to assign the given role.
-     * Rule: superadmin (treasurer) can assign any role, including another treasurer.
-     * Otherwise, a user can assign any role strictly lower than their own level.
+     * Rules:
+     *  - superadmin (treasurer) can assign any role, including another treasurer ;
+     *  - président peut assigner n'importe quel rôle, y compris trésorier ;
+     *  - sinon, un utilisateur peut assigner tout rôle de niveau strictement inférieur au sien.
      */
     public function canAssignRole(string $role): bool
     {
@@ -124,6 +126,9 @@ class User extends Authenticatable implements FilamentUser
             return false;
         }
         if ($this->isSuperadmin()) {
+            return true;
+        }
+        if ($this->isPresident()) {
             return true;
         }
         $target = self::ROLES[$role]['level'];

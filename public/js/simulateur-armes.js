@@ -495,16 +495,13 @@
         return (metalMinerai + ressortMinerai) * fp;
     }
 
-    function weaponCraftCostBreakdownOne(w, planPriceEu, ferPrice, compsInStock) {
-        var pp = Math.max(0, planPriceEu);
-        var p = w.pieces;
-        var costPlans = (p.plans || 0) * pp;
-        var costComp = compsInStock ? 0 : weaponCraftCompCostOne(w);
+    function weaponCraftCostBreakdownOne(w, ferPrice) {
+        var costComp = weaponCraftCompCostOne(w);
         var costMat = weaponCraftMatCostOne(w, ferPrice);
-        var costPoly = (p.polymere || 0) * POLYMERE_COST;
-        var totalAch = costPlans + costComp + costMat + costPoly;
-        var totalRec = costPlans + costComp + costPoly;
-        return { costPlans: costPlans, costComp: costComp, costMat: costMat, costPoly: costPoly, totalAch: totalAch, totalRec: totalRec };
+        var costPoly = (w.pieces.polymere || 0) * POLYMERE_COST;
+        var coutAchat = costComp + costMat + costPoly;
+        var coutBraque = costMat + costPoly;
+        return { costComp: costComp, costMat: costMat, costPoly: costPoly, coutAchat: coutAchat, coutBraque: coutBraque };
     }
 
     function weaponCraftTimeLabel(craftTime) {
@@ -517,19 +514,10 @@
         return el ? Math.max(0, parseFloat(el.value) || 0) : 30;
     }
 
-    function readWeaponCraftCompsInStock() {
-        var el = $('weaponCraftCompsInStock');
-        return el ? el.checked : false;
-    }
-
     function updateWeaponCraftTable() {
         var tbody = $('weaponCraftBody');
-        var planIn = $('weaponCraftPlanPrice');
-        if (!tbody || !planIn) return;
-        var raw = String(planIn.value).trim();
-        var planEu = raw === '' ? 0 : Math.max(0, parseFloat(raw) || 0);
+        if (!tbody) return;
         var ferPrice = readWeaponCraftFerPrice();
-        var compsInStock = readWeaponCraftCompsInStock();
         var html = '';
         weaponList.forEach(function (w) {
             var wd = weapons[w.slug];
@@ -543,24 +531,23 @@
             var range = fmtPriceRange(wd);
             var sellCell = (sell > 0 ? fmtEuro(sell) : '\u2014') + (range ? '<br><small class="price-range">' + range + '</small>' : '');
             if (bought) {
-                html += '<td>\u2014</td><td>\u2014</td><td>\u2014</td><td>\u2014</td><td>\u2014</td><td>\u2014</td>';
+                html += '<td>\u2014</td><td>\u2014</td><td>\u2014</td><td>\u2014</td><td>\u2014</td>';
                 html += '<td>' + sellCell + '</td>';
                 var margeRevente = (sell > 0 && refBuy > 0) ? sell - refBuy : null;
                 html += '<td class="' + ammoBenClass(margeRevente) + '">' + (margeRevente != null ? fmtEuro(margeRevente) : '\u2014') + '</td>';
                 html += '<td class="' + ammoBenClass(margeRevente) + '">' + (margeRevente != null ? fmtEuro(margeRevente) : '\u2014') + '</td>';
             } else {
-                var b = weaponCraftCostBreakdownOne(wd, planEu, ferPrice, compsInStock);
-                html += '<td>' + fmtEuro(b.costPlans) + '</td>';
-                html += '<td>' + (compsInStock ? '\u2014' : fmtEuro(b.costComp)) + '</td>';
+                var b = weaponCraftCostBreakdownOne(wd, ferPrice);
+                html += '<td>' + fmtEuro(b.costComp) + '</td>';
                 html += '<td>' + fmtEuro(b.costMat) + '</td>';
                 html += '<td>' + fmtEuro(b.costPoly) + '</td>';
-                html += '<td>' + fmtEuro(b.totalAch) + '</td>';
-                html += '<td>' + fmtEuro(b.totalRec) + '</td>';
+                html += '<td>' + fmtEuro(b.coutAchat) + '</td>';
+                html += '<td>' + fmtEuro(b.coutBraque) + '</td>';
                 html += '<td>' + sellCell + '</td>';
-                var margeAch = (sell > 0) ? sell - b.totalAch : null;
-                var margeRec = (sell > 0) ? sell - b.totalRec : null;
+                var margeAch = (sell > 0) ? sell - b.coutAchat : null;
+                var margeBraq = (sell > 0) ? sell - b.coutBraque : null;
                 html += '<td class="' + ammoBenClass(margeAch) + '">' + (margeAch != null ? fmtEuro(margeAch) : '\u2014') + '</td>';
-                html += '<td class="' + ammoBenClass(margeRec) + '">' + (margeRec != null ? fmtEuro(margeRec) : '\u2014') + '</td>';
+                html += '<td class="' + ammoBenClass(margeBraq) + '">' + (margeBraq != null ? fmtEuro(margeBraq) : '\u2014') + '</td>';
             }
             html += '</tr>';
         });
@@ -635,19 +622,10 @@
     }
 
     // ===== WEAPON CRAFT EVENT LISTENERS =====
-    var weaponCraftPlanEl = $('weaponCraftPlanPrice');
-    if (weaponCraftPlanEl) {
-        weaponCraftPlanEl.addEventListener('input', refreshWeaponCraftSims);
-        weaponCraftPlanEl.addEventListener('change', refreshWeaponCraftSims);
-    }
     var weaponCraftFerEl = $('weaponCraftFerPrice');
     if (weaponCraftFerEl) {
         weaponCraftFerEl.addEventListener('input', refreshWeaponCraftSims);
         weaponCraftFerEl.addEventListener('change', refreshWeaponCraftSims);
-    }
-    var weaponCraftCompsEl = $('weaponCraftCompsInStock');
-    if (weaponCraftCompsEl) {
-        weaponCraftCompsEl.addEventListener('change', refreshWeaponCraftSims);
     }
     refreshWeaponCraftSims();
 
@@ -696,8 +674,17 @@
         updateCraftableFromStock();
     }
 
-    auth.onLogin(function () { showDashboard(); });
-    auth.onLogout(function () { hideDashboard(); });
+    function updateWeaponGate() {
+        var notLogged = $('weaponSimNotLogged');
+        var content = $('weaponSimContent');
+        var loggedIn = !!(auth && auth.isLoggedIn);
+        if (notLogged) notLogged.style.display = loggedIn ? 'none' : '';
+        if (content) content.style.display = loggedIn ? '' : 'none';
+    }
+
+    auth.onLogin(function () { updateWeaponGate(); showDashboard(); });
+    auth.onLogout(function () { updateWeaponGate(); hideDashboard(); });
+    updateWeaponGate();
     if (auth.isLoggedIn) showDashboard();
 
     // ===== POPULATE FORMS =====
